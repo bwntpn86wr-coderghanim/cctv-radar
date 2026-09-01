@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>AegisRadar 360 - جامعة نينوى</title>
 
+  <!-- المكتبات البرمجية -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/face-min.js"></script>
 
   <style>
     * {
@@ -17,93 +16,131 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      -webkit-tap-highlight-color: transparent;
     }
 
     body {
-      background-color: #121212;
+      background-color: #0f111a;
       color: #fff;
-      overflow: hidden;
+      overflow-x: hidden;
       width: 100vw;
       height: 100vh;
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
     }
 
-    /* --- شاشة تسجيل الدخول وكلمة السر --- */
-    #login-overlay {
+    .step-screen {
       position: fixed;
       top: 0; left: 0;
       width: 100vw; height: 100vh;
-      background: rgba(18, 18, 18, 0.95);
-      backdrop-filter: blur(10px);
-      z-index: 9999;
+      background: #0f111a;
+      z-index: 100;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       padding: 20px;
-    }
-
-    .login-box {
-      background: #1e1e24;
-      padding: 25px;
-      border-radius: 16px;
-      border: 1px solid #00adb5;
       text-align: center;
-      width: 100%;
-      max-width: 360px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
     }
 
-    /* --- الهيكل العام للتطبيق --- */
-    #app-container {
-      display: flex;
+    .hidden { display: none !important; }
+
+    /* الصفحة التعريفية (المرحلة 1) */
+    .intro-card {
+      background: linear-gradient(145deg, #1e2230, #141722);
+      border: 1px solid #00adb5;
+      border-radius: 20px;
+      padding: 40px 30px;
+      max-width: 600px;
       width: 100%;
-      height: 100%;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    }
+
+    .intro-card h1 { font-size: 28px; color: #00adb5; margin-bottom: 10px; }
+    .intro-card h2 { font-size: 16px; color: #a0a5b5; margin-bottom: 20px; }
+    
+    .project-desc {
+      background: rgba(0, 173, 181, 0.08);
+      border-right: 4px solid #00adb5;
+      padding: 15px;
+      text-align: right;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+      border-radius: 4px;
+    }
+
+    .team-box {
+      text-align: right;
+      background: #181b26;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    .team-box span { color: #00fff5; font-weight: bold; }
+
+    /* شاشة كلمة السر (المرحلة 2) */
+    .pass-box {
+      background: #1e2230;
+      border: 1px solid #00adb5;
+      padding: 30px;
+      border-radius: 16px;
+      max-width: 380px;
+      width: 100%;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: none;
+      background: #282c3d;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    button {
+      background: #00adb5;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover { background: #00888e; }
+
+    /* الواجهة الرئيسية (المرحلة 3) */
+    #main-app {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
     }
 
     #sidebar {
-      width: 360px;
-      background-color: #1e1e24;
-      padding: 15px;
+      width: 380px;
+      background: #141722;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      z-index: 10;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+      gap: 15px;
       overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      z-index: 10;
+      border-left: 1px solid #282c3d;
     }
 
     .card {
-      background: #2b2b36;
-      padding: 12px;
+      background: #1e2230;
+      padding: 15px;
       border-radius: 12px;
+      border: 1px solid #282c3d;
     }
 
-    .header-card {
-      background: linear-gradient(135deg, #00adb5 0%, #1e1e24 100%);
-      border: 1px solid #00adb5;
-    }
+    .card h3 { font-size: 14px; color: #00adb5; margin-bottom: 10px; }
 
-    .header-card h1 { font-size: 18px; color: #fff; }
-    .header-card h2 { font-size: 12px; color: #e0e0e0; margin-bottom: 6px; }
-    
-    .info-group {
-      font-size: 12px;
-      line-height: 1.5;
-      border-top: 1px solid rgba(255,255,255,0.2);
-      padding-top: 8px;
-      text-align: right;
-    }
-    .info-group span { color: #00fff5; font-weight: bold; }
-
-    .card h3 { margin-bottom: 8px; font-size: 14px; color: #00adb5; }
-
-    .cam-container {
+    .cam-wrapper {
       position: relative;
       width: 100%;
-      height: 160px;
+      height: 180px;
       background: #000;
       border-radius: 8px;
       overflow: hidden;
@@ -115,277 +152,320 @@
       object-fit: cover;
     }
 
+    #face-box {
+      position: absolute;
+      border: 2px solid #00fff5;
+      box-shadow: 0 0 8px #00fff5;
+      border-radius: 4px;
+      display: none;
+      pointer-events: none;
+    }
+
+    #canvas-container { flex-grow: 1; height: 100%; }
+
     #gallery {
       display: flex;
-      flex-direction: column;
       gap: 8px;
-      max-height: 150px;
-      overflow-y: auto;
+      overflow-x: auto;
+      padding-top: 8px;
     }
 
-    .face-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: #393e46;
-      padding: 6px;
-      border-radius: 6px;
-    }
-
-    .face-item img {
-      width: 45px;
-      height: 45px;
+    .gallery-img {
+      width: 55px;
+      height: 55px;
       border-radius: 6px;
       object-fit: cover;
       border: 1px solid #00adb5;
     }
 
-    .face-info { flex-grow: 1; font-size: 11px; }
+    /* جدول رصد الأشخاص للرادار */
+    .targets-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
 
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 6px;
+    .target-card {
+      background: #282c3d;
+      padding: 8px 12px;
       border-radius: 8px;
-      border: none;
-      background: #393e46;
-      color: #fff;
-      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      border-right: 4px solid #aaa;
     }
 
-    .input-group { display: flex; gap: 5px; }
+    .cat-guest { border-color: #00fff5; }
+    .cat-family { border-color: #4eef90; }
+    .cat-unknown { border-color: #ff4d4d; }
 
-    button {
-      background: #00adb5;
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .btn-download {
-      background: #4eef90;
-      color: #000;
-      padding: 4px 8px;
+    .badge {
+      padding: 2px 6px;
+      border-radius: 4px;
       font-size: 10px;
-      width: auto;
+      font-weight: bold;
     }
-
-    .status-closed { color: #4eef90; font-weight: bold; }
-    .status-open { color: #ff4d4d; font-weight: bold; }
-
-    #canvas-container { flex-grow: 1; height: 100%; touch-action: none; }
+    .badge-standing { background: #00adb5; color: #fff; }
+    .badge-sitting { background: #f39c12; color: #fff; }
+    .badge-sleeping { background: #9b59b6; color: #fff; }
   </style>
 </head>
 <body>
 
-  <div id="login-overlay">
-    <div class="login-box">
-      <div class="card header-card" style="margin-bottom: 15px;">
-        <h1>🛡️ AegisRadar 360</h1>
-        <h2>جامعة نينوى - كلية الهندسة</h2>
-        <div class="info-group">
-          <p>👨‍🏫 <b>إشراف الاستاذ:</b> <span>إبراهيم</span></p>
-          <p style="margin-top: 4px;"><b>إعداد الطلاب:</b></p>
-          <p>• 👨‍💻 <span>غانم فراس</span></p>
-          <p>• 👩‍💻 <span>سما غسان</span></p>
-          <p>• 👨‍💻 <span>إبراهيم غسان</span></p>
-        </div>
+  <!-- 1️⃣ المرحلة الأولى: الصفحة التعريفية الشاملة -->
+  <div id="step-1" class="step-screen">
+    <div class="intro-card">
+      <h1>🛡️ AegisRadar 360</h1>
+      <h2>نظام أمني متكامل للرصد ثلاثي الأبعاد وإدارة المنازل الذكية</h2>
+      
+      <div class="project-desc">
+        يقوم المشروع بربط تقنيات الرادار المليمترية (mmWave Radar) ومتحكمات IoT برسم خرائط ثلاثية الأبعاد للغرف والمباني مع تتبع حركة وحالة 6 أشخاص بالتزامن مع نظام مراقبة الكاميرا.
       </div>
 
-      <p style="font-size: 12px; color: #ccc; margin-bottom: 10px;">أدخل كلمة السر للوصول إلى النظام:</p>
-      <input type="password" id="passInput" placeholder="كلمة السر" style="text-align: center; font-size: 16px;">
-      <button onclick="checkPassword()">دخول النظام 🔓</button>
-      <p id="login-error" style="color: #ff4d4d; font-size: 12px; margin-top: 8px; display: none;">كلمة السر غير صحيحة!</p>
+      <div class="team-box">
+        <p>👨‍🏫 <b>إشراف الأستاذ القدير:</b> <span>إبراهيم</span></p>
+        <hr style="border-color: #282c3d; margin: 8px 0;">
+        <p><b>فريق العمل (إعداد الطلاب):</b></p>
+        <p>• 👨‍💻 <span>غانم فراس</span></p>
+        <p>• 👩‍💻 <span>سما غسان</span></p>
+        <p>• 👨‍💻 <span>إبراهيم غسان</span></p>
+        <p style="margin-top: 8px; font-size: 12px; color: #888;">جامعة نينوى - كلية الهندسة</p>
+      </div>
+
+      <button onclick="goToStep(2)" style="font-size: 16px; padding: 14px;">التالي ➔</button>
     </div>
   </div>
 
-  <div id="app-container">
+  <!-- 2️⃣ المرحلة الثانية: إدخال رمز الدخول -->
+  <div id="step-2" class="step-screen hidden">
+    <div class="pass-box">
+      <h2 style="color: #00adb5; margin-bottom: 10px;">🔒 رمز حماية النظام</h2>
+      <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">يرجى إدخال رمز المرور للوصول إلى لوحة التكوين:</p>
+      <input type="password" id="passInput" placeholder="أدخل الرمز هنا" style="text-align: center; font-size: 18px;">
+      <button onclick="verifyPassword()">دخول النظام 🔓</button>
+      <p id="pass-error" style="color: #ff4d4d; font-size: 12px; display: none; margin-top: 8px;">الرمز غير صحيح!</p>
+    </div>
+  </div>
+
+  <!-- 3️⃣ المرحلة الثالثة: لوحة التهيئة والواجهة الرئيسية -->
+  <div id="main-app" class="hidden">
     <div id="sidebar">
       
-      <div class="card header-card">
-        <h1>🛡️ AegisRadar 360</h1>
-        <h2>جامعة نينوى - كلية الهندسة</h2>
-        <div class="info-group">
-          <p>👨‍🏫 <b>إشراف الاستاذ:</b> <span>إبراهيم</span></p>
-          <p>• 👨‍💻 <span>غانم فراس</span> | 👩‍💻 <span>سما غسان</span> | 👨‍💻 <span>إبراهيم غسان</span></p>
+      <!-- رصد الرادار لـ 6 أشخاص وحالتهم -->
+      <div class="card">
+        <h3>📡 تتبع الرادار (6 أشخاص)</h3>
+        <div id="targets-container" class="targets-list">
+          <!-- ستظهر الأهداف الستة هنا تلقائياً -->
         </div>
       </div>
 
+      <!-- إعداد رابط الكاميرا والبث -->
       <div class="card">
-        <h3>البث المباشر (Face Detection) 📷</h3>
-        <div class="cam-container">
-          <img id="camera-stream" crossorigin="anonymous" src="http://192.168.1.50:81/stream" alt="البث غير متصل" onerror="this.src='https://via.placeholder.com/300x160?text=Camera+Offline';" />
+        <h3>1. الكاميرا والوجوه 🎥</h3>
+        <input type="text" id="camUrl" placeholder="رابط Stream الكاميرا" value="http://192.168.1.50:81/stream">
+        <button onclick="updateCamUrl()">تحديث رابط الكاميرا 🔄</button>
+        
+        <div class="cam-wrapper" style="margin-top: 10px;">
+          <img id="camera-stream" crossorigin="anonymous" src="http://192.168.1.50:81/stream" onerror="this.src='https://via.placeholder.com/300x160?text=Camera+Offline';" />
+          <div id="face-box"></div>
         </div>
-        <button onclick="manualCapture()" style="margin-top: 8px;">التقاط صورة يدوياً 📸</button>
-      </div>
 
-      <div class="card">
-        <h3>سجل الوجوه الملتقطة 👤</h3>
-        <div id="gallery">
-          <p style="font-size: 11px; color: #aaa;" id="no-faces">لم يتم التقاط وجوه بعد...</p>
+        <div style="display: flex; gap: 5px; margin-top: 8px;">
+          <button onclick="toggleFaceBox()">تحديد الوجه 🔲</button>
+          <button onclick="captureFace()" style="background: #4eef90; color: #000;">سحب صورة 📸</button>
         </div>
+
+        <div id="gallery"></div>
       </div>
 
-      <div id="lock-card" class="card">
-        <h3>حالة الباب / القفل</h3>
-        <div id="lock-status" class="status-closed">جاري الاتصال... 🔒</div>
-      </div>
-
+      <!-- تهيئة عدد الغرف والجدران -->
       <div class="card">
-        <h3>إضافة غرفة جديدة للمنزل</h3>
+        <h3>2. إعدادات الغرف والجدران 🧱</h3>
         <input type="text" id="roomName" placeholder="اسم الغرفة" />
-        <div class="input-group">
+        <div style="display: flex; gap: 5px;">
+          <input type="number" id="dimW" placeholder="العرض W" value="6" />
+          <input type="number" id="dimL" placeholder="الطول L" value="6" />
+          <input type="number" id="dimH" placeholder="الارتفاع H" value="3" />
+        </div>
+        <div style="display: flex; gap: 5px;">
           <input type="number" id="posX" placeholder="X" value="0" />
-          <input type="number" id="posY" placeholder="Y" value="0" />
           <input type="number" id="posZ" placeholder="Z" value="0" />
         </div>
-        <div class="input-group">
-          <input type="number" id="dimW" placeholder="W" value="4" />
-          <input type="number" id="dimL" placeholder="L" value="4" />
-          <input type="number" id="dimH" placeholder="H" value="3" />
-        </div>
-        <button onclick="addNewRoomFromUI()">إضافة الغرفة ➕</button>
+        <button onclick="addCustomRoom()">إضافة الغرفة للمخطط ➕</button>
       </div>
+
+      <!-- حالة قفل الباب -->
+      <div class="card">
+        <h3>3. قفل الباب / MQTT 🔒</h3>
+        <div id="lock-status" style="color: #4eef90; font-weight: bold;">الباب مغلق 🔒</div>
+      </div>
+
     </div>
 
+    <!-- العرض 3D -->
     <div id="canvas-container"></div>
   </div>
 
   <script>
-    // --- 🔑 التحقق من كلمة السر ---
-    function checkPassword() {
-      const pass = document.getElementById('passInput').value;
-      const correctPass = "20262026"; // كلمة السر المطلوبة
+    // --- التنقل بين المراحل ---
+    function goToStep(stepNumber) {
+      document.getElementById('step-1').classList.add('hidden');
+      document.getElementById('step-2').classList.add('hidden');
+      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+    }
 
-      if (pass === correctPass) {
-        document.getElementById('login-overlay').style.display = 'none';
+    function verifyPassword() {
+      const pass = document.getElementById('passInput').value;
+      if (pass === "20262026") {
+        document.getElementById('step-2').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        init3D();
       } else {
-        document.getElementById('login-error').style.display = 'block';
+        document.getElementById('pass-error').style.display = 'block';
       }
     }
 
-    // --- 1. Three.js 3D Engine ---
-    const container = document.getElementById('canvas-container');
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x121212);
-
-    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.set(0, 20, 25);
-    camera.lookAt(0, 0, 0);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    container.appendChild(renderer.domElement);
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    dirLight.position.set(15, 30, 15);
-    scene.add(dirLight);
-
-    scene.add(new THREE.GridHelper(60, 60, 0x00adb5, 0x393e46));
-
-    // --- 2. سحب وصور الوجوه ---
-    let lastCaptureTime = 0;
-
-    function captureFaceImage() {
-      const now = Date.now();
-      if (now - lastCaptureTime < 3000) return;
-      lastCaptureTime = now;
-
-      const img = document.getElementById('camera-stream');
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth || 300;
-      canvas.height = img.naturalHeight || 160;
-
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      saveFaceToGallery(canvas.toDataURL('image/jpeg'));
+    function updateCamUrl() {
+      document.getElementById('camera-stream').src = document.getElementById('camUrl').value;
     }
 
-    function manualCapture() {
-      const img = document.getElementById('camera-stream');
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth || 300;
-      canvas.height = img.naturalHeight || 160;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      saveFaceToGallery(canvas.toDataURL('image/jpeg'));
+    let isBoxVisible = false;
+    function toggleFaceBox() {
+      const box = document.getElementById('face-box');
+      isBoxVisible = !isBoxVisible;
+      if (isBoxVisible) {
+        box.style.top = '25px'; box.style.left = '35%';
+        box.style.width = '90px'; box.style.height = '90px';
+        box.style.display = 'block';
+      } else {
+        box.style.display = 'none';
+      }
     }
 
-    function saveFaceToGallery(dataURL) {
+    function captureFace() {
+      const img = document.getElementById('camera-stream');
+      const canvas = document.createElement('canvas');
+      canvas.width = 150; canvas.height = 150;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, 150, 150);
+
       const gallery = document.getElementById('gallery');
-      const noFacesText = document.getElementById('no-faces');
-      if (noFacesText) noFacesText.remove();
-
-      const timeStr = new Date().toLocaleTimeString('ar-EG');
-      
-      const item = document.createElement('div');
-      item.className = 'face-item';
-      item.innerHTML = `
-        <img src="${dataURL}" alt="وجه ملتقط" />
-        <div class="face-info">
-          <div><b>رصد وجه جديد</b></div>
-          <div style="color:#aaa;">الوقت: ${timeStr}</div>
-        </div>
-        <a href="${dataURL}" download="face_${Date.now()}.jpg">
-          <button class="btn-download">حفظ 💾</button>
-        </a>
-      `;
-      gallery.prepend(item);
+      const newImg = document.createElement('img');
+      newImg.src = canvas.toDataURL('image/jpeg');
+      newImg.className = 'gallery-img';
+      gallery.prepend(newImg);
     }
 
-    window.onload = function() {
-      const tracker = new tracking.ObjectTracker('face');
-      tracker.on('track', function(event) {
-        if (event.data.length > 0) {
-          captureFaceImage();
-        }
+    // --- نظام رصد الأشخاص الـ 6 وإدارتهم ---
+    const personCategories = [
+      { id: 1, name: "شخص 1 (ضيف)", cat: "cat-guest", color: 0x00fff5 },
+      { id: 2, name: "شخص 2 (ضيف)", cat: "cat-guest", color: 0x00fff5 },
+      { id: 3, name: "شخص 3 (عائلة)", cat: "cat-family", color: 0x4eef90 },
+      { id: 4, name: "شخص 4 (عائلة)", cat: "cat-family", color: 0x4eef90 },
+      { id: 5, name: "شخص 5 (غير معرّف)", cat: "cat-unknown", color: 0xff4d4d },
+      { id: 6, name: "شخص 6 (غير معرّف)", cat: "cat-unknown", color: 0xff4d4d }
+    ];
+
+    let radarTargets = [
+      { id: 1, state: "واقف", speed: 1.2, x: -2, z: -1, y: 1.6 },
+      { id: 2, state: "جالس", speed: 0.0, x: -1, z: 2, y: 0.9 },
+      { id: 3, state: "نائم", speed: 0.0, x: 2, z: -2, y: 0.3 },
+      { id: 4, state: "واقف", speed: 0.8, x: 1, z: 1, y: 1.6 },
+      { id: 5, state: "جالس", speed: 0.1, x: 3, z: 2, y: 0.9 },
+      { id: 6, state: "نائم", speed: 0.0, x: -3, z: 1, y: 0.3 }
+    ];
+
+    let targetMeshes = [];
+
+    function renderTargetsUI() {
+      const container = document.getElementById('targets-container');
+      container.innerHTML = '';
+
+      radarTargets.forEach((t, i) => {
+        const catInfo = personCategories[i];
+        let badgeClass = "badge-standing";
+        if (t.state === "جالس") badgeClass = "badge-sitting";
+        if (t.state === "نائم") badgeClass = "badge-sleeping";
+
+        const div = document.createElement('div');
+        div.className = `target-card ${catInfo.cat}`;
+        div.innerHTML = `
+          <div>
+            <b>${catInfo.name}</b>
+            <div style="color: #aaa; font-size: 10px;">السرعة: ${t.speed} m/s</div>
+          </div>
+          <span class="badge ${badgeClass}">${t.state}</span>
+        `;
+        container.appendChild(div);
       });
-      tracking.track('#camera-stream', tracker);
-    };
-
-    // --- 3. بناء الغرف ---
-    const rooms = [];
-    function createRoom(id, name, x, y, z, w, l, h) {
-      const geometry = new THREE.BoxGeometry(w, h, l);
-      const material = new THREE.MeshLambertMaterial({ color: 0x00adb5, wireframe: true, transparent: true, opacity: 0.6 });
-      const roomMesh = new THREE.Mesh(geometry, material);
-      roomMesh.position.set(x, y + h / 2, z);
-      scene.add(roomMesh);
-      rooms.push({ id, name, mesh: roomMesh });
     }
 
-    function addNewRoomFromUI() {
-      const name = document.getElementById('roomName').value || `غرفة ${rooms.length + 1}`;
-      const x = parseFloat(document.getElementById('posX').value) || 0;
-      const y = parseFloat(document.getElementById('posY').value) || 0;
-      const z = parseFloat(document.getElementById('posZ').value) || 0;
+    // --- Three.js 3D Engine ---
+    let scene, camera, renderer, controls;
+
+    function init3D() {
+      const container = document.getElementById('canvas-container');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0f111a);
+
+      camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(12, 16, 22);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+      const light = new THREE.DirectionalLight(0xffffff, 0.5);
+      light.position.set(10, 20, 10);
+      scene.add(light);
+
+      scene.add(new THREE.GridHelper(50, 50, 0x00adb5, 0x282c3d));
+
+      // إضافة الغرفة الرئيسية
+      addRoomMesh("الصالة", 8, 8, 3, 0, 0);
+
+      // إضافة مجسمات الـ 6 أشخاص في الـ 3D
+      radarTargets.forEach((t, i) => {
+        const geom = new THREE.CylinderGeometry(0.3, 0.3, t.y, 16);
+        const mat = new THREE.MeshLambertMaterial({ color: personCategories[i].color });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.position.set(t.x, t.y / 2, t.z);
+        scene.add(mesh);
+        targetMeshes.push(mesh);
+      });
+
+      renderTargetsUI();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
+
+    function addRoomMesh(name, w, l, h, x, z) {
+      const geometry = new THREE.BoxGeometry(w, h, l);
+      const material = new THREE.MeshLambertMaterial({ color: 0x00adb5, wireframe: true });
+      const room = new THREE.Mesh(geometry, material);
+      room.position.set(x, h/2, z);
+      scene.add(room);
+    }
+
+    function addCustomRoom() {
       const w = parseFloat(document.getElementById('dimW').value) || 4;
       const l = parseFloat(document.getElementById('dimL').value) || 4;
       const h = parseFloat(document.getElementById('dimH').value) || 3;
-      createRoom(`room_${Date.now()}`, name, x, y, z, w, l, h);
+      const x = parseFloat(document.getElementById('posX').value) || 0;
+      const z = parseFloat(document.getElementById('posZ').value) || 0;
+      addRoomMesh('غرفة جديدة', w, l, h, x, z);
     }
-
-    createRoom("r1", "المجلس", -5, 0, -2, 6, 6, 3);
-
-    // --- 4. اتصال MQTT ---
-    const mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
-    mqttClient.on('connect', () => mqttClient.subscribe('aegisradar/house/stream'));
-    mqttClient.on('message', (topic, payload) => {
-      try {
-        const data = JSON.parse(payload.toString());
-        const lockElement = document.getElementById('lock-status');
-        lockElement.innerText = data.doorLock === 'OPEN' ? 'الباب مفتوح 🔓' : 'الباب مغلق 🔒';
-        lockElement.className = data.doorLock === 'OPEN' ? 'status-open' : 'status-closed';
-      } catch (err) {}
-    });
-
-    function animate() {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    }
-    animate();
   </script>
 </body>
 </html>
