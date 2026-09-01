@@ -1,26 +1,9 @@
-#include <WiFi.h>
-#include <WebServer.h>
-
-const char* ssid = "FTTH-Nsp3";
-const char* password = "20062009";
-
-#define RADAR_RX 5
-#define RADAR_TX 17
-#define TAMPER_PIN 18
-#define LED_PIN 4
-
-HardwareSerial RadarSerial(2);
-WebServer server(80);
-
-int targetX = 0, targetY = 0, targetSpeed = 0;
-
-const char HTML_PAGE[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AegisRadar 360 - Room & Security Status</title>
+    <title>AegisRadar 360 - Global Live Monitor</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #050505; color: #fff; font-family: sans-serif; }
         
@@ -36,7 +19,6 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         .status-ok { color: #00ff66; font-weight: bold; }
         .status-alert { color: #ff3333; font-weight: bold; }
 
-        /* مؤشر ضوئي في واجهة المستخدم */
         .lock-indicator {
             display: inline-block; width: 12px; height: 12px; border-radius: 50%;
             margin-right: 5px; background-color: #00ff66; box-shadow: 0 0 8px #00ff66;
@@ -50,11 +32,12 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         button:hover { background: #00b3cc; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 </head>
 <body>
     <div id="info-panel">
-        <h2>AegisRadar 360</h2>
-        <p>System Status: <span id="esp-status" class="status-ok">Connected</span></p>
+        <h2>AegisRadar 360 (Global)</h2>
+        <p>MQTT Status: <span id="mqtt-status" class="status-alert">Connecting...</span></p>
         <p><span id="indicator" class="lock-indicator"></span>Tamper Lock: <span id="tamper-status" class="status-ok">CLOSED (SECURE)</span></p>
         
         <hr style="border-color: rgba(255,255,255,0.1);">
@@ -83,7 +66,6 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         let roomWidth = 5, roomLength = 6, roomHeight = 3;
         let lastTamperState = false;
 
-        // طلب الإذن لإرسال الإشعارات على المتصفح
         if (Notification.permission !== "granted") {
             Notification.requestPermission();
         }
@@ -96,13 +78,11 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // مجسم رادار الهدف
             const targetGeo = new THREE.SphereGeometry(0.25, 16, 16);
             const targetMat = new THREE.MeshBasicMaterial({ color: 0x00ff66 });
             targetMesh = new THREE.Mesh(targetGeo, targetMat);
             scene.add(targetMesh);
 
-            // ضوء الحالة 3D (أخضر / أحمر)
             const lightGeo = new THREE.SphereGeometry(0.3, 16, 16);
             const lightMat = new THREE.MeshBasicMaterial({ color: 0x00ff66 });
             statusLight = new THREE.Mesh(lightGeo, lightMat);
@@ -131,7 +111,6 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
             roomBox.position.set(0, h / 2, 0);
             scene.add(roomBox);
 
-            // تثبيت الضوء في زاوية الغرفة العلوية
             statusLight.position.set(-w / 2 + 0.5, h - 0.5, -l / 2 + 0.5);
         }
 
@@ -144,68 +123,76 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
 
         function sendNotification(title, body) {
             if (Notification.permission === "granted") {
-                new Notification(title, { body: body, icon: '' });
+                new Notification(title, { body: body });
             }
         }
 
-        async function fetchESPData() {
-            try {
-                const response = await fetch('/data');
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    const tamperElem = document.getElementById('tamper-status');
-                    const indicatorElem = document.getElementById('indicator');
+        // --- إعداد اتصال MQTT لـ WebSockets ---
+        const topic = "aegisradar/data/ghanim";
+        const clientID = "web_client_" + Math.random().toString(16).substr(2, 8);
+        const mqttClient = new Paho.MQTT.Client("broker.hivemq.com", 8884, clientID);
 
-                    // التحقق من حالة القفل
-                    if (data.tamper) { // القفل مفتوح (حالة اختراق)
-                        tamperElem.innerText = 'OPEN (TAMPER DETECTED!)';
-                        tamperElem.className = 'status-alert';
-                        indicatorElem.classList.add('open');
-                        
-                        // تغيير لون ضوء المشهد إلى الأحمر
-                        statusLight.material.color.setHex(0xff0000);
-                        targetMesh.material.color.setHex(0xff0000);
-                        scene.background = new THREE.Color(0x330000);
+        mqttClient.onConnectionLost = function (responseObject) {
+            document.getElementById('mqtt-status').innerText = 'Disconnected';
+            document.getElementById('mqtt-status').className = 'status-alert';
+        };
 
-                        // إرسال إشعار فوري عند الفتح لأول مرة
-                        if (!lastTamperState) {
-                            sendNotification("⚠️ AegisRadar Security Alert", "Warning: Anti-Tamper Switch OPENED!");
-                            lastTamperState = true;
-                        }
-                    } else { // القفل مغلق (حالة آمنة)
-                        tamperElem.innerText = 'CLOSED (SECURE)';
-                        tamperElem.className = 'status-ok';
-                        indicatorElem.classList.remove('open');
-                        
-                        // تغيير لون ضوء المشهد إلى الأخضر
-                        statusLight.material.color.setHex(0x00ff66);
-                        targetMesh.material.color.setHex(0x00ff66);
-                        scene.background = new THREE.Color(0x050505);
+        mqttClient.onMessageArrived = function (message) {
+            const data = JSON.parse(message.payloadString);
+            
+            const tamperElem = document.getElementById('tamper-status');
+            const indicatorElem = document.getElementById('indicator');
 
-                        if (lastTamperState) {
-                            sendNotification("✅ AegisRadar Security Status", "Anti-Tamper Switch is now CLOSED.");
-                            lastTamperState = false;
-                        }
-                    }
+            if (data.tamper) {
+                tamperElem.innerText = 'OPEN (TAMPER DETECTED!)';
+                tamperElem.className = 'status-alert';
+                indicatorElem.classList.add('open');
+                
+                statusLight.material.color.setHex(0xff0000);
+                targetMesh.material.color.setHex(0xff0000);
+                scene.background = new THREE.Color(0x330000);
 
-                    const xMeter = data.x / 1000;
-                    const yMeter = data.y / 1000;
-                    const zMeter = data.z / 1000;
-
-                    document.getElementById('posX').innerText = data.x;
-                    document.getElementById('posY').innerText = data.y;
-                    document.getElementById('posZ').innerText = data.z;
-
-                    targetMesh.position.set(xMeter, zMeter, -yMeter + (roomLength / 2));
+                if (!lastTamperState) {
+                    sendNotification("⚠️ AegisRadar Alert", "Warning: Anti-Tamper Switch OPENED!");
+                    lastTamperState = true;
                 }
-            } catch (error) {
-                document.getElementById('esp-status').innerText = 'Disconnected';
-                document.getElementById('esp-status').className = 'status-alert';
-            }
-        }
+            } else {
+                tamperElem.innerText = 'CLOSED (SECURE)';
+                tamperElem.className = 'status-ok';
+                indicatorElem.classList.remove('open');
+                
+                statusLight.material.color.setHex(0x00ff66);
+                targetMesh.material.color.setHex(0x00ff66);
+                scene.background = new THREE.Color(0x050505);
 
-        setInterval(fetchESPData, 100);
+                if (lastTamperState) {
+                    sendNotification("✅ AegisRadar Status", "Anti-Tamper Switch is now CLOSED.");
+                    lastTamperState = false;
+                }
+            }
+
+            const xMeter = data.x / 1000;
+            const yMeter = data.y / 1000;
+            const zMeter = data.z / 1000;
+
+            document.getElementById('posX').innerText = data.x;
+            document.getElementById('posY').innerText = data.y;
+            document.getElementById('posZ').innerText = data.z;
+
+            targetMesh.position.set(xMeter, zMeter, -yMeter + (roomLength / 2));
+        };
+
+        mqttClient.connect({
+            useSSL: true,
+            onSuccess: function () {
+                document.getElementById('mqtt-status').innerText = 'Connected (Global)';
+                document.getElementById('mqtt-status').className = 'status-ok';
+                mqttClient.subscribe(topic);
+            },
+            onFailure: function (err) {
+                document.getElementById('mqtt-status').innerText = 'Connection Failed';
+            }
+        });
 
         function animate() {
             requestAnimationFrame(animate);
@@ -222,68 +209,3 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
     </script>
 </body>
 </html>
-)rawliteral";
-
-void readRadarData() {
-    if (RadarSerial.available() >= 29) {
-        uint8_t buffer[29];
-        RadarSerial.readBytes(buffer, 29);
-        
-        if (buffer[0] == 0xAA && buffer[1] == 0xFF) {
-            int16_t rawX = buffer[4] | (buffer[5] << 8);
-            int16_t rawY = buffer[6] | (buffer[7] << 8);
-            
-            if (buffer[5] & 0x80) rawX -= 0x10000;
-            
-            targetX = rawX;
-            targetY = rawY;
-        }
-    }
-}
-
-void handleRoot() {
-    server.send(200, "text/html", HTML_PAGE);
-}
-
-void handleData() {
-    bool isTampering = (digitalRead(TAMPER_PIN) == LOW);
-    int targetZ = (targetY > 0) ? (int)(targetY * 0.15) : 0;
-
-    String json = "{";
-    json += "\"tamper\":" + String(isTampering ? "true" : "false") + ",";
-    json += "\"x\":" + String(targetX) + ",";
-    json += "\"y\":" + String(targetY) + ",";
-    json += "\"z\":" + String(targetZ);
-    json += "}";
-
-    server.send(200, "application/json", json);
-}
-
-void setup() {
-    Serial.begin(115200);
-    RadarSerial.begin(256000, SERIAL_8N1, RADAR_RX, RADAR_TX);
-
-    pinMode(TAMPER_PIN, INPUT_PULLUP);
-    pinMode(LED_PIN, OUTPUT);
-
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-    Serial.println("\nWiFi Connected!");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
-
-    server.on("/", handleRoot);
-    server.on("/data", handleData);
-    server.begin();
-}
-
-void loop() {
-    server.handleClient();
-    readRadarData();
-    
-    bool isTampering = (digitalRead(TAMPER_PIN) == LOW);
-    digitalWrite(LED_PIN, isTampering ? HIGH : LOW);
-}
