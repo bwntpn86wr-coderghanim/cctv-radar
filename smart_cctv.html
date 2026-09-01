@@ -18,10 +18,9 @@
 
     <nav class="bg-slate-900 border-b border-cyan-500/30 px-6 py-4 flex flex-wrap justify-between items-center shadow-lg">
         <div class="flex items-center space-x-4 space-x-reverse">
-            <div class="bg-cyan-950 p-2 rounded-lg border border-cyan-500/40 flex items-center justify-center">
-                <svg class="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a10 10 0 0114.142 0M1.757 8.929a16 16 0 0122.486 0"></path>
-                </svg>
+            <div class="bg-slate-950 p-1.5 rounded-lg border border-cyan-500/40 flex items-center justify-center">
+                <img src="https://upload.wikimedia.org/wikipedia/ar/d/d2/%D8%B4%D8%B9%D8%A7%D8%B1_%D8%AC%D8%A7%D9%85%D8%B9%D8%A9_%D9%86%D9%8A%D9%86%D9%88%D9%89.png" 
+                     alt="شعار جامعة نينوى" class="h-10 w-auto object-contain" />
             </div>
             <div>
                 <h1 class="text-2xl font-black text-cyan-400 tracking-wider">AEGIS RADAR 360</h1>
@@ -65,7 +64,7 @@
                     <span class="text-xs text-slate-400 bg-slate-950 px-3 py-1 rounded border border-slate-800">قسم هندسة الاتصالات</span>
                 </div>
                 <div id="canvasContainer" class="w-full h-[450px] bg-black/70 rounded-xl overflow-hidden relative">
-                    <div class="absolute bottom-3 right-3 bg-slate-950/80 p-2.5 text-xs text-slate-300 rounded-lg border border-slate-800 backdrop-blur">
+                    <div class="absolute bottom-3 right-3 bg-slate-950/80 p-2.5 text-xs text-slate-300 rounded-lg border border-slate-800 backdrop-blur z-10">
                         <span class="text-purple-400 font-bold">■</span> أبواب | <span class="text-sky-400 font-bold">■</span> نوافذ | <span class="text-slate-400 font-bold">■</span> جدران
                     </div>
                 </div>
@@ -81,12 +80,8 @@
                         <span id="cam-status" class="text-xs bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800">نشط</span>
                     </div>
                     
-                    <div class="w-full h-[250px] bg-black rounded-xl border border-slate-800 overflow-hidden relative flex items-center justify-center">
-                        <img id="cameraStream" src="" class="w-full h-full object-cover hidden" alt="Live Stream" />
-                        <div id="camPlaceholder" class="text-center p-4">
-                            <p class="text-sm text-slate-500 mb-2">الكاميرا غير متصلة</p>
-                            <p class="text-xs text-slate-600">أدخل رابط RTSP / HTTP الخاص بكاميرا الهاتف في الإعدادات</p>
-                        </div>
+                    <div class="w-full h-[250px] bg-black rounded-xl border border-slate-800 overflow-hidden relative">
+                        <iframe id="cameraStream" src="http://192.168.1.3:8081/video" class="w-full h-full border-0"></iframe>
                     </div>
 
                     <div class="mt-4 bg-slate-950 p-3.5 rounded-xl border border-cyan-500/30 space-y-2">
@@ -115,8 +110,16 @@
 
     <main id="page-settings" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow w-full">
         <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
-            <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">تعديل أبعاد وعدد الغرف</h2>
+            <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">تعديل التخطيط والأبواب والشبابيك 3D</h2>
+            
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm text-slate-300 mb-1">اتجاه ترتيب الغرف:</label>
+                    <select id="layoutDirection" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
+                        <option value="X">بالعرض (أفقياً على محور X)</option>
+                        <option value="Z">بالطول (عمودياً على محور Z)</option>
+                    </select>
+                </div>
                 <div>
                     <label class="block text-sm text-slate-300 mb-1">عدد الغرف:</label>
                     <input type="number" id="roomsCount" value="2" min="1" max="4" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
@@ -129,15 +132,34 @@
                     <label class="block text-sm text-slate-300 mb-1">طول الغرفة (أمتار):</label>
                     <input type="number" id="roomLength" value="5" min="2" max="15" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
                 </div>
+                <div>
+                    <label class="block text-sm text-slate-300 mb-1">موقع الباب الرئيسية:</label>
+                    <select id="doorSide" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
+                        <option value="front">الجدار الأمامي</option>
+                        <option value="back">الجدار الخلفي</option>
+                        <option value="left">الجدار الأيسر</option>
+                        <option value="right">الجدار الأيمن</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-300 mb-1">موقع الشباك الرئيسي:</label>
+                    <select id="windowSide" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
+                        <option value="back">الجدار الخلفي</option>
+                        <option value="front">الجدار الأمامي</option>
+                        <option value="left">الجدار الأيسر</option>
+                        <option value="right">الجدار الأيمن</option>
+                    </select>
+                </div>
             </div>
+            
             <button onclick="updateRoomSetup()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition">تحديث الخريطة ثلاثية الأبعاد</button>
         </div>
 
         <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
             <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">إعدادات الكاميرا الخارجية (iPhone / IP Cam)</h2>
             <div>
-                <label class="block text-sm text-slate-300 mb-1">رابط بث الكاميرا (HTTP MJPEG Stream):</label>
-                <input type="text" id="camUrlInput" value="http://admin:@192.168.1.3:8081/video" placeholder="http://admin:@192.168.1.3:8081/video" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
+                <label class="block text-sm text-slate-300 mb-1">رابط بث الكاميرا (HTTP Stream):</label>
+                <input type="text" id="camUrlInput" value="http://192.168.1.3:8081/video" placeholder="http://192.168.1.3:8081/video" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
             </div>
             <button onclick="saveCameraUrl()" class="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold text-sm">حفظ وتوصيل الكاميرا</button>
         </div>
@@ -145,31 +167,29 @@
 
     <main id="page-team" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow w-full">
         <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 text-center space-y-6">
-            <div class="border-b border-slate-800 pb-4">
+            <div class="border-b border-slate-800 pb-4 flex flex-col items-center">
+                <img src="https://upload.wikimedia.org/wikipedia/ar/d/d2/%D8%B4%D8%B9%D8%A7%D8%B1_%D8%AC%D8%A7%D9%85%D8%B9%D8%A9_%D9%86%D9%8A%D9%86%D9%88%D9%89.png" 
+                     alt="شعار جامعة نينوى" class="h-20 w-auto mb-3" />
                 <h2 class="text-2xl font-bold text-cyan-400">جامعة نينوى - كلية الهندسة</h2>
                 <p class="text-sm text-slate-400 mt-1">مشروع تخرج - قسم هندسة الاتصالات</p>
             </div>
 
             <div class="bg-slate-950 p-4 rounded-xl border border-cyan-500/30 max-w-sm mx-auto shadow-md">
-                <p class="text-xs text-cyan-400 font-semibold mb-1">إشراف الاستاذ</p>
-                <p class="text-lg font-bold text-white">أستاذ إبراهيم</p>
-                <p class="text-xs text-slate-500">مشرف مشروع التخرج</p>
+                <p class="text-xs text-cyan-400 font-semibold mb-1">إشراف</p>
+                <p class="text-xl font-bold text-white">إبراهيم</p>
             </div>
 
             <div>
-                <h3 class="text-sm font-bold text-slate-400 mb-4">إعداد مهندسي الاتصالات:</h3>
+                <h3 class="text-sm font-bold text-slate-400 mb-4">إعداد الطلاب:</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
-                        <p class="text-lg font-bold text-cyan-300">م. غانم</p>
-                        <p class="text-xs text-slate-400 mt-1">مهندس اتصالات</p>
+                        <p class="text-lg font-bold text-cyan-300">غانم فراس</p>
                     </div>
                     <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
-                        <p class="text-lg font-bold text-cyan-300">م. سما</p>
-                        <p class="text-xs text-slate-400 mt-1">مهندسة اتصالات</p>
+                        <p class="text-lg font-bold text-cyan-300">سما غسان</p>
                     </div>
                     <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
-                        <p class="text-lg font-bold text-cyan-300">م. إبراهيم</p>
-                        <p class="text-xs text-slate-400 mt-1">مهندس اتصالات</p>
+                        <p class="text-lg font-bold text-cyan-300">إبراهيم غسان</p>
                     </div>
                 </div>
             </div>
@@ -188,12 +208,9 @@
         }
 
         function applyStreamUrl(url) {
-            const img = document.getElementById('cameraStream');
-            const placeholder = document.getElementById('camPlaceholder');
-            if(url && img && placeholder) {
-                img.src = url;
-                img.classList.remove('hidden');
-                placeholder.classList.add('hidden');
+            const iframe = document.getElementById('cameraStream');
+            if(url && iframe) {
+                iframe.src = url;
             }
         }
 
@@ -205,18 +222,30 @@
             }
         }
 
-        let scene, camera, renderer, humanModels = [];
-        let roomConfig = { count: 2, width: 6, length: 5 };
+        let scene, camera, renderer, humanModels = [], animId = null;
+        let roomConfig = { 
+            count: 2, 
+            width: 6, 
+            length: 5, 
+            dir: 'X', 
+            doorSide: 'front', 
+            windowSide: 'back' 
+        };
 
         function updateRoomSetup() {
             roomConfig.count = parseInt(document.getElementById('roomsCount').value) || 2;
             roomConfig.width = parseFloat(document.getElementById('roomWidth').value) || 6;
             roomConfig.length = parseFloat(document.getElementById('roomLength').value) || 5;
+            roomConfig.dir = document.getElementById('layoutDirection').value;
+            roomConfig.doorSide = document.getElementById('doorSide').value;
+            roomConfig.windowSide = document.getElementById('windowSide').value;
             
-            if(renderer) {
-                document.getElementById('canvasContainer').innerHTML = '';
-                renderer = null;
-            }
+            // إيقاف وتفريغ المشهد الحالي تماماً لإتاحة التحديث
+            if (animId) cancelAnimationFrame(animId);
+            const container = document.getElementById('canvasContainer');
+            if (container) container.innerHTML = '<div class="absolute bottom-3 right-3 bg-slate-950/80 p-2.5 text-xs text-slate-300 rounded-lg border border-slate-800 backdrop-blur z-10"><span class="text-purple-400 font-bold">■</span> أبواب | <span class="text-sky-400 font-bold">■</span> نوافذ | <span class="text-slate-400 font-bold">■</span> جدران</div>';
+            renderer = null;
+
             switchTab('dashboard');
         }
 
@@ -262,14 +291,17 @@
             dirLight.position.set(5, 10, 7);
             scene.add(dirLight);
 
-            const totalWidth = roomConfig.count * roomConfig.width;
-            const floorGeo = new THREE.PlaneGeometry(totalWidth + 4, roomConfig.length + 4);
+            const isX = roomConfig.dir === 'X';
+            const totalX = isX ? roomConfig.count * roomConfig.width : roomConfig.width;
+            const totalZ = isX ? roomConfig.length : roomConfig.count * roomConfig.length;
+
+            const floorGeo = new THREE.PlaneGeometry(totalX + 4, totalZ + 4);
             const floorMat = new THREE.MeshBasicMaterial({ color: 0x0f172a, side: THREE.DoubleSide });
             const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = Math.PI / 2;
             scene.add(floor);
 
-            const grid = new THREE.GridHelper(Math.max(totalWidth, roomConfig.length) + 6, 14, 0x00f3ff, 0x1e293b);
+            const grid = new THREE.GridHelper(Math.max(totalX, totalZ) + 6, 14, 0x00f3ff, 0x1e293b);
             grid.position.y = 0.01;
             scene.add(grid);
 
@@ -283,16 +315,34 @@
                 scene.add(mesh);
             }
 
-            let startX = -((roomConfig.count - 1) * roomConfig.width) / 2;
-            for(let i = 0; i < roomConfig.count; i++) {
-                let rx = startX + (i * roomConfig.width);
-                addBox(roomConfig.width, 2, 0.1, rx, 1, -roomConfig.length/2, wallMat);
-                addBox(roomConfig.width, 2, 0.1, rx, 1, roomConfig.length/2, wallMat);
-                if(i === 0) addBox(0.1, 2, roomConfig.length, rx - roomConfig.width/2, 1, 0, wallMat);
-                addBox(0.1, 2, roomConfig.length, rx + roomConfig.width/2, 1, 0, wallMat);
+            let startX = isX ? -((roomConfig.count - 1) * roomConfig.width) / 2 : 0;
+            let startZ = !isX ? -((roomConfig.count - 1) * roomConfig.length) / 2 : 0;
 
-                addBox(1.2, 1.8, 0.05, rx, 0.9, roomConfig.length/2, doorMat);
-                addBox(1.4, 0.8, 0.05, rx, 1.2, -roomConfig.length/2, windowMat);
+            for(let i = 0; i < roomConfig.count; i++) {
+                let rx = isX ? startX + (i * roomConfig.width) : 0;
+                let rz = !isX ? startZ + (i * roomConfig.length) : 0;
+
+                // Walls Construction
+                addBox(roomConfig.width, 2, 0.1, rx, 1, rz - roomConfig.length/2, wallMat); // Back Wall
+                addBox(roomConfig.width, 2, 0.1, rx, 1, rz + roomConfig.length/2, wallMat); // Front Wall
+                addBox(0.1, 2, roomConfig.length, rx - roomConfig.width/2, 1, rz, wallMat); // Left Wall
+                addBox(0.1, 2, roomConfig.length, rx + roomConfig.width/2, 1, rz, wallMat); // Right Wall
+
+                // Custom Door Placement
+                let dPos = { x: rx, z: rz, w: 1.2, d: 0.05 };
+                if(roomConfig.doorSide === 'front') dPos.z += roomConfig.length/2;
+                else if(roomConfig.doorSide === 'back') dPos.z -= roomConfig.length/2;
+                else if(roomConfig.doorSide === 'left') { dPos.x -= roomConfig.width/2; dPos.w = 0.05; dPos.d = 1.2; }
+                else if(roomConfig.doorSide === 'right') { dPos.x += roomConfig.width/2; dPos.w = 0.05; dPos.d = 1.2; }
+                addBox(dPos.w, 1.8, dPos.d, dPos.x, 0.9, dPos.z, doorMat);
+
+                // Custom Window Placement
+                let wPos = { x: rx, z: rz, w: 1.4, d: 0.05 };
+                if(roomConfig.windowSide === 'front') wPos.z += roomConfig.length/2;
+                else if(roomConfig.windowSide === 'back') wPos.z -= roomConfig.length/2;
+                else if(roomConfig.windowSide === 'left') { wPos.x -= roomConfig.width/2; wPos.w = 0.05; wPos.d = 1.4; }
+                else if(roomConfig.windowSide === 'right') { wPos.x += roomConfig.width/2; wPos.w = 0.05; wPos.d = 1.4; }
+                addBox(wPos.w, 0.8, wPos.d, wPos.x, 1.2, wPos.z, windowMat);
             }
 
             humanModels = [];
@@ -303,11 +353,11 @@
                 humanModels.push(human);
             }
 
-            camera.position.set(0, Math.max(totalWidth, roomConfig.length) * 1.1, roomConfig.length * 1.1);
+            camera.position.set(0, Math.max(totalX, totalZ) * 1.2, totalZ * 1.2);
             camera.lookAt(0, 0, 0);
 
             function animate() {
-                requestAnimationFrame(animate);
+                animId = requestAnimationFrame(animate);
                 renderer.render(scene, camera);
             }
             animate();
@@ -346,7 +396,6 @@
 
                     document.getElementById('status-targets').innerText = activeCount + " / 6 أهداف 3D";
                     
-                    // التحديث الديناميكي لمعلومات الالتقاط البصري للكاميرا
                     if(detectedInfo) {
                         const now = new Date();
                         document.getElementById('target-id').innerText = "شخص (Target #" + detectedInfo.id + ")";
@@ -362,7 +411,6 @@
 
         window.onload = function() {
             initThree();
-            applyStreamUrl("http://admin:@192.168.1.3:8081/video");
         };
     </script>
 </body>
