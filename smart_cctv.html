@@ -3,211 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشروع AegisRadar 360 - نظام التتبع بالرادار</title>
+    <title>AegisRadar 360 - نظام التتبع المتقدم</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #0b0f19; color: #e2e8f0; }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #0b0f19; color: #f8fafc; }
         .page { display: none; }
         .page.active { display: block; }
-        .engineering-grid {
-            background-image: linear-gradient(to right, rgba(0, 255, 204, 0.05) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(0, 255, 204, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
-        }
     </style>
 </head>
-<body class="engineering-grid min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col justify-between">
 
-    <!-- شريط التنقل العلوي -->
-    <nav class="bg-slate-900/90 border-b border-cyan-500/30 backdrop-blur sticky top-0 z-50 p-4">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-cyan-400 tracking-wider">AEGIS RADAR 360</h1>
-            <div class="flex gap-4">
-                <button onclick="showPage('page1')" class="nav-btn bg-cyan-950 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/50 px-4 py-2 rounded">الرئيسية</button>
-                <button onclick="showPage('page2')" class="nav-btn bg-cyan-950 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/50 px-4 py-2 rounded">إعدادات الغرف والمناطق</button>
-                <button onclick="showPage('page3')" class="nav-btn bg-cyan-950 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/50 px-4 py-2 rounded">المحاكاة والتتبع (3D)</button>
-            </div>
+    <!-- Navbar -->
+    <nav class="bg-slate-900 border-b border-cyan-500/30 px-6 py-4 flex flex-wrap justify-between items-center shadow-lg">
+        <div class="flex items-center space-x-4 space-x-reverse">
+            <h1 class="text-2xl font-black text-cyan-400 tracking-wider">AEGIS RADAR 360</h1>
+            <span class="bg-cyan-950 text-cyan-400 text-xs px-2.5 py-1 rounded border border-cyan-800">إصدار الغرف المتقدمة</span>
+        </div>
+        <div class="flex space-x-2 space-x-reverse mt-2 sm:mt-0">
+            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 text-sm font-semibold rounded-lg bg-cyan-600 text-white shadow">الرئيسية والمحاكاة</button>
+            <button onclick="switchTab('settings')" id="btn-settings" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">إعدادات الكاميرا والغرف</button>
+            <button onclick="switchTab('team')" id="btn-team" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">فريق العمل</button>
         </div>
     </nav>
 
-    <!-- الصفحة الأولى: الواجهة الهندسية والمعلومات -->
-    <div id="page1" class="page active max-w-5xl mx-auto p-8 my-auto w-full">
-        <div class="border-2 border-cyan-500/40 bg-slate-900/80 p-8 rounded-xl shadow-2xl backdrop-blur relative overflow-hidden">
-            <div class="absolute -left-10 -top-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-xl"></div>
-            
-            <div class="text-center border-b border-cyan-500/30 pb-6 mb-8">
-                <span class="text-xs uppercase tracking-widest text-cyan-400 font-mono">مشروع تخرج هندسي</span>
-                <h2 class="text-3xl font-extrabold text-white mt-2">نظام تتبع الأهداف والمراقبة ثلاثي الأبعاد</h2>
-                <p class="text-slate-400 mt-1">3D Multi-Target Radar Tracking System using mmWave LD2450 & ESP32</p>
+    <!-- Page 1: Dashboard -->
+    <main id="page-dashboard" class="page active p-6 space-y-6 flex-grow">
+        <!-- Top Status Indicators -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
+                <span class="text-xs text-slate-400 block mb-1">حالة اتصال MQTT</span>
+                <span id="status-mqtt" class="text-base font-bold text-amber-500">جاري الاتصال...</span>
+            </div>
+            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
+                <span class="text-xs text-slate-400 block mb-1">حالة قفل الصندوق</span>
+                <span id="status-tamper" class="text-base font-bold text-emerald-400">مغلق (آمن)</span>
+            </div>
+            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
+                <span class="text-xs text-slate-400 block mb-1">حالة الخط الأحمر (الحد)</span>
+                <span id="status-boundary" class="text-base font-bold text-emerald-400">آمن</span>
+            </div>
+            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
+                <span class="text-xs text-slate-400 block mb-1">الأهداف المتتبعة</span>
+                <span id="status-targets" class="text-base font-bold text-cyan-400">0 / 6 أهداف</span>
+            </div>
+        </div>
+
+        <!-- Main Content (Radar 3D View + Camera Stream) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 3D Multi-room Visualizer -->
+            <div class="lg:col-span-2 bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col">
+                <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center">
+                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 ml-2 animate-ping"></span>
+                    خريطة المبنى الـ 3D (غرف، أبواب، ونوافذ)
+                </h3>
+                <div id="canvasContainer" class="w-full h-[450px] bg-black/60 rounded-xl overflow-hidden relative">
+                    <div class="absolute bottom-3 right-3 bg-slate-950/80 p-2 text-xs text-slate-400 rounded border border-slate-800 backdrop-blur">
+                        <span class="text-purple-400">■</span> أبواب | <span class="text-sky-400">■</span> نوافذ | <span class="text-slate-400">■</span> جدران
+                    </div>
+                </div>
             </div>
 
-            <div class="grid md:grid-cols-2 gap-8 my-8">
-                <div class="bg-slate-800/60 border border-cyan-500/20 p-6 rounded-lg">
-                    <h3 class="text-lg font-semibold text-cyan-400 mb-4 border-b border-cyan-500/20 pb-2">فريق العمل (الطلبة)</h3>
-                    <ul class="space-y-3 text-slate-200">
-                        <li class="flex items-center gap-2"><span>👤</span> غانم فراس</li>
-                        <li class="flex items-center gap-2"><span>👤</span> سما غسان</li>
-                        <li class="flex items-center gap-2"><span>👤</span> ابراهيم غسان</li>
-                    </ul>
-                </div>
-
-                <div class="bg-slate-800/60 border border-cyan-500/20 p-6 rounded-lg">
-                    <h3 class="text-lg font-semibold text-cyan-400 mb-4 border-b border-cyan-500/20 pb-2">الإشراف الأكاديمي</h3>
-                    <div class="flex items-center gap-3 text-slate-200">
-                        <span class="text-2xl">👨‍🏫</span>
-                        <div>
-                            <p class="font-bold">أستاذ ابراهيم</p>
-                            <p class="text-xs text-slate-400">مشرف المشروع</p>
+            <!-- External Camera Stream Box -->
+            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 ml-2 animate-pulse"></span>
+                        البث المباشر للكاميرا الخارجية
+                    </h3>
+                    <div class="w-full h-[300px] bg-black rounded-xl border border-slate-800 overflow-hidden relative flex items-center justify-center">
+                        <img id="cameraStream" src="" class="w-full h-full object-cover hidden" alt="Live Stream" />
+                        <div id="camPlaceholder" class="text-center p-4">
+                            <p class="text-sm text-slate-500 mb-2">الكاميرا غير متصلة</p>
+                            <p class="text-xs text-slate-600">أدخل رابط RTSP / HTTP الخاص بالكاميرا الخارجية في الإعدادات</p>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="text-center pt-4">
-                <button onclick="showPage('page2')" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-8 py-3 rounded-lg shadow-lg">الانتقال للإعدادات والتكوين &larr;</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- الصفحة الثانية: التحكم بالغرف والمنطقة الخطرة -->
-    <div id="page2" class="page max-w-4xl mx-auto p-8 my-auto w-full">
-        <div class="bg-slate-900/80 border border-cyan-500/30 p-6 rounded-xl shadow-xl">
-            <h2 class="text-xl font-bold text-cyan-400 mb-6 border-b border-cyan-500/20 pb-3">تكوين الغرفة ومناطق الخطر</h2>
-            
-            <div class="grid md:grid-cols-2 gap-6">
-                <!-- أبعاد الغرفة -->
-                <div class="space-y-4">
-                    <h3 class="text-md font-semibold text-slate-300">أبعاد الغرفة (بالأمتار):</h3>
-                    <div>
-                        <label class="text-sm text-slate-400">العرض (X):</label>
-                        <input type="number" id="roomW" value="6" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white">
+                <div class="mt-4 p-3 bg-slate-950/50 rounded-lg border border-slate-800 text-xs space-y-1">
+                    <div class="flex justify-between text-slate-400">
+                        <span>دقة البث:</span>
+                        <span class="text-slate-200">1080p HD</span>
                     </div>
-                    <div>
-                        <label class="text-sm text-slate-400">الطول (Y):</label>
-                        <input type="number" id="roomL" value="6" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white">
-                    </div>
-                    <div>
-                        <label class="text-sm text-slate-400">الارتفاع (Z):</label>
-                        <input type="number" id="roomH" value="3" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white">
-                    </div>
-                </div>
-
-                <!-- إعدادات المنطقة الخطرة والغرف -->
-                <div class="space-y-4">
-                    <h3 class="text-md font-semibold text-slate-300">التحكم بالنظام والمحيط:</h3>
-                    <div>
-                        <label class="text-sm text-slate-400">الحد الأقصى لمنطقة الخطر (Y - بالملم):</label>
-                        <input type="number" id="dangerZoneY" value="1500" class="w-full bg-slate-800 border border-red-500/40 rounded p-2 text-red-400 font-bold">
-                    </div>
-                    <div>
-                        <label class="text-sm text-slate-400">اختيار الغرفة المتحكم بها:</label>
-                        <select id="roomSelect" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white">
-                            <option>الغرفة الرئيسية (Room 1)</option>
-                            <option>الغرفة الفرعية (Room 2)</option>
-                            <option>المختبر (Room 3)</option>
-                        </select>
+                    <div class="flex justify-between text-slate-400">
+                        <span>نوع الكاميرا:</span>
+                        <span class="text-slate-200" id="camTypeDisplay">خارجية (iPhone IP / RTSP)</span>
                     </div>
                 </div>
             </div>
+        </div>
+    </main>
 
-            <div class="mt-8 text-left">
-                <button onclick="saveSettings()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-6 py-2 rounded">حفظ الإعدادات والانتقال للمحاكاة</button>
+    <!-- Page 2: Settings -->
+    <main id="page-settings" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow w-full">
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
+            <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">إعدادات الكاميرا الخارجية</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-slate-300 mb-1">رابط بث الكاميرا (HTTP MJPEG Stream URL):</label>
+                    <input type="text" id="camUrlInput" placeholder="مثال: http://192.168.1.50:8080/video" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300 focus:outline-none focus:border-cyan-500">
+                </div>
+                <button onclick="saveCameraUrl()" class="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold text-sm">حفظ وتوصيل الكاميرا</button>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- الصفحة الثالثة: المحاكاة والتتبع ثلاثي الأبعاد والإنذارات -->
-    <div id="page3" class="page max-w-7xl mx-auto p-4 w-full flex-1 flex flex-col">
-        <!-- شريط الحالة والإنذارات -->
-        <div class="grid md:grid-cols-4 gap-4 mb-4">
-            <div class="bg-slate-900 border border-slate-800 p-3 rounded text-center">
-                <span class="text-xs text-slate-400 block">حالة الاتصال MQTT</span>
-                <span id="mqttStatus" class="font-bold text-yellow-500">جاري الاتصال...</span>
-            </div>
-            <div id="tamperBox" class="bg-slate-900 border border-slate-800 p-3 rounded text-center">
-                <span class="text-xs text-slate-400 block">حالة قفل الصندوق</span>
-                <span id="tamperStatus" class="font-bold text-green-400">مغلق (آمن)</span>
-            </div>
-            <div id="dangerBox" class="bg-slate-900 border border-slate-800 p-3 rounded text-center">
-                <span class="text-xs text-slate-400 block">حالة الخط الأحمر (الخطر)</span>
-                <span id="dangerStatus" class="font-bold text-green-400">آمن</span>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 p-3 rounded text-center">
-                <span class="text-xs text-slate-400 block">الأهداف المنشطة</span>
-                <span class="font-bold text-cyan-400">تتبع حتى 6 أشخاص</span>
+    <!-- Page 3: Team -->
+    <main id="page-team" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow w-full">
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 text-center space-y-4">
+            <h2 class="text-2xl font-bold text-cyan-400">فريق عمل المشروع</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <p class="font-bold text-slate-200">غانم</p>
+                    <p class="text-xs text-slate-500">مطور النظام والشبكات</p>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <p class="font-bold text-slate-200">سما</p>
+                    <p class="text-xs text-slate-500">مهندسة معالجة البيانات</p>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <p class="font-bold text-slate-200">ابراهيم</p>
+                    <p class="text-xs text-slate-500">مصمم الواجهات والـ 3D</p>
+                </div>
             </div>
         </div>
+    </main>
 
-        <!-- نافذة المحاكاة الـ 3D -->
-        <div class="relative flex-1 bg-black rounded-xl overflow-hidden border border-cyan-500/30 min-h-[500px]" id="canvasContainer">
-            <!-- تفاصيل الإحداثيات على الشاشة -->
-            <div class="absolute top-4 right-4 bg-slate-900/80 p-3 rounded text-xs text-cyan-300 backdrop-blur z-10 border border-cyan-500/20">
-                <div class="font-bold border-b border-cyan-500/30 pb-1 mb-1">الإحداثيات الحية:</div>
-                <div id="targetsReadout">تنتظر البيانات...</div>
-            </div>
-        </div>
-    </div>
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-900 px-6 py-4 text-center text-xs text-slate-600">
+        مشروع AegisRadar 360 © 2026 - جميع الحقوق محفوظة
+    </footer>
 
     <script>
-        // إدارة التنقل بين الصفحات
-        function showPage(pageId) {
+        function switchTab(tabId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-            if(pageId === 'page3') { initThree(); }
+            document.getElementById('page-' + tabId).classList.add('active');
+            if (tabId === 'dashboard') initThree();
         }
 
-        function saveSettings() {
-            showPage('page3');
+        function saveCameraUrl() {
+            const url = document.getElementById('camUrlInput').value;
+            const img = document.getElementById('cameraStream');
+            const placeholder = document.getElementById('camPlaceholder');
+            if(url) {
+                img.src = url;
+                img.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                switchTab('dashboard');
+            }
         }
 
-        // إعداد الصوتيات للإنذارات
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playAlarmSound(freq = 880) {
-            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.2);
-        }
-
-        // تهيئة مشهد 3D (Three.js)
+        // --- Three.js 3D Blueprint Logic ---
         let scene, camera, renderer, targetsSpheres = [];
-        let dangerZoneLimit = 1500; // 1.5 meter default
 
         function initThree() {
             const container = document.getElementById('canvasContainer');
-            if(renderer) return; // منع التكرار
+            if(renderer) return;
 
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-            
+            scene.background = new THREE.Color(0x070a12);
+
+            camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
 
-            // إضافة الشبكة والغرفة
-            const grid = new THREE.GridHelper(10, 10, 0x00ffff, 0x224444);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const floorGeo = new THREE.PlaneGeometry(12, 10);
+            const floorMat = new THREE.MeshBasicMaterial({ color: 0x0f172a, side: THREE.DoubleSide });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = Math.PI / 2;
+            scene.add(floor);
+
+            const grid = new THREE.GridHelper(12, 12, 0x00f3ff, 0x1e293b);
+            grid.position.y = 0.01;
             scene.add(grid);
 
-            // إنشاء 6 كرات ملونة لـ 6 أهداف
-            const colors = [0x00ff00, 0x00ffff, 0xffff00, 0xff00ff, 0xffa500, 0xffffff];
-            for(let i=0; i<6; i++) {
-                const geo = new THREE.SphereGeometry(0.15, 16, 16);
-                const mat = new THREE.MeshBasicMaterial({ color: colors[i] });
-                const sphere = new THREE.Mesh(geo, mat);
+            // Structure Materials
+            const wallMat = new THREE.MeshPhongMaterial({ color: 0x1e293b, transparent: true, opacity: 0.75 });
+            const doorMat = new THREE.MeshPhongMaterial({ color: 0x8b5cf6 });
+            const windowMat = new THREE.MeshPhongMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 });
+
+            function addBox(w, h, d, x, y, z, mat) {
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+                mesh.position.set(x, y, z);
+                scene.add(mesh);
+            }
+
+            // Room 1 & Room 2 Walls
+            addBox(12, 2, 0.1, 0, 1, -5, wallMat);    // Back wall
+            addBox(0.1, 2, 10, -6, 1, 0, wallMat);   // Left wall
+            addBox(0.1, 2, 10, 6, 1, 0, wallMat);    // Right wall
+            addBox(0.1, 2, 6, 0, 1, -2, wallMat);    // Middle divider wall
+
+            // Doors and Windows
+            addBox(1.2, 1.8, 0.05, -3, 0.9, 0, doorMat);   // Door Room 1
+            addBox(1.2, 1.8, 0.05, 3, 0.9, 0, doorMat);    // Door Room 2
+            addBox(1.6, 1.0, 0.05, 3, 1.2, -5, windowMat); // Window Back
+
+            // Targets Spheres
+            const colors = [0x00ff00, 0x00ffff, 0xffff00, 0xff00ff, 0xffa500, 0xff4444];
+            for(let i = 0; i < 6; i++) {
+                const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), new THREE.MeshBasicMaterial({ color: colors[i] }));
                 sphere.visible = false;
                 scene.add(sphere);
                 targetsSpheres.push(sphere);
             }
 
-            camera.position.set(0, 5, 7);
+            camera.position.set(0, 10, 8);
             camera.lookAt(0, 0, 0);
 
             function animate() {
@@ -217,72 +222,36 @@
             animate();
         }
 
-        // الربط مع MQTT (HiveMQ)
+        // --- MQTT Setup ---
         const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
-        
         client.on('connect', () => {
-            document.getElementById('mqttStatus').innerText = 'متصل بنجاح';
-            document.getElementById('mqttStatus').className = 'font-bold text-green-400';
+            document.getElementById('status-mqtt').innerText = "متصل بنجاح";
+            document.getElementById('status-mqtt').className = "text-base font-bold text-emerald-400";
             client.subscribe('aegisradar/data/ghanim');
         });
 
         client.on('message', (topic, message) => {
-            const data = JSON.parse(message.toString());
-            dangerZoneLimit = parseFloat(document.getElementById('dangerZoneY').value) || 1500;
-            
-            // 1. التفتيش على التلاعب بقفل الصندوق (Tamper Lock)
-            const tamperBox = document.getElementById('tamperBox');
-            const tamperStatus = document.getElementById('tamperStatus');
-            if (data.tamper === true) {
-                tamperStatus.innerText = 'مفتوح (تحذير!)';
-                tamperBox.className = 'bg-red-950 border border-red-500 p-3 rounded text-center animate-pulse';
-                playAlarmSound(440); // صوت إنذار القفل
-            } else {
-                tamperStatus.innerText = 'مغلق (آمن)';
-                tamperBox.className = 'bg-slate-900 border border-slate-800 p-3 rounded text-center';
-            }
-
-            // 2. معالجة وتتبع حتى 6 أهداف + إنذار الخط الأحمر
-            let readoutHTML = '';
-            let inDangerZone = false;
-
-            const targets = data.targets || [{x: data.x, y: data.y, z: data.z}];
-
-            for(let i = 0; i < 6; i++) {
-                if(i < targets.length && targets[i].y > 0) {
-                    const t = targets[i];
-                    // تحويل المليمتر إلى أبعاد مشهد Three.js
-                    const posX = t.x / 1000;
-                    const posZ = t.y / 1000;
-                    
-                    targetsSpheres[i].position.set(posX, 0.15, posZ);
-                    targetsSpheres[i].visible = true;
-
-                    readoutHTML += `T${i+1}: X:${t.x} | Y:${t.y}<br/>`;
-
-                    // فحص اختراق الخط الأحمر / منطقة الخطر
-                    if(t.y <= dangerZoneLimit) {
-                        inDangerZone = true;
-                    }
-                } else {
-                    targetsSpheres[i].visible = false;
+            try {
+                const data = JSON.parse(message.toString());
+                if(data.targets) {
+                    let activeCount = 0;
+                    data.targets.forEach((t, i) => {
+                        if(i < 6 && targetsSpheres[i]) {
+                            if(t.y > 0) {
+                                targetsSpheres[i].position.set(t.x / 1000, 0.25, -(t.y / 1000));
+                                targetsSpheres[i].visible = true;
+                                activeCount++;
+                            } else {
+                                targetsSpheres[i].visible = false;
+                            }
+                        }
+                    });
+                    document.getElementById('status-targets').innerText = activeCount + " / 6 أهداف";
                 }
-            }
-
-            document.getElementById('targetsReadout').innerHTML = readoutHTML || 'لا توجد أهداف داخل النطاق';
-
-            // إنذار خط الخطر الأحمر
-            const dangerBox = document.getElementById('dangerBox');
-            const dangerStatus = document.getElementById('dangerStatus');
-            if (inDangerZone) {
-                dangerStatus.innerText = 'اختراق منطقة الخطر!';
-                dangerBox.className = 'bg-red-950 border border-red-600 p-3 rounded text-center animate-bounce';
-                playAlarmSound(1200); // صوت إنذار عالي
-            } else {
-                dangerStatus.innerText = 'آمن';
-                dangerBox.className = 'bg-slate-900 border border-slate-800 p-3 rounded text-center';
-            }
+            } catch(e) {}
         });
+
+        window.onload = initThree;
     </script>
 </body>
 </html>
