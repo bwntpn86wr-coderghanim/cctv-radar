@@ -15,10 +15,9 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
-    <!-- Navbar with University Header & Telecommunications Graphic -->
+    <!-- Navbar -->
     <nav class="bg-slate-900 border-b border-cyan-500/30 px-6 py-4 flex flex-wrap justify-between items-center shadow-lg">
         <div class="flex items-center space-x-4 space-x-reverse">
-            <!-- Telecom & University Logo Placeholder -->
             <div class="bg-cyan-950 p-2 rounded-lg border border-cyan-500/40 flex items-center justify-center">
                 <svg class="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071a10 10 0 0114.142 0M1.757 8.929a16 16 0 0122.486 0"></path>
@@ -31,14 +30,13 @@
         </div>
         <div class="flex space-x-2 space-x-reverse mt-3 sm:mt-0">
             <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 text-sm font-semibold rounded-lg bg-cyan-600 text-white shadow">الرئيسية والمحاكاة</button>
-            <button onclick="switchTab('settings')" id="btn-settings" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">إعدادات الغرف والأبعاد</button>
+            <button onclick="switchTab('settings')" id="btn-settings" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">إعدادات الغرف والكاميرا</button>
             <button onclick="switchTab('team')" id="btn-team" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">كادر المشروع</button>
         </div>
     </nav>
 
-    <!-- Page 1: Dashboard (Classic Original Interface) -->
+    <!-- Page 1: Dashboard (Included Camera Stream & 3D Humanoid Figures) -->
     <main id="page-dashboard" class="page active p-6 space-y-6 flex-grow">
-        <!-- Top Status Bar -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
                 <span class="text-xs text-slate-400 block mb-1">حالة اتصال MQTT</span>
@@ -54,29 +52,49 @@
             </div>
             <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
                 <span class="text-xs text-slate-400 block mb-1">الأهداف المنشطة</span>
-                <span id="status-targets" class="text-base font-bold text-cyan-400">تتبع حتى 6 أشخاص</span>
+                <span id="status-targets" class="text-base font-bold text-cyan-400">تتبع حتى 6 أشخاص 3D</span>
             </div>
         </div>
 
-        <!-- Main 3D Viewport -->
-        <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col">
-            <div class="flex justify-between items-center mb-3">
-                <h3 class="text-sm font-bold text-slate-300 flex items-center">
-                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 ml-2 animate-ping"></span>
-                    محاكاة التتبع ثلاثي الأبعاد (3D Room Blueprint)
-                </h3>
-                <span class="text-xs text-slate-400 bg-slate-950 px-3 py-1 rounded border border-slate-800">قسم هندسة الاتصالات</span>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 3D Room Visualizer -->
+            <div class="lg:col-span-2 bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-bold text-slate-300 flex items-center">
+                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 ml-2 animate-ping"></span>
+                        محاكاة التتبع ثلاثي الأبعاد (مجسمات 3D للأشخاص)
+                    </h3>
+                    <span class="text-xs text-slate-400 bg-slate-950 px-3 py-1 rounded border border-slate-800">قسم هندسة الاتصالات</span>
+                </div>
+                <div id="canvasContainer" class="w-full h-[450px] bg-black/70 rounded-xl overflow-hidden relative">
+                    <div class="absolute bottom-3 right-3 bg-slate-950/80 p-2.5 text-xs text-slate-300 rounded-lg border border-slate-800 backdrop-blur">
+                        <span class="text-purple-400 font-bold">■</span> أبواب | <span class="text-sky-400 font-bold">■</span> نوافذ | <span class="text-slate-400 font-bold">■</span> جدران
+                    </div>
+                </div>
             </div>
-            <div id="canvasContainer" class="w-full h-[520px] bg-black/70 rounded-xl overflow-hidden relative">
-                <div class="absolute bottom-3 right-3 bg-slate-950/80 p-2.5 text-xs text-slate-300 rounded-lg border border-slate-800 backdrop-blur">
-                    <span class="text-purple-400 font-bold">■</span> أبواب | <span class="text-sky-400 font-bold">■</span> نوافذ | <span class="text-slate-400 font-bold">■</span> جدران
+
+            <!-- External Camera Box -->
+            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 ml-2 animate-pulse"></span>
+                        البث المباشر للكاميرا الخارجية
+                    </h3>
+                    <div class="w-full h-[320px] bg-black rounded-xl border border-slate-800 overflow-hidden relative flex items-center justify-center">
+                        <img id="cameraStream" src="" class="w-full h-full object-cover hidden" alt="Live Stream" />
+                        <div id="camPlaceholder" class="text-center p-4">
+                            <p class="text-sm text-slate-500 mb-2">الكاميرا غير متصلة</p>
+                            <p class="text-xs text-slate-600">أدخل رابط RTSP / HTTP الخاص بكاميرا الهاتف في الإعدادات</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Page 2: Room & Dimension Settings -->
+    <!-- Page 2: Settings -->
     <main id="page-settings" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow w-full">
+        <!-- Room Builder Controls -->
         <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
             <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">تعديل أبعاد وعدد الغرف</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -95,9 +113,19 @@
             </div>
             <button onclick="updateRoomSetup()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition">تحديث الخريطة ثلاثية الأبعاد</button>
         </div>
+
+        <!-- Camera Controls -->
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
+            <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">إعدادات الكاميرا الخارجية (iPhone / IP Cam)</h2>
+            <div>
+                <label class="block text-sm text-slate-300 mb-1">رابط بث الكاميرا (HTTP MJPEG Stream):</label>
+                <input type="text" id="camUrlInput" placeholder="مثال: http://192.168.1.50:8080/video" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
+            </div>
+            <button onclick="saveCameraUrl()" class="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold text-sm">حفظ وتوصيل الكاميرا</button>
+        </div>
     </main>
 
-    <!-- Page 3: Academic Team & Supervision -->
+    <!-- Page 3: Team -->
     <main id="page-team" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow w-full">
         <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 text-center space-y-6">
             <div class="border-b border-slate-800 pb-4">
@@ -105,14 +133,12 @@
                 <p class="text-sm text-slate-400 mt-1">مشروع تخرج - قسم هندسة الاتصالات</p>
             </div>
 
-            <!-- Supervisor Section -->
             <div class="bg-slate-950 p-4 rounded-xl border border-cyan-500/30 max-w-sm mx-auto shadow-md">
                 <p class="text-xs text-cyan-400 font-semibold mb-1">إشراف الاستاذ</p>
                 <p class="text-lg font-bold text-white">أستاذ إبراهيم</p>
                 <p class="text-xs text-slate-500">مشرف مشروع التخرج</p>
             </div>
 
-            <!-- Students Section -->
             <div>
                 <h3 class="text-sm font-bold text-slate-400 mb-4">إعداد مهندسي الاتصالات:</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -145,7 +171,19 @@
             if (tabId === 'dashboard') initThree();
         }
 
-        let scene, camera, renderer, targetsSpheres = [];
+        function saveCameraUrl() {
+            const url = document.getElementById('camUrlInput').value;
+            const img = document.getElementById('cameraStream');
+            const placeholder = document.getElementById('camPlaceholder');
+            if(url) {
+                img.src = url;
+                img.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                switchTab('dashboard');
+            }
+        }
+
+        let scene, camera, renderer, humanModels = [];
         let roomConfig = { count: 2, width: 6, length: 5 };
 
         function updateRoomSetup() {
@@ -158,6 +196,33 @@
                 renderer = null;
             }
             switchTab('dashboard');
+        }
+
+        // Function to build 3D Human Model
+        function createHumanFigure(colorHex) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshPhongMaterial({ color: colorHex });
+
+            // Head
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), mat);
+            head.position.y = 0.95;
+            group.add(head);
+
+            // Body / Torso
+            const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.08, 0.45, 16), mat);
+            torso.position.y = 0.65;
+            group.add(torso);
+
+            // Legs
+            const legGeo = new THREE.CylinderGeometry(0.04, 0.03, 0.45, 12);
+            const leftLeg = new THREE.Mesh(legGeo, mat);
+            leftLeg.position.set(-0.06, 0.22, 0);
+            const rightLeg = new THREE.Mesh(legGeo, mat);
+            rightLeg.position.set(0.06, 0.22, 0);
+            group.add(leftLeg, rightLeg);
+
+            group.visible = false;
+            return group;
         }
 
         function initThree() {
@@ -175,6 +240,10 @@
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
 
+            const dirLight = new THREE.DirectionalLight(0x00f3ff, 0.6);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
             const totalWidth = roomConfig.count * roomConfig.width;
             const floorGeo = new THREE.PlaneGeometry(totalWidth + 4, roomConfig.length + 4);
             const floorMat = new THREE.MeshBasicMaterial({ color: 0x0f172a, side: THREE.DoubleSide });
@@ -186,7 +255,7 @@
             grid.position.y = 0.01;
             scene.add(grid);
 
-            // Structure Materials
+            // Materials
             const wallMat = new THREE.MeshPhongMaterial({ color: 0x1e293b, transparent: true, opacity: 0.75 });
             const doorMat = new THREE.MeshPhongMaterial({ color: 0x8b5cf6 });
             const windowMat = new THREE.MeshPhongMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 });
@@ -197,15 +266,12 @@
                 scene.add(mesh);
             }
 
-            // Draw Rooms Dynamically
+            // Draw Rooms
             let startX = -((roomConfig.count - 1) * roomConfig.width) / 2;
-            
             for(let i = 0; i < roomConfig.count; i++) {
                 let rx = startX + (i * roomConfig.width);
-                
                 addBox(roomConfig.width, 2, 0.1, rx, 1, -roomConfig.length/2, wallMat);
                 addBox(roomConfig.width, 2, 0.1, rx, 1, roomConfig.length/2, wallMat);
-                
                 if(i === 0) addBox(0.1, 2, roomConfig.length, rx - roomConfig.width/2, 1, 0, wallMat);
                 addBox(0.1, 2, roomConfig.length, rx + roomConfig.width/2, 1, 0, wallMat);
 
@@ -213,14 +279,13 @@
                 addBox(1.4, 0.8, 0.05, rx, 1.2, -roomConfig.length/2, windowMat);
             }
 
-            // Dynamic Targets
-            targetsSpheres = [];
+            // Create 3D Human Models
+            humanModels = [];
             const colors = [0x00ff00, 0x00ffff, 0xffff00, 0xff00ff, 0xffa500, 0xff4444];
             for(let i = 0; i < 6; i++) {
-                const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), new THREE.MeshBasicMaterial({ color: colors[i] }));
-                sphere.visible = false;
-                scene.add(sphere);
-                targetsSpheres.push(sphere);
+                const human = createHumanFigure(colors[i]);
+                scene.add(human);
+                humanModels.push(human);
             }
 
             camera.position.set(0, Math.max(totalWidth, roomConfig.length) * 1.1, roomConfig.length * 1.1);
@@ -233,7 +298,7 @@
             animate();
         }
 
-        // MQTT Data Reception
+        // MQTT Data Handling
         const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
         client.on('connect', () => {
             document.getElementById('status-mqtt').innerText = "متصل بنجاح";
@@ -247,17 +312,17 @@
                 if(data.targets) {
                     let activeCount = 0;
                     data.targets.forEach((t, i) => {
-                        if(i < 6 && targetsSpheres[i]) {
+                        if(i < 6 && humanModels[i]) {
                             if(t.y > 0) {
-                                targetsSpheres[i].position.set(t.x / 1000, 0.25, -(t.y / 1000));
-                                targetsSpheres[i].visible = true;
+                                humanModels[i].position.set(t.x / 1000, 0, -(t.y / 1000));
+                                humanModels[i].visible = true;
                                 activeCount++;
                             } else {
-                                targetsSpheres[i].visible = false;
+                                humanModels[i].visible = false;
                             }
                         }
                     });
-                    document.getElementById('status-targets').innerText = activeCount + " / 6 أهداف active";
+                    document.getElementById('status-targets').innerText = activeCount + " / 6 أهداف 3D";
                 }
             } catch(e) {}
         });
