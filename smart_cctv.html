@@ -1,284 +1,289 @@
-[7/26/2026 1:54 PM] GHANIM FIRAS⚜️: <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+#include <WiFi.h>
+#include <WebServer.h>
+
+const char* ssid = "FTTH-Nsp3";
+const char* password = "20062009";
+
+#define RADAR_RX 5
+#define RADAR_TX 17
+#define TAMPER_PIN 18
+#define LED_PIN 4
+
+HardwareSerial RadarSerial(2);
+WebServer server(80);
+
+int targetX = 0, targetY = 0, targetSpeed = 0;
+
+const char HTML_PAGE[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شاشة الرادار السحابية - تتبع وتحديد الحالة</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+    <title>AegisRadar 360 - Room & Security Status</title>
     <style>
-        body { 
-            background: #0d1117; 
-            color: white; 
-            text-align: center; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
+        body { margin: 0; overflow: hidden; background-color: #050505; color: #fff; font-family: sans-serif; }
+        
+        #info-panel {
+            position: absolute; top: 15px; left: 15px; z-index: 100;
+            background: rgba(15, 15, 25, 0.9); padding: 15px 20px; border-radius: 10px;
+            border: 1px solid rgba(0, 229, 255, 0.3); backdrop-filter: blur(5px);
+            width: 270px;
         }
-        #status { 
-            font-size: 15px; 
-            margin: 10px auto; 
-            padding: 8px 16px; 
-            border-radius: 20px;
-            display: inline-block;
-            background: #21262d;
-            border: 1px solid #30363d;
+        h2 { margin: 0 0 10px 0; font-size: 1.1rem; color: #00e5ff; }
+        p { margin: 4px 0; font-size: 0.85rem; }
+        .coords { color: #ffea00; font-weight: bold; }
+        .status-ok { color: #00ff66; font-weight: bold; }
+        .status-alert { color: #ff3333; font-weight: bold; }
+
+        /* مؤشر ضوئي في واجهة المستخدم */
+        .lock-indicator {
+            display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+            margin-right: 5px; background-color: #00ff66; box-shadow: 0 0 8px #00ff66;
         }
-        .dashboard {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin-top: 15px;
-        }
-        canvas { 
-            background: #161b22; 
-            border: 1px solid #30363d; 
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-        .info-card {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 20px;
-            min-width: 260px;
-            text-align: right;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-        .info-item {
-            margin-bottom: 15px;
-        }
-        .info-title {
-            color: #8b949e;
-            font-size: 13px;
-        }
-        .info-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #00ffaa;
-            margin-top: 5px;
-        }
-        .badge-standing { color: #3fb950; }
-        .badge-sitting { color: #d29922; }
-        .badge-moving { color: #58a6ff; }
-        .badge-none { color: #f85149; }
+        .lock-indicator.open { background-color: #ff3333; box-shadow: 0 0 8px #ff3333; }
+
+        .input-group { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .input-group label { font-size: 0.8rem; color: #aaa; }
+        .input-group input { width: 60px; background: #111; border: 1px solid #00e5ff; color: #fff; text-align: center; border-radius: 4px; padding: 2px; }
+        button { width: 100%; margin-top: 10px; background: #00e5ff; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; color: #000; }
+        button:hover { background: #00b3cc; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-
-    <h2>📡 شاشة الرادار السحابية - المراقبة والتتبع المباشر</h2>
-    <div id="status">جاري الاتصال بالسيرفر السحابي...</div>
-
-    <div class="dashboard">
-        <canvas id="radarCanvas" width="700" height="480"></canvas>
+    <div id="info-panel">
+        <h2>AegisRadar 360</h2>
+        <p>System Status: <span id="esp-status" class="status-ok">Connected</span></p>
+        <p><span id="indicator" class="lock-indicator"></span>Tamper Lock: <span id="tamper-status" class="status-ok">CLOSED (SECURE)</span></p>
         
-        <div class="info-card">
-            <h3>📊 معلومات الهدف المباشرة</h3>
-            <hr style="border-color: #30363d; margin-bottom: 15px;">
-            
-            <div class="info-item">
-                <div class="info-title">حالة الشخص الحالي:</div>
-                <div id="personState" class="info-value badge-none">غير متواجد</div>
-            </div>
-
-            <div class="info-item">
-                <div class="info-title">المسافة الفعلية:</div>
-                <div id="distanceVal" class="info-value">0 m</div>
-            </div>
-
-            <div class="info-item">
-                <div class="info-title">الإحداثيات (X, Y):</div>
-                <div id="coordsVal" class="info-value" style="font-size: 16px; color: #c9d1d9;">X: 0 | Y: 0</div>
-            </div>
-
-            <div class="info-item">
-                <div class="info-title">حالة الحركة:</div>
-                <div id="motionVal" class="info-value" style="font-size: 16px; color: #8b949e;">سكون</div>
-            </div>
+        <hr style="border-color: rgba(255,255,255,0.1);">
+        <p><b>📐 Room Dimensions (Meters):</b></p>
+        <div class="input-group">
+            <label>Width (X):</label>
+            <input type="number" id="roomW" value="5" step="0.5">
         </div>
+        <div class="input-group">
+            <label>Length (Y):</label>
+            <input type="number" id="roomL" value="6" step="0.5">
+        </div>
+        <div class="input-group">
+            <label>Height (Z):</label>
+            <input type="number" id="roomH" value="3" step="0.5">
+        </div>
+        <button onclick="updateRoomDimensions()">Apply Room</button>
+
+        <hr style="border-color: rgba(255,255,255,0.1);">
+        <p>Target Coordinates (mm):</p>
+        <p class="coords">X: <span id="posX">0</span> | Y: <span id="posY">0</span> | Z: <span id="posZ">0</span></p>
     </div>
 
     <script>
-        const canvas = document.getElementById('radarCanvas');
-        const ctx = canvas.getContext('2d');
-        const statusDiv = document.getElementById('status');
-        const stateEl = document.getElementById('personState');
-        const distEl = document.getElementById('distanceVal');
-        const coordsEl = document.getElementById('coordsVal');
-        const motionEl = document.getElementById('motionVal');
+        let scene, camera, renderer, roomBox, gridHelper, targetMesh, statusLight;
+        let roomWidth = 5, roomLength = 6, roomHeight = 3;
+        let lastTamperState = false;
 
-        const cx = canvas.width / 2;
-        const cy = canvas.height - 40;
+        // طلب الإذن لإرسال الإشعارات على المتصفح
+        if (Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
 
-        let target = { detected: false, x: 0, y: 0, speed: 0, pose: "NO TARGET" };
-        let trail = [];
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-        // الاتصال بسيرفر HiveMQ عبر WSS
-        const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
-client.on('connect', () => {
-    statusDiv.textContent = "متصل بالسحابة بنجاح ✅ (جاهز من أي مكان)";
-    statusDiv.style.color = "#3fb950";
-    client.subscribe('cctv_radar_ghanim_2026');
-});
-        client.on('offline', () => {
-            statusDiv.textContent = "غير متصل بالسيرفر السحابي ❌";
-            statusDiv.style.color = "#f85149";
-        });
+            // مجسم رادار الهدف
+            const targetGeo = new THREE.SphereGeometry(0.25, 16, 16);
+            const targetMat = new THREE.MeshBasicMaterial({ color: 0x00ff66 });
+            targetMesh = new THREE.Mesh(targetGeo, targetMat);
+            scene.add(targetMesh);
 
-        client.on('message', (topic, message) => {
+            // ضوء الحالة 3D (أخضر / أحمر)
+            const lightGeo = new THREE.SphereGeometry(0.3, 16, 16);
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0x00ff66 });
+            statusLight = new THREE.Mesh(lightGeo, lightMat);
+            scene.add(statusLight);
+
+            createRoom(roomWidth, roomLength, roomHeight);
+
+            camera.position.set(0, roomHeight * 2, roomLength * 1.5);
+            camera.lookAt(0, 0, 0);
+
+            animate();
+        }
+
+        function createRoom(w, l, h) {
+            if (roomBox) scene.remove(roomBox);
+            if (gridHelper) scene.remove(gridHelper);
+
+            gridHelper = new THREE.GridHelper(Math.max(w, l), 10, 0x00e5ff, 0x224455);
+            scene.add(gridHelper);
+
+            const boxGeo = new THREE.BoxGeometry(w, h, l);
+            const wireGeo = new THREE.WireframeGeometry(boxGeo);
+            const wireMat = new THREE.LineBasicMaterial({ color: 0x00e5ff });
+            roomBox = new THREE.LineSegments(wireGeo, wireMat);
+            
+            roomBox.position.set(0, h / 2, 0);
+            scene.add(roomBox);
+
+            // تثبيت الضوء في زاوية الغرفة العلوية
+            statusLight.position.set(-w / 2 + 0.5, h - 0.5, -l / 2 + 0.5);
+        }
+
+        function updateRoomDimensions() {
+            roomWidth = parseFloat(document.getElementById('roomW').value);
+            roomLength = parseFloat(document.getElementById('roomL').value);
+            roomHeight = parseFloat(document.getElementById('roomH').value);
+            createRoom(roomWidth, roomLength, roomHeight);
+        }
+
+        function sendNotification(title, body) {
+            if (Notification.permission === "granted") {
+                new Notification(title, { body: body, icon: '' });
+            }
+        }
+
+        async function fetchESPData() {
             try {
-                target = JSON.parse(message.toString());
-                updateDashboard(target);
+                const response = await fetch('/data');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    const tamperElem = document.getElementById('tamper-status');
+                    const indicatorElem = document.getElementById('indicator');
 
-                if (target.detected) {
-                    trail.push({ x: target.x, y: target.y });
-                    if (trail.length > 20) trail.shift();
-                } else {
-                    trail = [];
+                    // التحقق من حالة القفل
+                    if (data.tamper) { // القفل مفتوح (حالة اختراق)
+                        tamperElem.innerText = 'OPEN (TAMPER DETECTED!)';
+                        tamperElem.className = 'status-alert';
+                        indicatorElem.classList.add('open');
+                        
+                        // تغيير لون ضوء المشهد إلى الأحمر
+                        statusLight.material.color.setHex(0xff0000);
+                        targetMesh.material.color.setHex(0xff0000);
+                        scene.background = new THREE.Color(0x330000);
+
+                        // إرسال إشعار فوري عند الفتح لأول مرة
+                        if (!lastTamperState) {
+                            sendNotification("⚠️ AegisRadar Security Alert", "Warning: Anti-Tamper Switch OPENED!");
+                            lastTamperState = true;
+                        }
+                    } else { // القفل مغلق (حالة آمنة)
+                        tamperElem.innerText = 'CLOSED (SECURE)';
+                        tamperElem.className = 'status-ok';
+                        indicatorElem.classList.remove('open');
+                        
+                        // تغيير لون ضوء المشهد إلى الأخضر
+                        statusLight.material.color.setHex(0x00ff66);
+                        targetMesh.material.color.setHex(0x00ff66);
+                        scene.background = new THREE.Color(0x050505);
+
+                        if (lastTamperState) {
+                            sendNotification("✅ AegisRadar Security Status", "Anti-Tamper Switch is now CLOSED.");
+                            lastTamperState = false;
+                        }
+                    }
+
+                    const xMeter = data.x / 1000;
+                    const yMeter = data.y / 1000;
+                    const zMeter = data.z / 1000;
+
+                    document.getElementById('posX').innerText = data.x;
+                    document.getElementById('posY').innerText = data.y;
+                    document.getElementById('posZ').innerText = data.z;
+
+                    targetMesh.position.set(xMeter, zMeter, -yMeter + (roomLength / 2));
                 }
-            } catch (e) {
-                console.error("Error parsing JSON", e);
+            } catch (error) {
+                document.getElementById('esp-status').innerText = 'Disconnected';
+                document.getElementById('esp-status').className = 'status-alert';
             }
+        }
+
+        setInterval(fetchESPData, 100);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        function updateDashboard(t) {
-            if (!t.detected) {
-                stateEl.textContent = "غير متواجد";
-                stateEl.className = "info-value badge-none";
-                distEl.textContent = "0 m";
-                coordsEl.textContent = "X: 0 | Y: 0";
-                motionEl.textContent = "لا يوجد حركة";
-                return;
-            }
-
-            stateEl.textContent = t.pose;
-            if (t.pose === "واقف (Standing)") {
-                stateEl.className = "info-value badge-standing";
-            } else if (t.pose === "جالس (Sitting)") {
-                stateEl.className = "info-value badge-sitting";
-            } else if (t.pose === "تحرك (Moving)") {
-                stateEl.className = "info-value badge-moving";
-            } else {
-                stateEl.className = "info-value badge-none";
-            }
-
-            const distMeters = (Math.sqrt(t.x * t.x + t.y * t.y) / 1000).toFixed(2);
-            distEl.textContent = distMeters + " m";
-            coordsEl.textContent = 'X:${t.x} mm | Y:${t.y} mm';
-            motionEl.textContent = t.speed > 150 ? "حركة سريعة 🏃" : "ثبات / حركة خفيفة 🚶";
-        }
-
-        function drawPersonStickman(x, y, pose, color) {
-            ctx.save();
-            ctx.strokeStyle = color;
-            ctx.fillStyle = color;
-            ctx.lineWidth = 3;
-            ctx.lineCap = "round";
-
-            if (pose === "واقف (Standing)") {
-                ctx.beginPath();
-                ctx.arc(x, y - 50, 6, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(x, y - 44);
-                ctx.lineTo(x, y - 20);
-                ctx.moveTo(x - 12, y - 35);
-                ctx.lineTo(x + 12, y - 35);
-                ctx.moveTo(x, y - 20);
-                ctx.lineTo(x - 8, y);
-                ctx.moveTo(x, y - 20);
-                ctx.lineTo(x + 8, y);
-                ctx.stroke();
-            } else if (pose === "جالس (Sitting)") {
-                ctx.beginPath();
-                ctx.arc(x - 5, y - 40, 6, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(x - 5, y - 34);
-                ctx.lineTo(x - 5, y - 15);
-                ctx.moveTo(x - 5, y - 28);
-                ctx.lineTo(x + 5, y - 22);
-                ctx.moveTo(x - 5, y - 15);
-                ctx.lineTo(x + 8, y - 15);
-                ctx.lineTo(x + 8, y);
-                ctx.stroke();
-            } else if (pose === "تحرك (Moving)") {
-                ctx.beginPath();
-                ctx.arc(x + 4, y - 52, 6, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(x + 2, y - 46);
-                ctx.lineTo(x - 4, y - 22);
-                ctx.moveTo(x + 1, y - 38);
-                ctx.lineTo(x + 12, y - 30);
-                ctx.moveTo(x + 1, y - 38);
-                ctx.lineTo(x - 10, y - 42);
-                ctx.moveTo(x - 4, y - 22);
-                ctx.lineTo(x + 10, y - 8);
-                ctx.lineTo(x + 8, y);
-                ctx.moveTo(x - 4, y - 22);
-                ctx.lineTo(x - 14, y - 10);
-                ctx.stroke();
-            }
-            ctx.restore();
-        }
-
-        function render() {
-            ctx.clearRect(0, 0, canvas.width, canvas.width,canvas.clientHeight);
-
-
-            // 1. رسم دوائر الرادار
-            ctx.strokeStyle = "rgba(0, 255, 170, 0.2)";
-            ctx.lineWidth = 1;
-            for (let r = 1; r <= 4; r++) {
-                ctx.beginPath();
-                ctx.arc(cx, cy, r * 90, Math.PI, 0);
-                ctx.stroke();
-            }
-
-            // 2. رسم منطقة الخطر المقوسة باللون الأحمر (أقل من 1.5 متر)
-            ctx.strokeStyle = "rgba(248, 81, 73, 0.3)";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(cx, cy, 90, Math.PI, 0);
-            ctx.stroke();
-
-            // 3. رسم المسار
-            trail.forEach((p, idx) => {
-                const tx = cx + (p.x / 6000) * 350;
-                const ty = cy - (p.y / 6000) * 350;
-                ctx.fillStyle = "rgba(0, 255, 170, " + (idx / 20) + ")";
-                ctx.beginPath();
-                ctx.arc(tx, ty, 3, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // 4. رسم الهدف وهيكل الشخص
-            if (target.detected) {
-                const px = cx + (target.x / 6000) * 350;
-                const py = cy - (target.y / 6000) * 350;
-
-                let targetColor = "#00ffaa";
-                if (target.pose === "واقف (Standing)") targetColor = "#3fb950";
-                if (target.pose === "جالس (Sitting)") targetColor = "#d29922";
-                if (target.pose === "تحرك (Moving)") targetColor = "#58a6ff";
-
-                drawPersonStickman(px, py - 10, target.pose, targetColor);
-
-                ctx.strokeStyle = targetColor;
-                ctx.lineWidth = 2;
-                ctx.strokeRect(px - 22, py - 22, 44, 44);
-
-                ctx.fillStyle = "#ffffff";
-                ctx.font = "bold 13px sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText(target.pose, px, py - 65);
-            }
-
-            requestAnimationFrame(render);
-        }
-
-        render();
+        init3D();
     </script>
 </body>
 </html>
+)rawliteral";
+
+void readRadarData() {
+    if (RadarSerial.available() >= 29) {
+        uint8_t buffer[29];
+        RadarSerial.readBytes(buffer, 29);
+        
+        if (buffer[0] == 0xAA && buffer[1] == 0xFF) {
+            int16_t rawX = buffer[4] | (buffer[5] << 8);
+            int16_t rawY = buffer[6] | (buffer[7] << 8);
+            
+            if (buffer[5] & 0x80) rawX -= 0x10000;
+            
+            targetX = rawX;
+            targetY = rawY;
+        }
+    }
+}
+
+void handleRoot() {
+    server.send(200, "text/html", HTML_PAGE);
+}
+
+void handleData() {
+    bool isTampering = (digitalRead(TAMPER_PIN) == LOW);
+    int targetZ = (targetY > 0) ? (int)(targetY * 0.15) : 0;
+
+    String json = "{";
+    json += "\"tamper\":" + String(isTampering ? "true" : "false") + ",";
+    json += "\"x\":" + String(targetX) + ",";
+    json += "\"y\":" + String(targetY) + ",";
+    json += "\"z\":" + String(targetZ);
+    json += "}";
+
+    server.send(200, "application/json", json);
+}
+
+void setup() {
+    Serial.begin(115200);
+    RadarSerial.begin(256000, SERIAL_8N1, RADAR_RX, RADAR_TX);
+
+    pinMode(TAMPER_PIN, INPUT_PULLUP);
+    pinMode(LED_PIN, OUTPUT);
+
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("\nWiFi Connected!");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    server.on("/", handleRoot);
+    server.on("/data", handleData);
+    server.begin();
+}
+
+void loop() {
+    server.handleClient();
+    readRadarData();
+    
+    bool isTampering = (digitalRead(TAMPER_PIN) == LOW);
+    digitalWrite(LED_PIN, isTampering ? HIGH : LOW);
+}
