@@ -42,7 +42,6 @@
 
     .hidden { display: none !important; }
 
-    /* الصفحة التعريفية (المرحلة 1) */
     .intro-card {
       background: linear-gradient(145deg, #1e2230, #141722);
       border: 1px solid #00adb5;
@@ -78,7 +77,6 @@
 
     .team-box span { color: #00fff5; font-weight: bold; }
 
-    /* شاشة كلمة السر (المرحلة 2) */
     .pass-box {
       background: #1e2230;
       border: 1px solid #00adb5;
@@ -88,7 +86,7 @@
       width: 100%;
     }
 
-    input, button {
+    input, select, button {
       width: 100%;
       padding: 12px;
       margin-bottom: 10px;
@@ -109,7 +107,6 @@
 
     button:hover { background: #00888e; }
 
-    /* الواجهة الرئيسية (المرحلة 3) */
     #main-app {
       display: flex;
       width: 100vw;
@@ -178,12 +175,11 @@
       border: 1px solid #00adb5;
     }
 
-    /* جدول رصد الأشخاص للرادار */
     .targets-list {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-height: 200px;
+      max-height: 160px;
       overflow-y: auto;
     }
 
@@ -215,14 +211,23 @@
 </head>
 <body>
 
-  <!-- 1️⃣ المرحلة الأولى: الصفحة التعريفية الشاملة -->
+  <!-- 1️⃣ المرحلة الأولى: التعريف بالمشروع -->
   <div id="step-1" class="step-screen">
     <div class="intro-card">
       <h1>🛡️ AegisRadar 360</h1>
       <h2>نظام أمني متكامل للرصد ثلاثي الأبعاد وإدارة المنازل الذكية</h2>
       
       <div class="project-desc">
-        يقوم المشروع بربط تقنيات الرادار المليمترية (mmWave Radar) ومتحكمات IoT برسم خرائط ثلاثية الأبعاد للغرف والمباني مع تتبع حركة وحالة 6 أشخاص بالتزامن مع نظام مراقبة الكاميرا.
+    
+نظام أمني ذكي للمراقبة والكشف والاستجابة للطوارئ
+
+يهدف المشروع إلى تطوير نظام أمني ذكي متكامل يعتمد على دمج تقنية الرادار المليمترية (mmWave Radar) مع الرؤية الحاسوبية والكاميرا لتوفير مراقبة ذكية ودقيقة للأشخاص مع الحفاظ على الخصوصية.
+
+يتمكن النظام من اكتشاف الأشخاص وتتبع مواقعهم وحركتهم في الوقت الحقيقي، مما يجعله مناسباً للاستخدام في البيئات الحساسة مثل المصارف والمؤسسات الأمنية، خصوصاً أثناء حالات الطوارئ كـ الحرائق وعمليات السطو والاقتحام، حيث يساعد على تحديد أماكن الأشخاص داخل المبنى وتوجيه فرق الإنقاذ والأمن إليهم بسرعة ودقة.
+
+كما يتضمن المشروع نظاماً مخصصاً لمراقبة كبار السن والأشخاص الذين يحتاجون إلى رعاية، بالاعتماد على الرادار دون الحاجة إلى تشغيل الكاميرا بشكل مستمر، مما يوفر مستوى أعلى من الخصوصية والأمان. وفي حال اكتشاف سقوط الشخص أو توقف حركته لفترة غير طبيعية، يقوم النظام بتحليل الحالة وإرسال إنذار فوري إلى الجهة المسؤولة لاتخاذ الإجراءات المناسبة.
+
+ويجمع المشروع بين الرادار المليمترية، الكاميرا، الذكاء الاصطناعي، تتبع الأشخاص، اكتشاف السقوط، وحماية الخصوصية، بهدف إنشاء منظومة أمنية ذكية قادرة على المراقبة والاستجابة للحالات الطارئة بصورة أكثر سرعة وفعالية.
       </div>
 
       <div class="team-box">
@@ -239,7 +244,7 @@
     </div>
   </div>
 
-  <!-- 2️⃣ المرحلة الثانية: إدخال رمز الدخول -->
+  <!-- 2️⃣ المرحلة الثانية: رمز الدخول -->
   <div id="step-2" class="step-screen hidden">
     <div class="pass-box">
       <h2 style="color: #00adb5; margin-bottom: 10px;">🔒 رمز حماية النظام</h2>
@@ -250,26 +255,35 @@
     </div>
   </div>
 
-  <!-- 3️⃣ المرحلة الثالثة: لوحة التهيئة والواجهة الرئيسية -->
+  <!-- 3️⃣ المرحلة الثالثة: الواجهة الرئيسية -->
   <div id="main-app" class="hidden">
     <div id="sidebar">
       
-      <!-- رصد الرادار لـ 6 أشخاص وحالتهم -->
+      <!-- اختيار والتحويل بين الخرائط -->
       <div class="card">
-        <h3>📡 تتبع الرادار (6 أشخاص)</h3>
-        <div id="targets-container" class="targets-list">
-          <!-- ستظهر الأهداف الستة هنا تلقائياً -->
-        </div>
+        <h3>🗺️ التحويل بين الخرائط المحفوظة</h3>
+        <select id="mapSelector" onchange="switchMap()">
+          <option value="default">الخريطة الرئيسية (الطابق الأرضي)</option>
+          <option value="floor_2">الخريطة الثانية (الطابق العلوي)</option>
+        </select>
+        <button onclick="clearCurrentMap()" style="background: #ff4d4d; margin-top: 4px;">مسح الخريطة الحالية 🗑️</button>
       </div>
 
-      <!-- إعداد رابط الكاميرا والبث -->
+      <!-- رصد الرادار لأجسام الأشخاص -->
       <div class="card">
-        <h3>1. الكاميرا والوجوه 🎥</h3>
-        <input type="text" id="camUrl" placeholder="رابط Stream الكاميرا" value="http://192.168.1.50:81/stream">
+        <h3>📡 تتبع حركة الرادار اللحظية</h3>
+        <button onclick="simulateRadarMotion()" style="background: #282c3d; border: 1px solid #00adb5; margin-bottom: 10px;">محاكاة التقاط حركة جديدة ⚡</button>
+        <div id="targets-container" class="targets-list"></div>
+      </div>
+
+      <!-- إعداد كاميرا هاتفك الآيفون -->
+      <div class="card">
+        <h3>1. الكاميرا والوجوه (آيفون) 🎥</h3>
+        <input type="text" id="camUrl" placeholder="رابط Stream الكاميرا" value="http://192.168.1.3:8081">
         <button onclick="updateCamUrl()">تحديث رابط الكاميرا 🔄</button>
         
         <div class="cam-wrapper" style="margin-top: 10px;">
-          <img id="camera-stream" crossorigin="anonymous" src="http://192.168.1.50:81/stream" onerror="this.src='https://via.placeholder.com/300x160?text=Camera+Offline';" />
+          <img id="camera-stream" crossorigin="anonymous" src="http://192.168.1.3:8081" onerror="this.src='https://via.placeholder.com/300x160?text=Camera+Offline';" />
           <div id="face-box"></div>
         </div>
 
@@ -281,9 +295,9 @@
         <div id="gallery"></div>
       </div>
 
-      <!-- تهيئة عدد الغرف والجدران -->
+      <!-- إضافة وحفظ الغرف والجدران تلقائياً -->
       <div class="card">
-        <h3>2. إعدادات الغرف والجدران 🧱</h3>
+        <h3>2. إعدادات الغرف وحفظ المخطط 🧱</h3>
         <input type="text" id="roomName" placeholder="اسم الغرفة" />
         <div style="display: flex; gap: 5px;">
           <input type="number" id="dimW" placeholder="العرض W" value="6" />
@@ -294,13 +308,7 @@
           <input type="number" id="posX" placeholder="X" value="0" />
           <input type="number" id="posZ" placeholder="Z" value="0" />
         </div>
-        <button onclick="addCustomRoom()">إضافة الغرفة للمخطط ➕</button>
-      </div>
-
-      <!-- حالة قفل الباب -->
-      <div class="card">
-        <h3>3. قفل الباب / MQTT 🔒</h3>
-        <div id="lock-status" style="color: #4eef90; font-weight: bold;">الباب مغلق 🔒</div>
+        <button onclick="addCustomRoomAndSave()">إضافة وحفظ الغرفة 💾</button>
       </div>
 
     </div>
@@ -310,7 +318,6 @@
   </div>
 
   <script>
-    // --- التنقل بين المراحل ---
     function goToStep(stepNumber) {
       document.getElementById('step-1').classList.add('hidden');
       document.getElementById('step-2').classList.add('hidden');
@@ -359,33 +366,61 @@
       gallery.prepend(newImg);
     }
 
-    // --- نظام رصد الأشخاص الـ 6 وإدارتهم ---
+    // --- إدارة الخرائط والتخزين المحلي (LocalStorage) ---
+    let currentMapKey = "default";
+    let savedRooms = {};
+
+    function loadSavedMaps() {
+      const data = localStorage.getItem("aegis_maps");
+      if (data) {
+        savedRooms = JSON.parse(data);
+      } else {
+        savedRooms = {
+          default: [{ name: "الصالة", w: 8, l: 8, h: 3, x: 0, z: 0 }],
+          floor_2: [{ name: "غرفة النوم", w: 5, l: 5, h: 3, x: 0, z: 0 }]
+        };
+        saveMapsToStorage();
+      }
+    }
+
+    function saveMapsToStorage() {
+      localStorage.setItem("aegis_maps", JSON.stringify(savedRooms));
+    }
+
+    function switchMap() {
+      currentMapKey = document.getElementById('mapSelector').value;
+      renderCurrentMap();
+    }
+
+    function clearCurrentMap() {
+      savedRooms[currentMapKey] = [];
+      saveMapsToStorage();
+      renderCurrentMap();
+    }
+
+    // --- أقسام الرادار والـ 3D ---
     const personCategories = [
       { id: 1, name: "شخص 1 (ضيف)", cat: "cat-guest", color: 0x00fff5 },
       { id: 2, name: "شخص 2 (ضيف)", cat: "cat-guest", color: 0x00fff5 },
       { id: 3, name: "شخص 3 (عائلة)", cat: "cat-family", color: 0x4eef90 },
       { id: 4, name: "شخص 4 (عائلة)", cat: "cat-family", color: 0x4eef90 },
-      { id: 5, name: "شخص 5 (غير معرّف)", cat: "cat-unknown", color: 0xff4d4d },
-      { id: 6, name: "شخص 6 (غير معرّف)", cat: "cat-unknown", color: 0xff4d4d }
+      { id: 5, name: "شخص 5 (تنبيه أمني)", cat: "cat-unknown", color: 0xff4d4d },
+      { id: 6, name: "شخص 6 (تنبيه أمني)", cat: "cat-unknown", color: 0xff4d4d }
     ];
 
-    let radarTargets = [
-      { id: 1, state: "واقف", speed: 1.2, x: -2, z: -1, y: 1.6 },
-      { id: 2, state: "جالس", speed: 0.0, x: -1, z: 2, y: 0.9 },
-      { id: 3, state: "نائم", speed: 0.0, x: 2, z: -2, y: 0.3 },
-      { id: 4, state: "واقف", speed: 0.8, x: 1, z: 1, y: 1.6 },
-      { id: 5, state: "جالس", speed: 0.1, x: 3, z: 2, y: 0.9 },
-      { id: 6, state: "نائم", speed: 0.0, x: -3, z: 1, y: 0.3 }
-    ];
-
-    let targetMeshes = [];
+    let activeTargets = [];
 
     function renderTargetsUI() {
       const container = document.getElementById('targets-container');
       container.innerHTML = '';
 
-      radarTargets.forEach((t, i) => {
-        const catInfo = personCategories[i];
+      if (activeTargets.length === 0) {
+        container.innerHTML = '<div style="color: #888; font-size: 11px;">في انتظار التلقاط حركات جديدة عبر الرادار...</div>';
+        return;
+      }
+
+      activeTargets.forEach((t) => {
+        const catInfo = personCategories[t.id - 1];
         let badgeClass = "badge-standing";
         if (t.state === "جالس") badgeClass = "badge-sitting";
         if (t.state === "نائم") badgeClass = "badge-sleeping";
@@ -403,8 +438,51 @@
       });
     }
 
-    // --- Three.js 3D Engine ---
+    function createHumanModel(colorHex, state) {
+      const group = new THREE.Group();
+      const material = new THREE.MeshLambertMaterial({ color: colorHex });
+
+      const headGeom = new THREE.SphereGeometry(0.2, 16, 16);
+      const head = new THREE.Mesh(headGeom, material);
+
+      const torsoGeom = new THREE.BoxGeometry(0.4, 0.6, 0.25);
+      const torso = new THREE.Mesh(torsoGeom, material);
+
+      if (state === "واقف") {
+        head.position.set(0, 1.4, 0);
+        torso.position.set(0, 0.9, 0);
+        const legGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.6);
+        const legL = new THREE.Mesh(legGeom, material);
+        legL.position.set(-0.12, 0.3, 0);
+        const legR = new THREE.Mesh(legGeom, material);
+        legR.position.set(0.12, 0.3, 0);
+        group.add(head, torso, legL, legR);
+      } 
+      else if (state === "جالس") {
+        head.position.set(0, 0.9, 0);
+        torso.position.set(0, 0.5, 0);
+        const legGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.4);
+        const legL = new THREE.Mesh(legGeom, material);
+        legL.rotation.x = Math.PI / 2;
+        legL.position.set(-0.12, 0.2, 0.2);
+        const legR = new THREE.Mesh(legGeom, material);
+        legR.rotation.x = Math.PI / 2;
+        legR.position.set(0.12, 0.2, 0.2);
+        group.add(head, torso, legL, legR);
+      } 
+      else {
+        group.rotation.z = Math.PI / 2;
+        head.position.set(0, 0.2, 0);
+        torso.position.set(-0.5, 0.2, 0);
+        group.add(head, torso);
+      }
+
+      return group;
+    }
+
     let scene, camera, renderer, controls;
+    let targetMeshesGroup = new THREE.Group();
+    let roomsGroup = new THREE.Group();
 
     function init3D() {
       const container = document.getElementById('canvas-container');
@@ -420,26 +498,17 @@
 
       controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-      const light = new THREE.DirectionalLight(0xffffff, 0.5);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+      const light = new THREE.DirectionalLight(0xffffff, 0.6);
       light.position.set(10, 20, 10);
       scene.add(light);
 
       scene.add(new THREE.GridHelper(50, 50, 0x00adb5, 0x282c3d));
+      scene.add(targetMeshesGroup);
+      scene.add(roomsGroup);
 
-      // إضافة الغرفة الرئيسية
-      addRoomMesh("الصالة", 8, 8, 3, 0, 0);
-
-      // إضافة مجسمات الـ 6 أشخاص في الـ 3D
-      radarTargets.forEach((t, i) => {
-        const geom = new THREE.CylinderGeometry(0.3, 0.3, t.y, 16);
-        const mat = new THREE.MeshLambertMaterial({ color: personCategories[i].color });
-        const mesh = new THREE.Mesh(geom, mat);
-        mesh.position.set(t.x, t.y / 2, t.z);
-        scene.add(mesh);
-        targetMeshes.push(mesh);
-      });
-
+      loadSavedMaps();
+      renderCurrentMap();
       renderTargetsUI();
 
       function animate() {
@@ -450,21 +519,66 @@
       animate();
     }
 
-    function addRoomMesh(name, w, l, h, x, z) {
-      const geometry = new THREE.BoxGeometry(w, h, l);
-      const material = new THREE.MeshLambertMaterial({ color: 0x00adb5, wireframe: true });
-      const room = new THREE.Mesh(geometry, material);
-      room.position.set(x, h/2, z);
-      scene.add(room);
+    function renderCurrentMap() {
+      while(roomsGroup.children.length > 0) { 
+        roomsGroup.remove(roomsGroup.children[0]); 
+      }
+
+      const roomsList = savedRooms[currentMapKey] || [];
+      roomsList.forEach(r => {
+        const geometry = new THREE.BoxGeometry(r.w, r.h, r.l);
+        const material = new THREE.MeshLambertMaterial({ color: 0x00adb5, wireframe: true });
+        const room = new THREE.Mesh(geometry, material);
+        room.position.set(r.x, r.h / 2, r.z);
+        roomsGroup.add(room);
+      });
     }
 
-    function addCustomRoom() {
+    function addCustomRoomAndSave() {
+      const name = document.getElementById('roomName').value || 'غرفة جديدة';
       const w = parseFloat(document.getElementById('dimW').value) || 4;
       const l = parseFloat(document.getElementById('dimL').value) || 4;
       const h = parseFloat(document.getElementById('dimH').value) || 3;
       const x = parseFloat(document.getElementById('posX').value) || 0;
       const z = parseFloat(document.getElementById('posZ').value) || 0;
-      addRoomMesh('غرفة جديدة', w, l, h, x, z);
+
+      if (!savedRooms[currentMapKey]) savedRooms[currentMapKey] = [];
+      savedRooms[currentMapKey].push({ name, w, l, h, x, z });
+
+      saveMapsToStorage();
+      renderCurrentMap();
+    }
+
+    function simulateRadarMotion() {
+      while(targetMeshesGroup.children.length > 0){ 
+        targetMeshesGroup.remove(targetMeshesGroup.children[0]); 
+      }
+
+      const count = Math.floor(Math.random() * 3) + 1;
+      activeTargets = [];
+
+      for (let i = 0; i < count; i++) {
+        const id = i + 1;
+        const states = ["واقف", "جالس", "نائم"];
+        const selectedState = states[Math.floor(Math.random() * states.length)];
+        const speed = (Math.random() * 1.5).toFixed(1);
+        const posX = (Math.random() * 6 - 3).toFixed(1);
+        const posZ = (Math.random() * 6 - 3).toFixed(1);
+
+        activeTargets.push({
+          id: id,
+          state: selectedState,
+          speed: speed,
+          x: posX,
+          z: posZ
+        });
+
+        const humanModel = createHumanModel(personCategories[id - 1].color, selectedState);
+        humanModel.position.set(parseFloat(posX), 0, parseFloat(posZ));
+        targetMeshesGroup.add(humanModel);
+      }
+
+      renderTargetsUI();
     }
   </script>
 </body>
