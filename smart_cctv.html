@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>AegisRadar 360 - جامعة نينوى - هندسة الاتصالات</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -15,7 +16,6 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
-    <!-- Navbar -->
     <nav class="bg-slate-900 border-b border-cyan-500/30 px-6 py-4 flex flex-wrap justify-between items-center shadow-lg">
         <div class="flex items-center space-x-4 space-x-reverse">
             <div class="bg-cyan-950 p-2 rounded-lg border border-cyan-500/40 flex items-center justify-center">
@@ -35,7 +35,6 @@
         </div>
     </nav>
 
-    <!-- Page 1: Dashboard -->
     <main id="page-dashboard" class="page active p-6 space-y-6 flex-grow">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
@@ -57,7 +56,6 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- 3D Room Visualizer -->
             <div class="lg:col-span-2 bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="text-sm font-bold text-slate-300 flex items-center">
@@ -73,18 +71,41 @@
                 </div>
             </div>
 
-            <!-- External Camera Box -->
             <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between">
                 <div>
-                    <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center">
-                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 ml-2 animate-pulse"></span>
-                        البث المباشر للكاميرا الخارجية
-                    </h3>
-                    <div class="w-full h-[320px] bg-black rounded-xl border border-slate-800 overflow-hidden relative flex items-center justify-center">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-sm font-bold text-slate-300 flex items-center">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-500 ml-2 animate-pulse"></span>
+                            البث المباشر للكاميرا الخارجية
+                        </h3>
+                        <span id="cam-status" class="text-xs bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800">نشط</span>
+                    </div>
+                    
+                    <div class="w-full h-[250px] bg-black rounded-xl border border-slate-800 overflow-hidden relative flex items-center justify-center">
                         <img id="cameraStream" src="" class="w-full h-full object-cover hidden" alt="Live Stream" />
                         <div id="camPlaceholder" class="text-center p-4">
                             <p class="text-sm text-slate-500 mb-2">الكاميرا غير متصلة</p>
                             <p class="text-xs text-slate-600">أدخل رابط RTSP / HTTP الخاص بكاميرا الهاتف في الإعدادات</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 bg-slate-950 p-3.5 rounded-xl border border-cyan-500/30 space-y-2">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <span class="text-xs text-cyan-400 font-bold flex items-center">
+                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                معلومات الالتقاط البصري
+                            </span>
+                            <span id="detection-time" class="text-[10px] text-slate-500">--:--:--</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="bg-slate-900 p-2 rounded">
+                                <span class="text-slate-400 block text-[10px]">الهدف المتعرف عليه:</span>
+                                <span id="target-id" class="font-bold text-emerald-400">بانتظار التقاط...</span>
+                            </div>
+                            <div class="bg-slate-900 p-2 rounded">
+                                <span class="text-slate-400 block text-[10px]">الموقـع البصري:</span>
+                                <span id="target-pos" class="font-bold text-cyan-300">N/A</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -92,9 +113,7 @@
         </div>
     </main>
 
-    <!-- Page 2: Settings -->
     <main id="page-settings" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow w-full">
-        <!-- Room Builder Controls -->
         <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
             <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">تعديل أبعاد وعدد الغرف</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -114,7 +133,6 @@
             <button onclick="updateRoomSetup()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition">تحديث الخريطة ثلاثية الأبعاد</button>
         </div>
 
-        <!-- Camera Controls -->
         <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
             <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">إعدادات الكاميرا الخارجية (iPhone / IP Cam)</h2>
             <div>
@@ -125,7 +143,6 @@
         </div>
     </main>
 
-    <!-- Page 3: Team -->
     <main id="page-team" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow w-full">
         <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 text-center space-y-6">
             <div class="border-b border-slate-800 pb-4">
@@ -159,7 +176,6 @@
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="bg-slate-950 border-t border-slate-900 px-6 py-4 text-center text-xs text-slate-500">
         جامعة نينوى - قسم هندسة الاتصالات © 2026 - مشروع AegisRadar 360
     </footer>
@@ -208,17 +224,14 @@
             const group = new THREE.Group();
             const mat = new THREE.MeshPhongMaterial({ color: colorHex });
 
-            // Head
             const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), mat);
             head.position.y = 0.95;
             group.add(head);
 
-            // Body / Torso
             const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.08, 0.45, 16), mat);
             torso.position.y = 0.65;
             group.add(torso);
 
-            // Legs
             const legGeo = new THREE.CylinderGeometry(0.04, 0.03, 0.45, 12);
             const leftLeg = new THREE.Mesh(legGeo, mat);
             leftLeg.position.set(-0.06, 0.22, 0);
@@ -300,6 +313,7 @@
             animate();
         }
 
+        // MQTT and Data Processing
         const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
         client.on('connect', () => {
             document.getElementById('status-mqtt').innerText = "متصل بنجاح";
@@ -312,25 +326,42 @@
                 const data = JSON.parse(message.toString());
                 if(data.targets) {
                     let activeCount = 0;
+                    let detectedInfo = null;
+
                     data.targets.forEach((t, i) => {
                         if(i < 6 && humanModels[i]) {
                             if(t.y > 0) {
                                 humanModels[i].position.set(t.x / 1000, 0, -(t.y / 1000));
                                 humanModels[i].visible = true;
                                 activeCount++;
+
+                                if(!detectedInfo) {
+                                    detectedInfo = { id: i + 1, x: (t.x / 1000).toFixed(2), y: (t.y / 1000).toFixed(2) };
+                                }
                             } else {
                                 humanModels[i].visible = false;
                             }
                         }
                     });
+
                     document.getElementById('status-targets').innerText = activeCount + " / 6 أهداف 3D";
+                    
+                    // التحديث الديناميكي لمعلومات الالتقاط البصري للكاميرا
+                    if(detectedInfo) {
+                        const now = new Date();
+                        document.getElementById('target-id').innerText = "شخص (Target #" + detectedInfo.id + ")";
+                        document.getElementById('target-pos').innerText = "X: " + detectedInfo.x + "m | Y: " + detectedInfo.y + "m";
+                        document.getElementById('detection-time').innerText = now.toLocaleTimeString('ar-IQ');
+                    } else {
+                        document.getElementById('target-id').innerText = "لا يوجد حركة";
+                        document.getElementById('target-pos').innerText = "N/A";
+                    }
                 }
             } catch(e) {}
         });
 
         window.onload = function() {
             initThree();
-            // تفعيل رابط كاميرا الآيفون المباشر فور فتح الموقع
             applyStreamUrl("http://admin:@192.168.1.3:8081/video");
         };
     </script>
