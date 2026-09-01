@@ -3,415 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>AegisRadar 360 - جامعة نينوى - هندسة الاتصالات</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background-color: #0b0f19; color: #f8fafc; }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #0b0f19; color: #f8fafc; overflow: hidden; }
         .page { display: none; }
         .page.active { display: block; }
+        
+        /* استايل شاشة القفل */
+        #lock-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #0b0f19; color: white;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; transition: opacity 0.5s;
+        }
+        #lock-screen.hidden { opacity: 0; pointer-events: none; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
-    <nav class="bg-slate-900 border-b border-cyan-500/30 px-6 py-4 flex flex-wrap justify-between items-center shadow-lg">
-        <div class="flex items-center space-x-4 space-x-reverse">
-            <div class="bg-slate-950 p-1.5 rounded-lg border border-cyan-500/40 flex items-center justify-center">
-                <img src="https://upload.wikimedia.org/wikipedia/ar/d/d2/%D8%B4%D8%B9%D8%A7%D8%B1_%D8%AC%D8%A7%D9%85%D8%B9%D8%A9_%D9%86%D9%8A%D9%86%D9%88%D9%89.png" 
-                     alt="شعار جامعة نينوى" class="h-10 w-auto object-contain" />
-            </div>
-            <div>
-                <h1 class="text-2xl font-black text-cyan-400 tracking-wider">AEGIS RADAR 360</h1>
-                <p class="text-xs text-slate-400">جامعة نينوى - كلية الهندسة - قسم هندسة الاتصالات</p>
-            </div>
+    <div id="lock-screen">
+        <div class="bg-slate-900 p-8 rounded-2xl border border-cyan-500/30 shadow-2xl text-center space-y-6 w-full max-w-md mx-4">
+            <img src="https://raw.githubusercontent.com/bwntpn86wr-coderghanim/cctv-radar/main/logo.png" 
+                 onerror="this.src='https://dummyimage.com/100x100/0284c7/fff.png&text=UON'"
+                 alt="شعار جامعة نينوى" class="h-20 w-auto mx-auto mb-4" />
+            <h2 class="text-2xl font-bold text-cyan-400">نظام AegisRadar 360</h2>
+            <p class="text-sm text-slate-400">يرجى إدخال كلمة المرور للوصول إلى لوحة التحكم</p>
+            
+            <input type="password" id="password-input" placeholder="كلمة المرور" 
+                   class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3.5 text-center text-lg text-cyan-300 placeholder-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none">
+            
+            <button onclick="checkPassword()" 
+                    class="w-full py-3.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition text-lg shadow-lg">
+                دخول للنظام
+            </button>
+            <p id="login-error" class="text-sm text-red-500 hidden animate-pulse">كلمة المرور غير صحيحة، حاول مجدداً.</p>
         </div>
-        <div class="flex space-x-2 space-x-reverse mt-3 sm:mt-0">
-            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 text-sm font-semibold rounded-lg bg-cyan-600 text-white shadow">الرئيسية والمحاكاة</button>
-            <button onclick="switchTab('settings')" id="btn-settings" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">إعدادات الغرف والكاميرا</button>
-            <button onclick="switchTab('team')" id="btn-team" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">كادر المشروع</button>
-        </div>
-    </nav>
+    </div>
 
-    <main id="page-dashboard" class="page active p-6 space-y-6 flex-grow">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
-                <span class="text-xs text-slate-400 block mb-1">حالة اتصال MQTT</span>
-                <span id="status-mqtt" class="text-base font-bold text-amber-500">جاري الاتصال...</span>
-            </div>
-            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
-                <span class="text-xs text-slate-400 block mb-1">حالة قفل الصندوق</span>
-                <span id="status-tamper" class="text-base font-bold text-emerald-400">مغلق (آمن)</span>
-            </div>
-            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
-                <span class="text-xs text-slate-400 block mb-1">حالة الخط الأحمر (الحد)</span>
-                <span id="status-boundary" class="text-base font-bold text-emerald-400">آمن</span>
-            </div>
-            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
-                <span class="text-xs text-slate-400 block mb-1">الأهداف المنشطة</span>
-                <span id="status-targets" class="text-base font-bold text-cyan-400">تتبع حتى 6 أشخاص 3D</span>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col">
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="text-sm font-bold text-slate-300 flex items-center">
-                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 ml-2 animate-ping"></span>
-                        محاكاة التتبع ثلاثي الأبعاد (مجسمات 3D للأشخاص)
-                    </h3>
-                    <span class="text-xs text-slate-400 bg-slate-950 px-3 py-1 rounded border border-slate-800">قسم هندسة الاتصالات</span>
+    <div id="main-content" class="hidden h-full flex flex-col flex-grow">
+        <nav class="bg-slate-900 border-b border-cyan-500/30 px-6 py-4 flex flex-wrap justify-between items-center shadow-lg">
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <div class="bg-slate-950 p-1.5 rounded-lg border border-cyan-500/40 flex items-center justify-center">
+                    <img src="https://raw.githubusercontent.com/bwntpn86wr-coderghanim/cctv-radar/main/logo.png" 
+                         onerror="this.src='https://dummyimage.com/100x100/0284c7/fff.png&text=UON'"
+                         alt="شعار جامعة نينوى" class="h-10 w-auto object-contain" />
                 </div>
-                <div id="canvasContainer" class="w-full h-[450px] bg-black/70 rounded-xl overflow-hidden relative">
-                    <div class="absolute bottom-3 right-3 bg-slate-950/80 p-2.5 text-xs text-slate-300 rounded-lg border border-slate-800 backdrop-blur z-10">
-                        <span class="text-purple-400 font-bold">■</span> أبواب | <span class="text-sky-400 font-bold">■</span> نوافذ | <span class="text-slate-400 font-bold">■</span> جدران
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between">
                 <div>
+                    <h1 class="text-2xl font-black text-cyan-400 tracking-wider">AEGIS RADAR 360</h1>
+                    <p class="text-xs text-slate-400">جامعة نينوى - كلية الهندسة - قسم هندسة الاتصالات</p>
+                </div>
+            </div>
+            <div class="flex space-x-2 space-x-reverse mt-3 sm:mt-0">
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 text-sm font-semibold rounded-lg bg-cyan-600 text-white shadow">الرئيسية والمحاكاة</button>
+                <button onclick="switchTab('settings')" id="btn-settings" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">إعدادات الغرف والكاميرا</button>
+                <button onclick="switchTab('team')" id="btn-team" class="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">كادر المشروع</button>
+            </div>
+        </nav>
+
+        <main id="page-dashboard" class="page active p-6 space-y-6 flex-grow overflow-y-auto">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
+                    <span class="text-xs text-slate-400 block mb-1">حالة اتصال MQTT</span>
+                    <span id="status-mqtt" class="text-base font-bold text-amber-500">جاري الاتصال...</span>
+                </div>
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
+                    <span class="text-xs text-slate-400 block mb-1">حالة قفل الصندوق</span>
+                    <span id="status-tamper" class="text-base font-bold text-emerald-400">مغلق (آمن)</span>
+                </div>
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
+                    <span class="text-xs text-slate-400 block mb-1">حالة الخط الأحمر (الحد)</span>
+                    <span id="status-boundary" class="text-base font-bold text-emerald-400">آمن</span>
+                </div>
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
+                    <span class="text-xs text-slate-400 block mb-1">الأهداف المنشطة</span>
+                    <span id="status-targets" class="text-base font-bold text-cyan-400">تتبع حتى 6 أشخاص 3D</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-sm font-bold text-slate-300 flex items-center">
-                            <span class="w-2.5 h-2.5 rounded-full bg-red-500 ml-2 animate-pulse"></span>
-                            البث المباشر للكاميرا الخارجية
+                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 ml-2 animate-ping"></span>
+                            محاكاة التتبع ثلاثي الأبعاد
                         </h3>
-                        <span id="cam-status" class="text-xs bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800">نشط</span>
                     </div>
-                    
-                    <div class="w-full h-[250px] bg-black rounded-xl border border-slate-800 overflow-hidden relative">
-                        <iframe id="cameraStream" src="http://192.168.1.3:8081/video" class="w-full h-full border-0"></iframe>
-                    </div>
-
-                    <div class="mt-4 bg-slate-950 p-3.5 rounded-xl border border-cyan-500/30 space-y-2">
-                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                            <span class="text-xs text-cyan-400 font-bold flex items-center">
-                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                معلومات الالتقاط البصري
-                            </span>
-                            <span id="detection-time" class="text-[10px] text-slate-500">--:--:--</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <div class="bg-slate-900 p-2 rounded">
-                                <span class="text-slate-400 block text-[10px]">الهدف المتعرف عليه:</span>
-                                <span id="target-id" class="font-bold text-emerald-400">بانتظار التقاط...</span>
-                            </div>
-                            <div class="bg-slate-900 p-2 rounded">
-                                <span class="text-slate-400 block text-[10px]">الموقـع البصري:</span>
-                                <span id="target-pos" class="font-bold text-cyan-300">N/A</span>
-                            </div>
+                    <div id="canvasContainer" class="w-full h-[450px] bg-black/70 rounded-xl overflow-hidden relative">
+                        <div class="absolute bottom-3 right-3 bg-slate-950/80 p-2.5 text-xs text-slate-300 rounded-lg border border-slate-800 backdrop-blur z-10">
+                            <span class="text-purple-400 font-bold">■</span> أبواب | <span class="text-sky-400 font-bold">■</span> نوافذ | <span class="text-slate-400 font-bold">■</span> جدران
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </main>
 
-    <main id="page-settings" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow w-full">
-        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
-            <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">تعديل التخطيط والأبواب والشبابيك 3D</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-sm text-slate-300 mb-1">اتجاه ترتيب الغرف:</label>
-                    <select id="layoutDirection" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
-                        <option value="X">بالعرض (أفقياً على محور X)</option>
-                        <option value="Z">بالطول (عمودياً على محور Z)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-300 mb-1">عدد الغرف:</label>
-                    <input type="number" id="roomsCount" value="2" min="1" max="4" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-300 mb-1">عرض الغرفة (أمتار):</label>
-                    <input type="number" id="roomWidth" value="6" min="2" max="15" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-300 mb-1">طول الغرفة (أمتار):</label>
-                    <input type="number" id="roomLength" value="5" min="2" max="15" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-300 mb-1">موقع الباب الرئيسية:</label>
-                    <select id="doorSide" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
-                        <option value="front">الجدار الأمامي</option>
-                        <option value="back">الجدار الخلفي</option>
-                        <option value="left">الجدار الأيسر</option>
-                        <option value="right">الجدار الأيمن</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-300 mb-1">موقع الشباك الرئيسي:</label>
-                    <select id="windowSide" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
-                        <option value="back">الجدار الخلفي</option>
-                        <option value="front">الجدار الأمامي</option>
-                        <option value="left">الجدار الأيسر</option>
-                        <option value="right">الجدار الأيمن</option>
-                    </select>
+                <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-bold text-slate-300 flex items-center">
+                                <span class="w-2.5 h-2.5 rounded-full bg-red-500 ml-2 animate-pulse"></span>
+                                البث المباشر للكاميرا
+                            </h3>
+                        </div>
+                        <div class="w-full h-[250px] bg-black rounded-xl border border-slate-800 overflow-hidden relative flex items-center justify-center">
+                            <img id="cameraStream" src="http://192.168.1.3:8081/video" 
+                                 onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=500&q=80';" 
+                                 class="w-full h-full object-cover" alt="Camera Stream" />
+                        </div>
+                        <div class="mt-4 bg-slate-950 p-3.5 rounded-xl border border-cyan-500/30 space-y-2 text-xs">
+                            <div class="flex justify-between border-b border-slate-800 pb-2 text-cyan-400 font-bold">
+                                <span>معلومات الالتقاط البصري</span>
+                                <span id="detection-time">--:--:--</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="bg-slate-900 p-2 rounded">
+                                    <span class="text-slate-400 block text-[10px]">الهدف:</span>
+                                    <span id="target-id" class="font-bold text-emerald-400">بانتظار التقاط...</span>
+                                </div>
+                                <div class="bg-slate-900 p-2 rounded">
+                                    <span class="text-slate-400 block text-[10px]">الموقـع:</span>
+                                    <span id="target-pos" class="font-bold text-cyan-300">N/A</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <button onclick="updateRoomSetup()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition">تحديث الخريطة ثلاثية الأبعاد</button>
-        </div>
+        </main>
 
-        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
-            <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">إعدادات الكاميرا الخارجية (iPhone / IP Cam)</h2>
-            <div>
-                <label class="block text-sm text-slate-300 mb-1">رابط بث الكاميرا (HTTP Stream):</label>
-                <input type="text" id="camUrlInput" value="http://192.168.1.3:8081/video" placeholder="http://192.168.1.3:8081/video" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm text-cyan-300">
+        <main id="page-settings" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow overflow-y-auto">
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
+                <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">تعديل التخطيط وأحجام الغرف 3D</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="md:col-span-2">
+                        <label class="block text-slate-300 mb-1">الشكل:</label>
+                        <select id="layoutDirection" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-cyan-300"><option value="XZ">شبكي (X/Z)</option><option value="X">عرضي (X)</option><option value="Z">طولي (Z)</option></select>
+                    </div>
+                    <div><label class="block text-slate-300 mb-1">عرض الغرفة 1 (X1):</label><input type="number" id="room1Width" value="6" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-cyan-300"></div>
+                    <div><label class="block text-slate-300 mb-1">طول الغرفة 1 (Z1):</label><input type="number" id="room1Length" value="5" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-cyan-300"></div>
+                    <div><label class="block text-slate-300 mb-1">عرض الغرفة 2 (X2):</label><input type="number" id="room2Width" value="8" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-cyan-300"></div>
+                    <div><label class="block text-slate-300 mb-1">طول الغرفة 2 (Z2):</label><input type="number" id="room2Length" value="6" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-cyan-300"></div>
+                </div>
+                <button onclick="updateRoomSetup()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition">تحديث الخريطة</button>
             </div>
-            <button onclick="saveCameraUrl()" class="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold text-sm">حفظ وتوصيل الكاميرا</button>
-        </div>
-    </main>
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4">
+                <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-800 pb-3">إعدادات الكاميرا ورابط البث</h2>
+                <input type="text" id="camUrlInput" value="http://192.168.1.3:8081/video" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3.5 text-cyan-300">
+                <button onclick="saveCameraUrl()" class="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold">حفظ الرابط</button>
+            </div>
+        </main>
 
-    <main id="page-team" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow w-full">
-        <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 text-center space-y-6">
-            <div class="border-b border-slate-800 pb-4 flex flex-col items-center">
-                <img src="https://upload.wikimedia.org/wikipedia/ar/d/d2/%D8%B4%D8%B9%D8%A7%D8%B1_%D8%AC%D8%A7%D9%85%D8%B9%D8%A9_%D9%86%D9%8A%D9%86%D9%88%D9%89.png" 
-                     alt="شعار جامعة نينوى" class="h-20 w-auto mb-3" />
+        <main id="page-team" class="page p-6 max-w-4xl mx-auto space-y-6 flex-grow overflow-y-auto">
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-6 text-center flex flex-col items-center">
+                <img src="https://raw.githubusercontent.com/bwntpn86wr-coderghanim/cctv-radar/main/logo.png" onerror="this.src='https://dummyimage.com/100x100/0284c7/fff.png&text=UON'" alt="Logo" class="h-20 mb-4" />
                 <h2 class="text-2xl font-bold text-cyan-400">جامعة نينوى - كلية الهندسة</h2>
-                <p class="text-sm text-slate-400 mt-1">مشروع تخرج - قسم هندسة الاتصالات</p>
+                <p class="text-sm text-slate-400 mb-6">قسم هندسة الاتصالات</p>
+                <div class="bg-slate-950 p-4 rounded-xl border border-cyan-500/30 max-w-sm mb-6"><p class="text-xs text-cyan-400 mb-1">إشراف</p><p class="text-xl font-bold text-white">إبراهيم</p></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-bold text-cyan-300"><div class="bg-slate-950 p-5 rounded-xl border border-slate-800">غانم فراس</div><div class="bg-slate-950 p-5 rounded-xl border border-slate-800">سما غسان</div><div class="bg-slate-950 p-5 rounded-xl border border-slate-800">إبراهيم غسان</div></div>
             </div>
+        </main>
 
-            <div class="bg-slate-950 p-4 rounded-xl border border-cyan-500/30 max-w-sm mx-auto shadow-md">
-                <p class="text-xs text-cyan-400 font-semibold mb-1">إشراف</p>
-                <p class="text-xl font-bold text-white">إبراهيم</p>
-            </div>
-
-            <div>
-                <h3 class="text-sm font-bold text-slate-400 mb-4">إعداد الطلاب:</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
-                        <p class="text-lg font-bold text-cyan-300">غانم فراس</p>
-                    </div>
-                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
-                        <p class="text-lg font-bold text-cyan-300">سما غسان</p>
-                    </div>
-                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
-                        <p class="text-lg font-bold text-cyan-300">إبراهيم غسان</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <footer class="bg-slate-950 border-t border-slate-900 px-6 py-4 text-center text-xs text-slate-500">
-        جامعة نينوى - قسم هندسة الاتصالات © 2026 - مشروع AegisRadar 360
-    </footer>
+        <footer class="bg-slate-950 border-t border-slate-900 px-6 py-4 text-center text-xs text-slate-500">
+            جامعة نينوى - قسم هندسة الاتصالات © 2026 - مشروع AegisRadar 360
+        </footer>
+    </div>
 
     <script>
+        // 🔐 إعدادات كلمة المرور (تغييرها يتم من هنا)
+        const CORRECT_PASSWORD_HASH = "20042004"; // الرمز الحالي
+        const mainContent = document.getElementById('main-content');
+        const lockScreen = document.getElementById('lock-screen');
+        const passwordInput = document.getElementById('password-input');
+        const errorMsg = document.getElementById('login-error');
+
+        // دالة التحقق من كلمة المرور
+        function checkPassword() {
+            if (passwordInput.value === CORRECT_PASSWORD_HASH) {
+                // دخول ناجح
+                lockScreen.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+                document.body.style.overflow = 'auto'; // تفعيل التمرير
+                initThree(); // تشغيل الـ 3D بعد الدخول
+                errorMsg.classList.add('hidden');
+            } else {
+                // رمز خطأ
+                errorMsg.classList.remove('hidden');
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        // السماح بالدخول عند ضغط Enter
+        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPassword(); });
+
+        // باقي دوال النظام المعتادة (Tabs, Three.js, MQTT...)
         function switchTab(tabId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-' + tabId).classList.add('active');
-            if (tabId === 'dashboard') initThree();
-        }
-
-        function applyStreamUrl(url) {
-            const iframe = document.getElementById('cameraStream');
-            if(url && iframe) {
-                iframe.src = url;
-            }
         }
 
         function saveCameraUrl() {
             const url = document.getElementById('camUrlInput').value;
-            if(url) {
-                applyStreamUrl(url);
-                switchTab('dashboard');
-            }
+            const img = document.getElementById('cameraStream');
+            if(url && img) { img.src = url; switchTab('dashboard'); }
         }
 
         let scene, camera, renderer, humanModels = [], animId = null;
-        let roomConfig = { 
-            count: 2, 
-            width: 6, 
-            length: 5, 
-            dir: 'X', 
-            doorSide: 'front', 
-            windowSide: 'back' 
-        };
+        let roomConfig = { r1W: 6, r1L: 5, r2W: 8, r2L: 6, dir: 'XZ' };
 
         function updateRoomSetup() {
-            roomConfig.count = parseInt(document.getElementById('roomsCount').value) || 2;
-            roomConfig.width = parseFloat(document.getElementById('roomWidth').value) || 6;
-            roomConfig.length = parseFloat(document.getElementById('roomLength').value) || 5;
+            roomConfig.r1W = parseFloat(document.getElementById('room1Width').value) || 6;
+            roomConfig.r1L = parseFloat(document.getElementById('room1Length').value) || 5;
+            roomConfig.r2W = parseFloat(document.getElementById('room2Width').value) || 8;
+            roomConfig.r2L = parseFloat(document.getElementById('room2Length').value) || 6;
             roomConfig.dir = document.getElementById('layoutDirection').value;
-            roomConfig.doorSide = document.getElementById('doorSide').value;
-            roomConfig.windowSide = document.getElementById('windowSide').value;
-            
-            // إيقاف وتفريغ المشهد الحالي تماماً لإتاحة التحديث
             if (animId) cancelAnimationFrame(animId);
             const container = document.getElementById('canvasContainer');
             if (container) container.innerHTML = '<div class="absolute bottom-3 right-3 bg-slate-950/80 p-2.5 text-xs text-slate-300 rounded-lg border border-slate-800 backdrop-blur z-10"><span class="text-purple-400 font-bold">■</span> أبواب | <span class="text-sky-400 font-bold">■</span> نوافذ | <span class="text-slate-400 font-bold">■</span> جدران</div>';
-            renderer = null;
-
-            switchTab('dashboard');
+            renderer = null; switchTab('dashboard'); initThree();
         }
 
         function createHumanFigure(colorHex) {
-            const group = new THREE.Group();
-            const mat = new THREE.MeshPhongMaterial({ color: colorHex });
-
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), mat);
-            head.position.y = 0.95;
-            group.add(head);
-
-            const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.08, 0.45, 16), mat);
-            torso.position.y = 0.65;
-            group.add(torso);
-
+            const group = new THREE.Group(); const mat = new THREE.MeshPhongMaterial({ color: colorHex });
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), mat); head.position.y = 0.95; group.add(head);
+            const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.08, 0.45, 16), mat); torso.position.y = 0.65; group.add(torso);
             const legGeo = new THREE.CylinderGeometry(0.04, 0.03, 0.45, 12);
-            const leftLeg = new THREE.Mesh(legGeo, mat);
-            leftLeg.position.set(-0.06, 0.22, 0);
-            const rightLeg = new THREE.Mesh(legGeo, mat);
-            rightLeg.position.set(0.06, 0.22, 0);
-            group.add(leftLeg, rightLeg);
-
-            group.visible = false;
-            return group;
+            const leftLeg = new THREE.Mesh(legGeo, mat); leftLeg.position.set(-0.06, 0.22, 0); group.add(leftLeg);
+            const rightLeg = new THREE.Mesh(legGeo, mat); rightLeg.position.set(0.06, 0.22, 0); group.add(rightLeg);
+            group.visible = false; return group;
         }
 
         function initThree() {
             const container = document.getElementById('canvasContainer');
-            if(renderer) return;
+            if(renderer || lockScreen.classList.contains('hidden') === false) return; // منع التشغيل خلف شاشة القفل
 
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x070a12);
-
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x070a12);
             camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
-
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-            scene.add(ambientLight);
-
-            const dirLight = new THREE.DirectionalLight(0x00f3ff, 0.6);
-            dirLight.position.set(5, 10, 7);
-            scene.add(dirLight);
-
-            const isX = roomConfig.dir === 'X';
-            const totalX = isX ? roomConfig.count * roomConfig.width : roomConfig.width;
-            const totalZ = isX ? roomConfig.length : roomConfig.count * roomConfig.length;
-
-            const floorGeo = new THREE.PlaneGeometry(totalX + 4, totalZ + 4);
-            const floorMat = new THREE.MeshBasicMaterial({ color: 0x0f172a, side: THREE.DoubleSide });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = Math.PI / 2;
-            scene.add(floor);
-
-            const grid = new THREE.GridHelper(Math.max(totalX, totalZ) + 6, 14, 0x00f3ff, 0x1e293b);
-            grid.position.y = 0.01;
-            scene.add(grid);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8)); const dirLight = new THREE.DirectionalLight(0x00f3ff, 0.6); dirLight.position.set(5, 10, 7); scene.add(dirLight);
 
             const wallMat = new THREE.MeshPhongMaterial({ color: 0x1e293b, transparent: true, opacity: 0.75 });
             const doorMat = new THREE.MeshPhongMaterial({ color: 0x8b5cf6 });
             const windowMat = new THREE.MeshPhongMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 });
 
-            function addBox(w, h, d, x, y, z, mat) {
-                const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-                mesh.position.set(x, y, z);
-                scene.add(mesh);
+            function addBox(w, h, d, x, y, z, mat) { const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); mesh.position.set(x, y, z); scene.add(mesh); }
+            function buildSingleRoom(width, length, rx, rz) {
+                addBox(width, 2, 0.1, rx, 1, rz - length/2, wallMat); addBox(width, 2, 0.1, rx, 1, rz + length/2, wallMat); 
+                addBox(0.1, 2, length, rx - width/2, 1, rz, wallMat); addBox(0.1, 2, length, rx + width/2, 1, rz, wallMat); 
+                addBox(1.2, 1.8, 0.05, rx, 0.9, rz + length/2, doorMat); // Default Door
+                addBox(1.4, 0.8, 0.05, rx, 1.2, rz - length/2, windowMat); // Default Window
             }
 
-            let startX = isX ? -((roomConfig.count - 1) * roomConfig.width) / 2 : 0;
-            let startZ = !isX ? -((roomConfig.count - 1) * roomConfig.length) / 2 : 0;
+            let r1 = { w: roomConfig.r1W, l: roomConfig.r1L, x: 0, z: 0 }; let r2 = { w: roomConfig.r2W, l: roomConfig.r2L, x: 0, z: 0 };
+            if (roomConfig.dir === 'X') { r1.x = -(r1.w / 2); r2.x = r2.w / 2; } 
+            else if (roomConfig.dir === 'Z') { r1.z = -(r1.l / 2); r2.z = r2.l / 2; } 
+            else if (roomConfig.dir === 'XZ') { r1.x = -(r1.w / 2); r1.z = -(r1.l / 2); r2.x = (r2.w / 2);  r2.z = (r2.l / 2); }
+            buildSingleRoom(r1.w, r1.l, r1.x, r1.z); buildSingleRoom(r2.w, r2.l, r2.x, r2.z);
 
-            for(let i = 0; i < roomConfig.count; i++) {
-                let rx = isX ? startX + (i * roomConfig.width) : 0;
-                let rz = !isX ? startZ + (i * roomConfig.length) : 0;
-
-                // Walls Construction
-                addBox(roomConfig.width, 2, 0.1, rx, 1, rz - roomConfig.length/2, wallMat); // Back Wall
-                addBox(roomConfig.width, 2, 0.1, rx, 1, rz + roomConfig.length/2, wallMat); // Front Wall
-                addBox(0.1, 2, roomConfig.length, rx - roomConfig.width/2, 1, rz, wallMat); // Left Wall
-                addBox(0.1, 2, roomConfig.length, rx + roomConfig.width/2, 1, rz, wallMat); // Right Wall
-
-                // Custom Door Placement
-                let dPos = { x: rx, z: rz, w: 1.2, d: 0.05 };
-                if(roomConfig.doorSide === 'front') dPos.z += roomConfig.length/2;
-                else if(roomConfig.doorSide === 'back') dPos.z -= roomConfig.length/2;
-                else if(roomConfig.doorSide === 'left') { dPos.x -= roomConfig.width/2; dPos.w = 0.05; dPos.d = 1.2; }
-                else if(roomConfig.doorSide === 'right') { dPos.x += roomConfig.width/2; dPos.w = 0.05; dPos.d = 1.2; }
-                addBox(dPos.w, 1.8, dPos.d, dPos.x, 0.9, dPos.z, doorMat);
-
-                // Custom Window Placement
-                let wPos = { x: rx, z: rz, w: 1.4, d: 0.05 };
-                if(roomConfig.windowSide === 'front') wPos.z += roomConfig.length/2;
-                else if(roomConfig.windowSide === 'back') wPos.z -= roomConfig.length/2;
-                else if(roomConfig.windowSide === 'left') { wPos.x -= roomConfig.width/2; wPos.w = 0.05; wPos.d = 1.4; }
-                else if(roomConfig.windowSide === 'right') { wPos.x += roomConfig.width/2; wPos.w = 0.05; wPos.d = 1.4; }
-                addBox(wPos.w, 0.8, wPos.d, wPos.x, 1.2, wPos.z, windowMat);
-            }
-
-            humanModels = [];
-            const colors = [0x00ff00, 0x00ffff, 0xffff00, 0xff00ff, 0xffa500, 0xff4444];
-            for(let i = 0; i < 6; i++) {
-                const human = createHumanFigure(colors[i]);
-                scene.add(human);
-                humanModels.push(human);
-            }
-
-            camera.position.set(0, Math.max(totalX, totalZ) * 1.2, totalZ * 1.2);
-            camera.lookAt(0, 0, 0);
-
-            function animate() {
-                animId = requestAnimationFrame(animate);
-                renderer.render(scene, camera);
-            }
-            animate();
+            const maxDim = Math.max(r1.w + r2.w, r1.l + r2.l) + 6;
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(maxDim, maxDim), new THREE.MeshBasicMaterial({ color: 0x0f172a, side: THREE.DoubleSide })); floor.rotation.x = Math.PI / 2; scene.add(floor);
+            const grid = new THREE.GridHelper(maxDim, 16, 0x00f3ff, 0x1e293b); grid.position.y = 0.01; scene.add(grid);
+            humanModels = []; const colors = [0x00ff00, 0x00ffff, 0xffff00, 0xff00ff, 0xffa500, 0xff4444];
+            for(let i = 0; i < 6; i++) { const human = createHumanFigure(colors[i]); scene.add(human); humanModels.push(human); }
+            camera.position.set(0, maxDim * 1.1, maxDim * 1.1); camera.lookAt(0, 0, 0);
+            function animate() { animId = requestAnimationFrame(animate); renderer.render(scene, camera); } animate();
         }
 
-        // MQTT and Data Processing
         const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
-        client.on('connect', () => {
-            document.getElementById('status-mqtt').innerText = "متصل بنجاح";
-            document.getElementById('status-mqtt').className = "text-base font-bold text-emerald-400";
-            client.subscribe('aegisradar/data/ghanim');
-        });
-
+        client.on('connect', () => { document.getElementById('status-mqtt').innerText = "متصل"; document.getElementById('status-mqtt').className = "text-base font-bold text-emerald-400"; client.subscribe('aegisradar/data/ghanim'); });
         client.on('message', (topic, message) => {
             try {
-                const data = JSON.parse(message.toString());
-                if(data.targets) {
-                    let activeCount = 0;
-                    let detectedInfo = null;
-
-                    data.targets.forEach((t, i) => {
-                        if(i < 6 && humanModels[i]) {
-                            if(t.y > 0) {
-                                humanModels[i].position.set(t.x / 1000, 0, -(t.y / 1000));
-                                humanModels[i].visible = true;
-                                activeCount++;
-
-                                if(!detectedInfo) {
-                                    detectedInfo = { id: i + 1, x: (t.x / 1000).toFixed(2), y: (t.y / 1000).toFixed(2) };
-                                }
-                            } else {
-                                humanModels[i].visible = false;
-                            }
-                        }
-                    });
-
-                    document.getElementById('status-targets').innerText = activeCount + " / 6 أهداف 3D";
-                    
-                    if(detectedInfo) {
-                        const now = new Date();
-                        document.getElementById('target-id').innerText = "شخص (Target #" + detectedInfo.id + ")";
-                        document.getElementById('target-pos').innerText = "X: " + detectedInfo.x + "m | Y: " + detectedInfo.y + "m";
-                        document.getElementById('detection-time').innerText = now.toLocaleTimeString('ar-IQ');
-                    } else {
-                        document.getElementById('target-id').innerText = "لا يوجد حركة";
-                        document.getElementById('target-pos').innerText = "N/A";
+                const data = JSON.parse(message.toString()); if(!data.targets) return;
+                let activeCount = 0; let detectedInfo = null;
+                data.targets.forEach((t, i) => {
+                    if(i < 6 && humanModels[i]) {
+                        if(t.y > 0) { humanModels[i].position.set(t.x / 1000, 0, -(t.y / 1000)); humanModels[i].visible = true; activeCount++; if(!detectedInfo) detectedInfo = { id: i + 1, x: (t.x / 1000).toFixed(2), y: (t.y / 1000).toFixed(2) }; }
+                        else { humanModels[i].visible = false; }
                     }
-                }
+                });
+                document.getElementById('status-targets').innerText = activeCount + " / 6 أهداف 3D";
+                if(detectedInfo) { const now = new Date(); document.getElementById('target-id').innerText = "Target #" + detectedInfo.id; document.getElementById('target-pos').innerText = "X: " + detectedInfo.x + "m | Y: " + detectedInfo.y + "m"; document.getElementById('detection-time').innerText = now.toLocaleTimeString('ar-IQ'); }
+                else { document.getElementById('target-id').innerText = "لا يوجد حركة"; document.getElementById('target-pos').innerText = "N/A"; }
             } catch(e) {}
         });
-
-        window.onload = function() {
-            initThree();
-        };
+        // لا يتم تشغيل الثلاثي الأبعاد هنا، بل بعد نجاح كلمة المرور
     </script>
 </body>
 </html>
