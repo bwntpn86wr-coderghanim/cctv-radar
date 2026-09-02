@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AegisRadar 360 - جامعة نينوى</title>
 
-  <!-- المكتبات البرمجية -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -199,7 +198,6 @@
 </head>
 <body>
 
-  <!-- 1️⃣ المرحلة الأولى: التعريف بالمشروع -->
   <div id="step-1" class="step-screen">
     <div class="intro-card">
       <h1>🛡️ AegisRadar 360</h1>
@@ -223,7 +221,6 @@
     </div>
   </div>
 
-  <!-- 2️⃣ المرحلة الثانية: رمز الدخول -->
   <div id="step-2" class="step-screen hidden">
     <div class="pass-box">
       <h2 style="color: #00adb5; margin-bottom: 10px;">🔒 رمز حماية النظام</h2>
@@ -234,11 +231,9 @@
     </div>
   </div>
 
-  <!-- 3️⃣ المرحلة الثالثة: الواجهة الرئيسية -->
   <div id="main-app" class="hidden">
     <div id="sidebar">
       
-      <!-- اختيار والتحويل بين الخرائط -->
       <div class="card">
         <h3>🗺️ التحويل بين الخرائط المحفوظة</h3>
         <select id="mapSelector" onchange="switchMap()">
@@ -248,13 +243,11 @@
         <button onclick="clearCurrentMap()" style="background: #ff4d4d; margin-top: 4px;">مسح الخريطة الحالية 🗑️</button>
       </div>
 
-      <!-- رصد حركة الرادار اللحظية الحقيقية -->
       <div class="card">
         <h3>📡 تتبع حركة الرادار الحية (LD2450)</h3>
         <div id="targets-container" class="targets-list"></div>
       </div>
 
-      <!-- إعداد كاميرا الآيفون المعدلة لسفاري -->
       <div class="card">
         <h3>1. الكاميرا والوجوه (Safari iOS) 🎥</h3>
         <input type="text" id="camUrl" placeholder="رابط IP الخاص بالكاميرا" value="http://192.168.1.3:8081">
@@ -271,7 +264,6 @@
         </div>
       </div>
 
-      <!-- إضافة وحفظ الغرف والجدران -->
       <div class="card">
         <h3>2. إعدادات الغرف وحفظ المخطط 🧱</h3>
         <input type="text" id="roomName" placeholder="اسم الغرفة" />
@@ -289,7 +281,6 @@
 
     </div>
 
-    <!-- العرض 3D -->
     <div id="canvas-container"></div>
   </div>
 
@@ -376,11 +367,11 @@
     let activeTargets = [];
 
     function initMQTT() {
-      // تعديل رابط الاتصال إلى ws:// والمنفذ 8000 ليتوافق مع متصفحات الويب
+      // استخدام بروتوكول ws المتوافق مع المتصفح والمنفذ 8000
       const mqttClient = mqtt.connect('ws://broker.hivemq.com:8000/mqtt');
 
       mqttClient.on('connect', () => {
-        console.log("تم الاتصال بـ HiveMQ MQTT بنجاح!");
+        console.log("نجاح في HiveMQ MQTT تم الاتصال بـ");
         mqttClient.subscribe('aegis/radar/targets');
       });
 
@@ -401,25 +392,34 @@
     }
 
     function updateLiveTarget(data) {
-      let existingIndex = activeTargets.findIndex(t => t.radar === data.radar);
+      // التحقق من وجود أبعاد حقيقية وإلغاء حزم البايتات غير المكتملة
+      if (data.x === undefined && data.y === undefined) return;
+
+      const radarNum = parseInt(data.radar) || 1;
       
-      // تحويل الميليمتر القادم من ESP32 إلى أمتار وقراءة y المباشر
+      // تحويل الميليمتر القادم من ESP32 إلى أمتار للعرض ثلاثي الأبعاد
       const rawX = (parseFloat(data.x) || 0) / 1000.0;
       const rawZ = (parseFloat(data.y) || 0) / 1000.0;
 
       const parsedData = {
-        radar: data.radar || 1,
+        radar: radarNum,
         x: rawX.toFixed(2),
         z: rawZ.toFixed(2),
         speed: data.speed || 0,
-        state: "متحرك"
+        lastUpdate: Date.now()
       };
+
+      let existingIndex = activeTargets.findIndex(t => t.radar === radarNum);
 
       if (existingIndex !== -1) {
         activeTargets[existingIndex] = parsedData;
       } else {
         activeTargets.push(parsedData);
       }
+
+      // تنظيف الأهداف القديمة التي توقفت عن البث لأكثر من 3 ثوانٍ
+      const now = Date.now();
+      activeTargets = activeTargets.filter(t => (now - t.lastUpdate) < 3000);
 
       renderRealtime3D();
       renderTargetsUI();
