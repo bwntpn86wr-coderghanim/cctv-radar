@@ -134,19 +134,25 @@
 
     .card h3 { font-size: 14px; color: #00adb5; margin-bottom: 10px; }
 
+    /* تعديل حاوية الفيديو الخاصة بمتصفح سفاري آيفون */
     .cam-wrapper {
       position: relative;
       width: 100%;
-      height: 180px;
+      height: 200px;
       background: #000;
       border-radius: 8px;
       overflow: hidden;
+      border: 1px solid #00adb5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     #camera-stream {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      -webkit-user-select: none;
     }
 
     #face-box {
@@ -156,24 +162,10 @@
       border-radius: 4px;
       display: none;
       pointer-events: none;
+      z-index: 5;
     }
 
     #canvas-container { flex-grow: 1; height: 100%; }
-
-    #gallery {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-top: 8px;
-    }
-
-    .gallery-img {
-      width: 55px;
-      height: 55px;
-      border-radius: 6px;
-      object-fit: cover;
-      border: 1px solid #00adb5;
-    }
 
     .targets-list {
       display: flex;
@@ -194,9 +186,8 @@
       border-right: 4px solid #aaa;
     }
 
-    .cat-guest { border-color: #00fff5; }
-    .cat-family { border-color: #4eef90; }
-    .cat-unknown { border-color: #ff4d4d; }
+    .cat-radar1 { border-color: #00fff5; }
+    .cat-radar2 { border-color: #4eef90; }
 
     .badge {
       padding: 2px 6px;
@@ -204,9 +195,7 @@
       font-size: 10px;
       font-weight: bold;
     }
-    .badge-standing { background: #00adb5; color: #fff; }
-    .badge-sitting { background: #f39c12; color: #fff; }
-    .badge-sleeping { background: #9b59b6; color: #fff; }
+    .badge-live { background: #ff4d4d; color: #fff; }
   </style>
 </head>
 <body>
@@ -218,16 +207,7 @@
       <h2>نظام أمني متكامل للرصد ثلاثي الأبعاد وإدارة المنازل الذكية</h2>
       
       <div class="project-desc">
-    
-نظام أمني ذكي للمراقبة والكشف والاستجابة للطوارئ
-
-يهدف المشروع إلى تطوير نظام أمني ذكي متكامل يعتمد على دمج تقنية الرادار المليمترية (mmWave Radar) مع الرؤية الحاسوبية والكاميرا لتوفير مراقبة ذكية ودقيقة للأشخاص مع الحفاظ على الخصوصية.
-
-يتمكن النظام من اكتشاف الأشخاص وتتبع مواقعهم وحركتهم في الوقت الحقيقي، مما يجعله مناسباً للاستخدام في البيئات الحساسة مثل المصارف والمؤسسات الأمنية، خصوصاً أثناء حالات الطوارئ كـ الحرائق وعمليات السطو والاقتحام، حيث يساعد على تحديد أماكن الأشخاص داخل المبنى وتوجيه فرق الإنقاذ والأمن إليهم بسرعة ودقة.
-
-كما يتضمن المشروع نظاماً مخصصاً لمراقبة كبار السن والأشخاص الذين يحتاجون إلى رعاية، بالاعتماد على الرادار دون الحاجة إلى تشغيل الكاميرا بشكل مستمر، مما يوفر مستوى أعلى من الخصوصية والأمان. وفي حال اكتشاف سقوط الشخص أو توقف حركته لفترة غير طبيعية، يقوم النظام بتحليل الحالة وإرسال إنذار فوري إلى الجهة المسؤولة لاتخاذ الإجراءات المناسبة.
-
-ويجمع المشروع بين الرادار المليمترية، الكاميرا، الذكاء الاصطناعي، تتبع الأشخاص، اكتشاف السقوط، وحماية الخصوصية، بهدف إنشاء منظومة أمنية ذكية قادرة على المراقبة والاستجابة للحالات الطارئة بصورة أكثر سرعة وفعالية.
+        نظام أمني ذكي للمراقبة والكشف والاستجابة للطوارئ. يهدف المشروع إلى تطوير نظام أمني ذكي متكامل يعتمد على دمج تقنية الرادار المليمترية (mmWave Radar LD2450) مع الرؤية الحاسوبية والكاميرا لتوفير مراقبة ذكية ودقيقة للأشخاص مع الحفاظ على الخصوصية.
       </div>
 
       <div class="team-box">
@@ -269,33 +249,31 @@
         <button onclick="clearCurrentMap()" style="background: #ff4d4d; margin-top: 4px;">مسح الخريطة الحالية 🗑️</button>
       </div>
 
-      <!-- رصد الرادار لأجسام الأشخاص -->
+      <!-- رصد حركة الرادار اللحظية الحقيقية -->
       <div class="card">
-        <h3>📡 تتبع حركة الرادار اللحظية</h3>
-        <button onclick="simulateRadarMotion()" style="background: #282c3d; border: 1px solid #00adb5; margin-bottom: 10px;">محاكاة التقاط حركة جديدة ⚡</button>
+        <h3>📡 تتبع حركة الرادار الحية (LD2450)</h3>
         <div id="targets-container" class="targets-list"></div>
       </div>
 
-      <!-- إعداد كاميرا هاتفك الآيفون -->
+      <!-- إعداد كاميرا الآيفون المعدلة لسفاري -->
       <div class="card">
-        <h3>1. الكاميرا والوجوه (آيفون) 🎥</h3>
-        <input type="text" id="camUrl" placeholder="رابط Stream الكاميرا" value="http://192.168.1.3:8081">
-        <button onclick="updateCamUrl()">تحديث رابط الكاميرا 🔄</button>
+        <h3>1. الكاميرا والوجوه (Safari iOS) 🎥</h3>
+        <input type="text" id="camUrl" placeholder="رابط IP الخاص بالكاميرا" value="http://192.168.1.3:8081">
+        <button onclick="updateCamUrl()">تحديث البث 🔄</button>
         
         <div class="cam-wrapper" style="margin-top: 10px;">
-          <img id="camera-stream" crossorigin="anonymous" src="http://192.168.1.3:8081" onerror="this.src='https://via.placeholder.com/300x160?text=Camera+Offline';" />
+          <!-- استخدام img بدلاً من iframe لدعم متصفح سفاري دون مشاكل -->
+          <img id="camera-stream" src="http://192.168.1.3:8081" alt="جاري تحميل البث..." onerror="handleCamError(this)">
           <div id="face-box"></div>
         </div>
 
         <div style="display: flex; gap: 5px; margin-top: 8px;">
           <button onclick="toggleFaceBox()">تحديد الوجه 🔲</button>
-          <button onclick="captureFace()" style="background: #4eef90; color: #000;">سحب صورة 📸</button>
+          <button onclick="openCamDirect()" style="background: #282c3d; border: 1px solid #00adb5;">فتح البث مباشرة ↗️</button>
         </div>
-
-        <div id="gallery"></div>
       </div>
 
-      <!-- إضافة وحفظ الغرف والجدران تلقائياً -->
+      <!-- إضافة وحفظ الغرف والجدران -->
       <div class="card">
         <h3>2. إعدادات الغرف وحفظ المخطط 🧱</h3>
         <input type="text" id="roomName" placeholder="اسم الغرفة" />
@@ -330,13 +308,26 @@
         document.getElementById('step-2').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
         init3D();
+        initMQTT();
       } else {
         document.getElementById('pass-error').style.display = 'block';
       }
     }
 
+    // دوال تشغيل كاميرا الآيفون المخصصة لمتصفح Safari
     function updateCamUrl() {
-      document.getElementById('camera-stream').src = document.getElementById('camUrl').value;
+      const url = document.getElementById('camUrl').value;
+      const img = document.getElementById('camera-stream');
+      img.src = url;
+    }
+
+    function openCamDirect() {
+      const url = document.getElementById('camUrl').value;
+      window.open(url, '_blank');
+    }
+
+    function handleCamError(img) {
+      console.log("تنبيه: تعذر تحميل بث الصورة عبر HTTP المباشر في سفاري.");
     }
 
     let isBoxVisible = false;
@@ -350,20 +341,6 @@
       } else {
         box.style.display = 'none';
       }
-    }
-
-    function captureFace() {
-      const img = document.getElementById('camera-stream');
-      const canvas = document.createElement('canvas');
-      canvas.width = 150; canvas.height = 150;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, 150, 150);
-
-      const gallery = document.getElementById('gallery');
-      const newImg = document.createElement('img');
-      newImg.src = canvas.toDataURL('image/jpeg');
-      newImg.className = 'gallery-img';
-      gallery.prepend(newImg);
     }
 
     // --- إدارة الخرائط والتخزين المحلي (LocalStorage) ---
@@ -398,85 +375,93 @@
       renderCurrentMap();
     }
 
-    // --- أقسام الرادار والـ 3D ---
-    const personCategories = [
-      { id: 1, name: "شخص 1 (ضيف)", cat: "cat-guest", color: 0x00fff5 },
-      { id: 2, name: "شخص 2 (ضيف)", cat: "cat-guest", color: 0x00fff5 },
-      { id: 3, name: "شخص 3 (عائلة)", cat: "cat-family", color: 0x4eef90 },
-      { id: 4, name: "شخص 4 (عائلة)", cat: "cat-family", color: 0x4eef90 },
-      { id: 5, name: "شخص 5 (تنبيه أمني)", cat: "cat-unknown", color: 0xff4d4d },
-      { id: 6, name: "شخص 6 (تنبيه أمني)", cat: "cat-unknown", color: 0xff4d4d }
-    ];
-
+    // --- استقبال معطيات الرادار الحية (LD2450 عبر MQTT) ---
     let activeTargets = [];
+
+    function initMQTT() {
+      const mqttClient = mqtt.connect('wss://broker.hivemq.com:8004/mqtt');
+
+      mqttClient.on('connect', () => {
+        mqttClient.subscribe('aegis/radar/targets');
+      });
+
+      mqttClient.on('message', (topic, message) => {
+        if (topic === 'aegis/radar/targets') {
+          try {
+            const data = JSON.parse(message.toString());
+            updateLiveTarget(data);
+          } catch(e) {
+            console.error("خطأ في قراءة بيانات MQTT", e);
+          }
+        }
+      });
+    }
+
+    function updateLiveTarget(data) {
+      let existingIndex = activeTargets.findIndex(t => t.radar === data.radar);
+      
+      const parsedData = {
+        radar: data.radar || 1,
+        x: parseFloat(data.x).toFixed(2),
+        z: parseFloat(data.z).toFixed(2),
+        speed: data.speed || 0,
+        state: "واقف"
+      };
+
+      if (existingIndex !== -1) {
+        activeTargets[existingIndex] = parsedData;
+      } else {
+        activeTargets.push(parsedData);
+      }
+
+      renderRealtime3D();
+      renderTargetsUI();
+    }
 
     function renderTargetsUI() {
       const container = document.getElementById('targets-container');
       container.innerHTML = '';
 
       if (activeTargets.length === 0) {
-        container.innerHTML = '<div style="color: #888; font-size: 11px;">في انتظار التلقاط حركات جديدة عبر الرادار...</div>';
+        container.innerHTML = '<div style="color: #888; font-size: 11px;">في انتظار التلقاط حركة حقيقية من حساسات LD2450...</div>';
         return;
       }
 
       activeTargets.forEach((t) => {
-        const catInfo = personCategories[t.id - 1];
-        let badgeClass = "badge-standing";
-        if (t.state === "جالس") badgeClass = "badge-sitting";
-        if (t.state === "نائم") badgeClass = "badge-sleeping";
-
         const div = document.createElement('div');
-        div.className = `target-card ${catInfo.cat}`;
+        div.className = `target-card ${t.radar === 1 ? 'cat-radar1' : 'cat-radar2'}`;
         div.innerHTML = `
           <div>
-            <b>${catInfo.name}</b>
-            <div style="color: #aaa; font-size: 10px;">السرعة: ${t.speed} m/s</div>
+            <b>رادار ${t.radar} - تم التقاط هدف</b>
+            <div style="color: #aaa; font-size: 10px;">الإحداثيات الحية: X: ${t.x}m | Z: ${t.z}m</div>
+            <div style="color: #00fff5; font-size: 10px;">السرعة: ${t.speed} cm/s</div>
           </div>
-          <span class="badge ${badgeClass}">${t.state}</span>
+          <span class="badge badge-live">مباشر 🔴</span>
         `;
         container.appendChild(div);
       });
     }
 
-    function createHumanModel(colorHex, state) {
+    // --- أقسام الرادار والـ 3D ---
+    function createHumanModel(colorHex) {
       const group = new THREE.Group();
       const material = new THREE.MeshLambertMaterial({ color: colorHex });
 
       const headGeom = new THREE.SphereGeometry(0.2, 16, 16);
       const head = new THREE.Mesh(headGeom, material);
+      head.position.set(0, 1.4, 0);
 
       const torsoGeom = new THREE.BoxGeometry(0.4, 0.6, 0.25);
       const torso = new THREE.Mesh(torsoGeom, material);
+      torso.position.set(0, 0.9, 0);
 
-      if (state === "واقف") {
-        head.position.set(0, 1.4, 0);
-        torso.position.set(0, 0.9, 0);
-        const legGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.6);
-        const legL = new THREE.Mesh(legGeom, material);
-        legL.position.set(-0.12, 0.3, 0);
-        const legR = new THREE.Mesh(legGeom, material);
-        legR.position.set(0.12, 0.3, 0);
-        group.add(head, torso, legL, legR);
-      } 
-      else if (state === "جالس") {
-        head.position.set(0, 0.9, 0);
-        torso.position.set(0, 0.5, 0);
-        const legGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.4);
-        const legL = new THREE.Mesh(legGeom, material);
-        legL.rotation.x = Math.PI / 2;
-        legL.position.set(-0.12, 0.2, 0.2);
-        const legR = new THREE.Mesh(legGeom, material);
-        legR.rotation.x = Math.PI / 2;
-        legR.position.set(0.12, 0.2, 0.2);
-        group.add(head, torso, legL, legR);
-      } 
-      else {
-        group.rotation.z = Math.PI / 2;
-        head.position.set(0, 0.2, 0);
-        torso.position.set(-0.5, 0.2, 0);
-        group.add(head, torso);
-      }
+      const legGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.6);
+      const legL = new THREE.Mesh(legGeom, material);
+      legL.position.set(-0.12, 0.3, 0);
+      const legR = new THREE.Mesh(legGeom, material);
+      legR.position.set(0.12, 0.3, 0);
 
+      group.add(head, torso, legL, legR);
       return group;
     }
 
@@ -549,36 +534,17 @@
       renderCurrentMap();
     }
 
-    function simulateRadarMotion() {
+    function renderRealtime3D() {
       while(targetMeshesGroup.children.length > 0){ 
         targetMeshesGroup.remove(targetMeshesGroup.children[0]); 
       }
 
-      const count = Math.floor(Math.random() * 3) + 1;
-      activeTargets = [];
-
-      for (let i = 0; i < count; i++) {
-        const id = i + 1;
-        const states = ["واقف", "جالس", "نائم"];
-        const selectedState = states[Math.floor(Math.random() * states.length)];
-        const speed = (Math.random() * 1.5).toFixed(1);
-        const posX = (Math.random() * 6 - 3).toFixed(1);
-        const posZ = (Math.random() * 6 - 3).toFixed(1);
-
-        activeTargets.push({
-          id: id,
-          state: selectedState,
-          speed: speed,
-          x: posX,
-          z: posZ
-        });
-
-        const humanModel = createHumanModel(personCategories[id - 1].color, selectedState);
-        humanModel.position.set(parseFloat(posX), 0, parseFloat(posZ));
+      activeTargets.forEach(t => {
+        const color = t.radar === 1 ? 0x00fff5 : 0x4eef90;
+        const humanModel = createHumanModel(color);
+        humanModel.position.set(parseFloat(t.x), 0, parseFloat(t.z));
         targetMeshesGroup.add(humanModel);
-      }
-
-      renderTargetsUI();
+      });
     }
   </script>
 </body>
