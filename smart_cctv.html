@@ -367,8 +367,8 @@
     let activeTargets = [];
 
     function initMQTT() {
-      // استخدام بروتوكول ws المتوافق مع المتصفح والمنفذ 8000
-      const mqttClient = mqtt.connect('ws://broker.hivemq.com:8000/mqtt');
+      // استخدام بروتوكول wss المتوافق مع المتصفح والمذ80
+      const mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
 
       mqttClient.on('connect', () => {
         console.log("نجاح في HiveMQ MQTT تم الاتصال بـ");
