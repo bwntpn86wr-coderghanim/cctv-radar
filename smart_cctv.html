@@ -315,7 +315,7 @@
     }
 
     function handleCamError(img) {
-      console.log("تنبيه: تعذر تحميل بث الصورة عبر HTTP المباشر في سفاري.");
+      console.log("تنبيه: تعذر تحميل بث الصورة عبر HTTP المباشر في HTTPS.");
     }
 
     let isBoxVisible = false;
@@ -367,11 +367,10 @@
     let activeTargets = [];
 
     function initMQTT() {
-      // استخدام بروتوكول wss المتوافق مع المتصفح والمذ80
       const mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
 
       mqttClient.on('connect', () => {
-        console.log("نجاح في HiveMQ MQTT تم الاتصال بـ");
+        console.log("تم الاتصال بـ HiveMQ MQTT بنجاح!");
         mqttClient.subscribe('aegis/radar/targets');
       });
 
@@ -383,7 +382,7 @@
         if (topic === 'aegis/radar/targets') {
           try {
             const data = JSON.parse(message.toString());
-            updateLiveTarget(data);
+            processIncomingRadarData(data);
           } catch(e) {
             console.error("خطأ في قراءة بيانات JSON", e);
           }
@@ -391,15 +390,32 @@
       });
     }
 
-    function updateLiveTarget(data) {
-      // التحقق من وجود أبعاد حقيقية وإلغاء حزم البايتات غير المكتملة
-      if (data.x === undefined && data.y === undefined) return;
+    function processIncomingRadarData(data) {
+      // معالجة البيانات سواء كانت مصفوفة أهداف أو هدف مفرد
+      if (Array.isArray(data)) {
+        data.forEach(item => updateLiveTarget(item));
+      } else if (data.targets && Array.isArray(data.targets)) {
+        data.targets.forEach(item => updateLiveTarget(item));
+      } else {
+        updateLiveTarget(data);
+      }
+    }
 
+    function updateLiveTarget(data) {
       const radarNum = parseInt(data.radar) || 1;
       
+      // التأكد من استخراج إحداثيات مقبولة
+      let posX = data.x !== undefined ? data.x : (data.targetX || null);
+      let posZ = data.y !== undefined ? data.y : (data.targetY || null);
+
+      // في حال وصول بيانات سداسية عشرية مثل {"bytes": "fc"} بدون X و Y
+      if (posX === null || posZ === null) {
+        return; 
+      }
+
       // تحويل الميليمتر القادم من ESP32 إلى أمتار للعرض ثلاثي الأبعاد
-      const rawX = (parseFloat(data.x) || 0) / 1000.0;
-      const rawZ = (parseFloat(data.y) || 0) / 1000.0;
+      const rawX = parseFloat(posX) / 1000.0;
+      const rawZ = parseFloat(posZ) / 1000.0;
 
       const parsedData = {
         radar: radarNum,
@@ -417,7 +433,7 @@
         activeTargets.push(parsedData);
       }
 
-      // تنظيف الأهداف القديمة التي توقفت عن البث لأكثر من 3 ثوانٍ
+      // تنظيف الأهداف القديمة بعد 3 ثوانٍ
       const now = Date.now();
       activeTargets = activeTargets.filter(t => (now - t.lastUpdate) < 3000);
 
@@ -502,6 +518,12 @@
       loadSavedMaps();
       renderCurrentMap();
       renderTargetsUI();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
 
       function animate() {
         requestAnimationFrame(animate);
