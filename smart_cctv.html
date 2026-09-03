@@ -3,17 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>AegisRadar 360 - جامعة نينوى</title>
+  <title>AegisRadar 360 AI - جامعة نينوى</title>
 
+  <!-- Three.js & MQTT -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
+  <!-- MediaPipe AI Face Detection -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-detection"></script>
+
   <style>
     * {
       box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
@@ -21,8 +27,7 @@
       background-color: #0f111a;
       color: #fff;
       overflow-x: hidden;
-      width: 100vw;
-      height: 100vh;
+      width: 100vw; height: 100vh;
     }
 
     .step-screen {
@@ -150,20 +155,20 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      -webkit-user-select: none;
     }
 
     #face-box {
       position: absolute;
       border: 2px solid #00fff5;
-      box-shadow: 0 0 8px #00fff5;
+      box-shadow: 0 0 10px #00fff5;
       border-radius: 4px;
       display: none;
       pointer-events: none;
       z-index: 5;
+      transition: all 0.1s ease-out;
     }
 
-    #canvas-container { flex-grow: 1; height: 100%; }
+    #canvas-container { flex-grow: 1; height: 100%; position: relative; }
 
     .targets-list {
       display: flex;
@@ -184,8 +189,9 @@
       border-right: 4px solid #aaa;
     }
 
-    .cat-radar1 { border-color: #00fff5; }
-    .cat-radar2 { border-color: #4eef90; }
+    .cat-target1 { border-color: #00fff5; }
+    .cat-target2 { border-color: #4eef90; }
+    .cat-target3 { border-color: #ffaa00; }
 
     .badge {
       padding: 2px 6px;
@@ -194,17 +200,40 @@
       font-weight: bold;
     }
     .badge-live { background: #ff4d4d; color: #fff; }
+
+    /* سجل الأحداث المباشر */
+    .log-box {
+      background: #0d0e15;
+      border: 1px solid #282c3d;
+      border-radius: 8px;
+      height: 120px;
+      overflow-y: auto;
+      padding: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #00fff5;
+    }
+    .log-item { margin-bottom: 4px; border-bottom: 1px solid #1a1d29; padding-bottom: 2px; }
+    .log-alert { color: #ff4d4d; font-weight: bold; }
+
+    /* ووميض الإنذار */
+    @keyframes alertFlash {
+      0% { border: 4px solid red; }
+      50% { border: 4px solid transparent; }
+      100% { border: 4px solid red; }
+    }
+    .alert-active { animation: alertFlash 0.5s infinite; }
   </style>
 </head>
 <body>
 
   <div id="step-1" class="step-screen">
     <div class="intro-card">
-      <h1>🛡️ AegisRadar 360</h1>
+      <h1>🛡️ AegisRadar 360 AI</h1>
       <h2>نظام أمني متكامل للرصد ثلاثي الأبعاد وإدارة المنازل الذكية</h2>
       
       <div class="project-desc">
-        نظام أمني ذكي للمراقبة والكشف والاستجابة للطوارئ. يهدف المشروع إلى تطوير نظام أمني ذكي متكامل يعتمد على دمج تقنية الرادار المليمترية (mmWave Radar LD2450) مع الرؤية الحاسوبية والكاميرا لتوفير مراقبة ذكية ودقيقة للأشخاص مع الحفاظ على الخصوصية.
+        نظام أمني ذكي يدمج حساس الرادار المليمتري (LD2450) مع الرؤية الحاسوبية والذكاء الاصطناعي لتقديم تتبع ثلاثي الأبعاد متقدم مع حماية الخصوصية.
       </div>
 
       <div class="team-box">
@@ -244,28 +273,34 @@
       </div>
 
       <div class="card">
-        <h3>📡 تتبع حركة الرادار الحية (LD2450)</h3>
+        <h3>📡 تتبع أهداف الرادار المباشرة (LD2450)</h3>
         <div id="targets-container" class="targets-list"></div>
       </div>
 
       <div class="card">
-        <h3>1. الكاميرا والوجوه (Safari iOS) 🎥</h3>
-        <input type="text" id="camUrl" placeholder="رابط IP الخاص بالكاميرا" value="http://192.168.1.3:8081">
-        <button onclick="updateCamUrl()">تحديث البث 🔄</button>
-        
-        <div class="cam-wrapper" style="margin-top: 10px;">
-          <img id="camera-stream" src="http://192.168.1.3:8081" alt="جاري تحميل البث..." onerror="handleCamError(this)">
-          <div id="face-box"></div>
-        </div>
-
-        <div style="display: flex; gap: 5px; margin-top: 8px;">
-          <button onclick="toggleFaceBox()">تحديد الوجه 🔲</button>
-          <button onclick="openCamDirect()" style="background: #282c3d; border: 1px solid #00adb5;">فتح البث مباشرة ↗️</button>
+        <h3>🚨 سجل الأحداث والتنبيهات الأمنية</h3>
+        <div id="security-log" class="log-box">
+          <div class="log-item">[النظام]: تم تشغيل وحدة Aegis AI بنجاح.</div>
         </div>
       </div>
 
       <div class="card">
-        <h3>2. إعدادات الغرف وحفظ المخطط 🧱</h3>
+        <h3>🎥 1. الكاميرا والذكاء الاصطناعي (AI Face Tracker)</h3>
+        <input type="text" id="camUrl" placeholder="رابط IP الخاص بالكاميرا" value="http://192.168.1.3:8081">
+        <button onclick="updateCamUrl()">تحديث البث 🔄</button>
+        
+        <div class="cam-wrapper" style="margin-top: 10px;">
+          <img id="camera-stream" src="http://192.168.1.3:8081" crossorigin="anonymous" alt="جاري تحميل البث..." onerror="handleCamError(this)">
+          <div id="face-box"></div>
+        </div>
+
+        <div style="display: flex; gap: 5px; margin-top: 8px;">
+          <button id="aiToggleBtn" onclick="toggleAIFaceDetection()">تفعيل تتبع الوجه بالذكاء الاصطناعي 🤖</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🧱 2. إعدادات الغرف وحفظ المخطط</h3>
         <input type="text" id="roomName" placeholder="اسم الغرفة" />
         <div style="display: flex; gap: 5px;">
           <input type="number" id="dimW" placeholder="العرض W" value="6" />
@@ -298,37 +333,87 @@
         document.getElementById('main-app').classList.remove('hidden');
         init3D();
         initMQTT();
+        addLog("تم التحقق من كلمة السر. الدخول مصرح.");
       } else {
         document.getElementById('pass-error').style.display = 'block';
       }
     }
 
-    function updateCamUrl() {
-      const url = document.getElementById('camUrl').value;
-      const img = document.getElementById('camera-stream');
-      img.src = url;
+    function addLog(msg, isAlert = false) {
+      const logContainer = document.getElementById('security-log');
+      const time = new Date().toLocaleTimeString('ar-EG');
+      const item = document.createElement('div');
+      item.className = `log-item ${isAlert ? 'log-alert' : ''}`;
+      item.innerText = `[${time}] ${msg}`;
+      logContainer.appendChild(item);
+      logContainer.scrollTop = logContainer.scrollHeight;
     }
 
-    function openCamDirect() {
+    function updateCamUrl() {
       const url = document.getElementById('camUrl').value;
-      window.open(url, '_blank');
+      document.getElementById('camera-stream').src = url;
     }
 
     function handleCamError(img) {
-      console.log("تنبيه: تعذر تحميل بث الصورة عبر HTTP المباشر في HTTPS.");
+      console.log("تنبيه: تعذر تحميل بث الكاميرا.");
     }
 
-    let isBoxVisible = false;
-    function toggleFaceBox() {
-      const box = document.getElementById('face-box');
-      isBoxVisible = !isBoxVisible;
-      if (isBoxVisible) {
-        box.style.top = '25px'; box.style.left = '35%';
-        box.style.width = '90px'; box.style.height = '90px';
-        box.style.display = 'block';
+    // --- نظام الذكاء الاصطناعي لتتبع الوجه (AI Face Detection) ---
+    let detector = null;
+    let isAIDetecting = false;
+
+    async function toggleAIFaceDetection() {
+      const btn = document.getElementById('aiToggleBtn');
+      if (!isAIDetecting) {
+        btn.innerText = "جاري تحميل نموذج الذكاء الاصطناعي...";
+        try {
+          const model = faceDetection.SupportedModels.MediaPipeFaceDetector;
+          const detectorConfig = { runtime: 'tfjs', modelType: 'short' };
+          detector = await faceDetection.createDetector(model, detectorConfig);
+          isAIDetecting = true;
+          btn.innerText = "إيقاف الذكاء الاصطناعي 🛑";
+          btn.style.background = "#ff4d4d";
+          addLog("تم تشغيل نموذج AI Face Detection عبر المتصفح.");
+          detectFacesLoop();
+        } catch (e) {
+          console.error(e);
+          btn.innerText = "فشل التحميل ❌";
+          addLog("فشل تحميل نموذج AI الكاميرا.", true);
+        }
       } else {
-        box.style.display = 'none';
+        isAIDetecting = false;
+        document.getElementById('face-box').style.display = 'none';
+        btn.innerText = "تفعيل تتبع الوجه بالذكاء الاصطناعي 🤖";
+        btn.style.background = "#00adb5";
+        addLog("تم إيقاف تتبع الكاميرا.");
       }
+    }
+
+    async function detectFacesLoop() {
+      if (!isAIDetecting) return;
+      const img = document.getElementById('camera-stream');
+      const box = document.getElementById('face-box');
+
+      try {
+        if (detector && img.complete && img.naturalWidth !== 0) {
+          const faces = await detector.estimateFaces(img);
+          if (faces.length > 0) {
+            const face = faces[0].box;
+            const scaleX = img.clientWidth / img.naturalWidth;
+            const scaleY = img.clientHeight / img.naturalHeight;
+
+            box.style.left = `${face.xMin * scaleX}px`;
+            box.style.top = `${face.yMin * scaleY}px`;
+            box.style.width = `${face.width * scaleX}px`;
+            box.style.height = `${face.height * scaleY}px`;
+            box.style.display = 'block';
+          } else {
+            box.style.display = 'none';
+          }
+        }
+      } catch (err) {}
+      
+      if (isAIDetecting) requestAnimationFrame(detectFacesLoop);
     }
 
     // --- إدارة الخرائط والتخزين المحلي ---
@@ -341,8 +426,8 @@
         savedRooms = JSON.parse(data);
       } else {
         savedRooms = {
-          default: [{ name: "الصالة", w: 8, l: 8, h: 3, x: 0, z: 0 }],
-          floor_2: [{ name: "غرفة النوم", w: 5, l: 5, h: 3, x: 0, z: 0 }]
+          default: [{ name: "الصالة الرئيسية", w: 8, l: 8, h: 3, x: 0, z: 0 }],
+          floor_2: [{ name: "غرفة التحكم", w: 5, l: 5, h: 3, x: 0, z: 0 }]
         };
         saveMapsToStorage();
       }
@@ -355,27 +440,27 @@
     function switchMap() {
       currentMapKey = document.getElementById('mapSelector').value;
       renderCurrentMap();
+      addLog(`تم الانتقال إلى: ${currentMapKey}`);
     }
 
     function clearCurrentMap() {
       savedRooms[currentMapKey] = [];
       saveMapsToStorage();
       renderCurrentMap();
+      addLog("تم مسح الخريطة الحالية.", true);
     }
 
     // --- استقبال معطيات الرادار الحية عبر MQTT ---
-    let activeTargets = [];
+    let activeTargets = {};
+    let targetMeshes = {};
+    let targetTrails = {}; // مسارات الحركة
 
     function initMQTT() {
       const mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
 
       mqttClient.on('connect', () => {
-        console.log("تم الاتصال بـ HiveMQ MQTT بنجاح!");
+        addLog("تم الاتصال بـ HiveMQ MQTT Broker بنجاح!");
         mqttClient.subscribe('aegis/radar/targets');
-      });
-
-      mqttClient.on('error', (err) => {
-        console.error("خطأ اتصالات MQTT:", err);
       });
 
       mqttClient.on('message', (topic, message) => {
@@ -383,15 +468,12 @@
           try {
             const data = JSON.parse(message.toString());
             processIncomingRadarData(data);
-          } catch(e) {
-            console.error("خطأ في قراءة بيانات JSON", e);
-          }
+          } catch(e) {}
         }
       });
     }
 
     function processIncomingRadarData(data) {
-      // معالجة البيانات سواء كانت مصفوفة أهداف أو هدف مفرد
       if (Array.isArray(data)) {
         data.forEach(item => updateLiveTarget(item));
       } else if (data.targets && Array.isArray(data.targets)) {
@@ -402,42 +484,33 @@
     }
 
     function updateLiveTarget(data) {
-      const radarNum = parseInt(data.radar) || 1;
+      const targetId = parseInt(data.radar || data.id) || 1;
       
-      // التأكد من استخراج إحداثيات مقبولة
-      let posX = data.x !== undefined ? data.x : (data.targetX || null);
-      let posZ = data.y !== undefined ? data.y : (data.targetY || null);
+      let posX = data.x !== undefined ? data.x : data.targetX;
+      let posZ = data.y !== undefined ? data.y : data.targetY;
 
-      // في حال وصول بيانات سداسية عشرية مثل {"bytes": "fc"} بدون X و Y
-      if (posX === null || posZ === null) {
-        return; 
-      }
+      if (posX === undefined || posZ === undefined) return;
 
-      // تحويل الميليمتر القادم من ESP32 إلى أمتار للعرض ثلاثي الأبعاد
       const rawX = parseFloat(posX) / 1000.0;
       const rawZ = parseFloat(posZ) / 1000.0;
 
-      const parsedData = {
-        radar: radarNum,
-        x: rawX.toFixed(2),
-        z: rawZ.toFixed(2),
+      // فحص منطقة الخطر Geofencing (< 1.5m)
+      const dist = Math.sqrt(rawX * rawX + rawZ * rawZ);
+      if (dist < 1.5 && dist > 0.1) {
+        document.getElementById('main-app').classList.add('alert-active');
+        addLog(`🚨 اختراق أمني! هدف مقترب لمسافة ${dist.toFixed(1)}m`, true);
+      } else {
+        document.getElementById('main-app').classList.remove('alert-active');
+      }
+
+      activeTargets[targetId] = {
+        id: targetId,
+        targetX: rawX,
+        targetZ: rawZ,
         speed: data.speed || 0,
         lastUpdate: Date.now()
       };
 
-      let existingIndex = activeTargets.findIndex(t => t.radar === radarNum);
-
-      if (existingIndex !== -1) {
-        activeTargets[existingIndex] = parsedData;
-      } else {
-        activeTargets.push(parsedData);
-      }
-
-      // تنظيف الأهداف القديمة بعد 3 ثوانٍ
-      const now = Date.now();
-      activeTargets = activeTargets.filter(t => (now - t.lastUpdate) < 3000);
-
-      renderRealtime3D();
       renderTargetsUI();
     }
 
@@ -445,27 +518,29 @@
       const container = document.getElementById('targets-container');
       container.innerHTML = '';
 
-      if (activeTargets.length === 0) {
-        container.innerHTML = '<div style="color: #888; font-size: 11px;">في انتظار التقاط حركة حقيقية من حساسات LD2450...</div>';
+      const keys = Object.keys(activeTargets);
+      if (keys.length === 0) {
+        container.innerHTML = '<div style="color: #888; font-size: 11px;">في انتظار التقاط حركة من LD2450...</div>';
         return;
       }
 
-      activeTargets.forEach((t) => {
+      keys.forEach((id) => {
+        const t = activeTargets[id];
         const div = document.createElement('div');
-        div.className = `target-card ${t.radar === 1 ? 'cat-radar1' : 'cat-radar2'}`;
+        div.className = `target-card cat-target${t.id}`;
         div.innerHTML = `
           <div>
-            <b>رادار ${t.radar} - تم التقاط هدف</b>
-            <div style="color: #aaa; font-size: 10px;">الإحداثيات الحية: X: ${t.x}m | Z: ${t.z}m</div>
+            <b>هدف رادار #${t.id}</b>
+            <div style="color: #aaa; font-size: 10px;">X: ${t.targetX.toFixed(2)}m | Z: ${t.targetZ.toFixed(2)}m</div>
             <div style="color: #00fff5; font-size: 10px;">السرعة: ${t.speed} cm/s</div>
           </div>
-          <span class="badge badge-live">مباشر 🔴</span>
+          <span class="badge badge-live">رصد حي 🔴</span>
         `;
         container.appendChild(div);
       });
     }
 
-    // --- أقسام الـ 3D ---
+    // --- أقسام الرسوميات ثلاثية الأبعاد (3D System) ---
     function createHumanModel(colorHex) {
       const group = new THREE.Group();
       const material = new THREE.MeshLambertMaterial({ color: colorHex });
@@ -479,17 +554,14 @@
       torso.position.set(0, 0.9, 0);
 
       const legGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.6);
-      const legL = new THREE.Mesh(legGeom, material);
-      legL.position.set(-0.12, 0.3, 0);
-      const legR = new THREE.Mesh(legGeom, material);
-      legR.position.set(0.12, 0.3, 0);
+      const legL = new THREE.Mesh(legGeom, material); legL.position.set(-0.12, 0.3, 0);
+      const legR = new THREE.Mesh(legGeom, material); legR.position.set(0.12, 0.3, 0);
 
       group.add(head, torso, legL, legR);
       return group;
     }
 
     let scene, camera, renderer, controls;
-    let targetMeshesGroup = new THREE.Group();
     let roomsGroup = new THREE.Group();
 
     function init3D() {
@@ -512,12 +584,10 @@
       scene.add(light);
 
       scene.add(new THREE.GridHelper(50, 50, 0x00adb5, 0x282c3d));
-      scene.add(targetMeshesGroup);
       scene.add(roomsGroup);
 
       loadSavedMaps();
       renderCurrentMap();
-      renderTargetsUI();
 
       window.addEventListener('resize', () => {
         camera.aspect = container.clientWidth / container.clientHeight;
@@ -525,9 +595,54 @@
         renderer.setSize(container.clientWidth, container.clientHeight);
       });
 
+      // حلقة التحريك التفاعلية والتنعيم LERP
       function animate() {
         requestAnimationFrame(animate);
         controls.update();
+
+        const now = Date.now();
+        Object.keys(activeTargets).forEach(id => {
+          const t = activeTargets[id];
+
+          // إزالة الأهداف المتوقفة لأكثر من 3 ثوانٍ
+          if (now - t.lastUpdate > 3000) {
+            if (targetMeshes[id]) scene.remove(targetMeshes[id]);
+            if (targetTrails[id]) scene.remove(targetTrails[id].line);
+            delete activeTargets[id];
+            delete targetMeshes[id];
+            delete targetTrails[id];
+            renderTargetsUI();
+            return;
+          }
+
+          // إنشاء المجسم إن لم يكن موجوداً
+          if (!targetMeshes[id]) {
+            const colors = [0x00fff5, 0x4eef90, 0xffaa00];
+            const mesh = createHumanModel(colors[(id - 1) % 3]);
+            mesh.position.set(t.targetX, 0, t.targetZ);
+            scene.add(mesh);
+            targetMeshes[id] = mesh;
+
+            // إنشاء مسار الحركة (Trail)
+            const trailGeom = new THREE.BufferGeometry();
+            const trailMat = new THREE.LineBasicMaterial({ color: colors[(id - 1) % 3], transparent: true, opacity: 0.6 });
+            const line = new THREE.Line(trailGeom, trailMat);
+            scene.add(line);
+            targetTrails[id] = { line, points: [] };
+          }
+
+          // تنعيم الحركة باستخدام LERP (Linear Interpolation)
+          const mesh = targetMeshes[id];
+          mesh.position.x += (t.targetX - mesh.position.x) * 0.15;
+          mesh.position.z += (t.targetZ - mesh.position.z) * 0.15;
+
+          // تحديث النقاط لمسار الحركة
+          const trail = targetTrails[id];
+          trail.points.push(mesh.position.clone());
+          if (trail.points.length > 30) trail.points.shift();
+          trail.line.geometry.setFromPoints(trail.points);
+        });
+
         renderer.render(scene, camera);
       }
       animate();
@@ -540,11 +655,20 @@
 
       const roomsList = savedRooms[currentMapKey] || [];
       roomsList.forEach(r => {
+        // هيكل الغرفة الشبكي
         const geometry = new THREE.BoxGeometry(r.w, r.h, r.l);
         const material = new THREE.MeshLambertMaterial({ color: 0x00adb5, wireframe: true });
         const room = new THREE.Mesh(geometry, material);
         room.position.set(r.x, r.h / 2, r.z);
         roomsGroup.add(room);
+
+        // إضافة أرضية صلبة شبه شفافة لمنع طفو المجسم في الفراغ
+        const floorGeom = new THREE.PlaneGeometry(r.w, r.l);
+        const floorMat = new THREE.MeshBasicMaterial({ color: 0x181b26, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+        const floor = new THREE.Mesh(floorGeom, floorMat);
+        floor.rotation.x = Math.PI / 2;
+        floor.position.set(r.x, 0.01, r.z);
+        roomsGroup.add(floor);
       });
     }
 
@@ -561,19 +685,7 @@
 
       saveMapsToStorage();
       renderCurrentMap();
-    }
-
-    function renderRealtime3D() {
-      while(targetMeshesGroup.children.length > 0){ 
-        targetMeshesGroup.remove(targetMeshesGroup.children[0]); 
-      }
-
-      activeTargets.forEach(t => {
-        const color = t.radar === 1 ? 0x00fff5 : 0x4eef90;
-        const humanModel = createHumanModel(color);
-        humanModel.position.set(parseFloat(t.x), 0, parseFloat(t.z));
-        targetMeshesGroup.add(humanModel);
-      });
+      addLog(`تم إضافة غرفة: ${name}`);
     }
   </script>
 </body>
