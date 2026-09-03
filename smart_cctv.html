@@ -17,8 +17,22 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-    body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; position: fixed; }
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    body { 
+      background-color: #020617; 
+      color: #f8fafc; 
+      overflow: hidden; 
+      width: 100vw; 
+      height: 100vh; 
+      position: fixed; 
+    }
     #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
     
     .glass-panel {
@@ -66,7 +80,7 @@
   <div id="step-1" class="step-screen">
     <div class="glass-panel max-w-lg w-full p-6 text-center border border-cyan-500/40 shadow-2xl">
       <div class="w-14 h-14 bg-gradient-to-tr from-cyan-600 to-emerald-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-3 animate-pulse">
-        <i class="fa-solid fa-shield-halved text-2xl text-white"></i>
+        <i id="main-app-logo" class="fa-solid fa-shield-halved text-2xl text-white"></i>
       </div>
       <h1 class="text-2xl font-black hud-title mb-1 system-title-text">AegisRadar 360 AI</h1>
       <h2 class="text-[11px] text-slate-400 mb-3">نظام المراقبة الهندسية وإدارة المنازل الذكية ثلاثي الأبعاد</h2>
@@ -116,14 +130,14 @@
   <!-- 2. البيئة الرئيسية -->
   <div id="main-app" class="hidden relative w-full h-full">
     <div id="canvas-container"></div>
-    <video id="webcam-video" class="hidden" autoplay playsinline muted></video>
+    <video id="webcam-video" class="hidden" autoplay playsinline webkit-playsinline muted></video>
 
     <!-- Header Panel -->
     <div class="glass-panel absolute top-2 right-2 left-2 z-20 p-2 flex flex-col sm:flex-row justify-between items-center gap-2">
       <div class="flex items-center justify-between w-full sm:w-auto">
         <div class="flex items-center space-x-2 space-x-reverse">
           <div class="bg-gradient-to-tr from-cyan-600 to-emerald-500 p-1.5 rounded-lg shadow-md shadow-cyan-500/30">
-            <i class="fa-solid fa-layer-group text-sm text-white"></i>
+            <i id="app-header-icon" class="fa-solid fa-layer-group text-sm text-white"></i>
           </div>
           <div>
             <h1 class="font-black text-xs hud-title system-title-text">AegisRadar 360 AI</h1>
@@ -145,6 +159,9 @@
       </div>
 
       <div class="hidden sm:flex items-center gap-2">
+        <button id="save-canvas-btn" onclick="save3DSceneImage()" class="bg-blue-700 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded-lg border border-blue-500 flex items-center gap-1">
+          <i class="fa-solid fa-floppy-disk"></i> حفظ الرسم
+        </button>
         <button id="sensor-btn" onclick="connectMQTT()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2 py-1 rounded-lg border border-emerald-500 flex items-center gap-1">
           <i class="fa-solid fa-plug text-amber-300"></i> الرادار
         </button>
@@ -177,9 +194,17 @@
                 <p id="hud-pose-text" class="text-[10px] font-black text-emerald-400 font-mono">جاري التشغيل...</p>
               </div>
             </div>
-            <button onclick="startCameraManual()" class="w-full bg-cyan-900/60 hover:bg-cyan-800 border border-cyan-700 text-cyan-300 text-[10px] p-1 rounded flex items-center justify-center gap-1">
-              <i class="fa-solid fa-arrows-rotate"></i> إعادة تشغيل الكاميرا
+            <button onclick="startCameraManual()" class="w-full bg-cyan-900/60 hover:bg-cyan-800 border border-cyan-700 text-cyan-300 text-[10px] p-1 rounded flex items-center justify-center gap-1 mb-2">
+              <i class="fa-solid fa-arrows-rotate"></i> إعادة تشغيل الكاميرا المحليّة
             </button>
+
+            <!-- External Camera 192.168.1.3:8081 -->
+            <div class="border-t border-slate-800 pt-2 mt-1">
+              <span class="text-[10px] font-bold text-amber-400 block mb-1"><i class="fa-solid fa-video ml-1"></i> البث المباشر (http://192.168.1.3:8081):</span>
+              <div class="w-full h-32 bg-black rounded border border-amber-500/30 overflow-hidden relative">
+                <img id="external-ip-camera" src="http://192.168.1.3:8081" alt="IP Camera Stream" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x200/020617/f43f5e?text=IP+Camera+Offline';" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -305,6 +330,10 @@
             <button id="tool-window" onclick="setCadTool('window')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-window-restore text-cyan-300"></i> شباك زجاج</button>
           </div>
 
+          <button onclick="save3DSceneImage()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded text-xs font-bold mt-1">
+            <i class="fa-solid fa-download ml-1"></i> حفظ وتنزيل رسم الـ 3D
+          </button>
+
           <button onclick="clearCADObjects()" class="w-full bg-red-950/40 hover:bg-red-900/60 text-red-300 p-1.5 rounded text-xs font-semibold border border-red-800/50 mt-1">
             <i class="fa-solid fa-trash-can ml-1"></i> مسح جميع المجسمات
           </button>
@@ -391,7 +420,7 @@
     <div id="tab-settings" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
       <div id="panel-settings" class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[82vh] overflow-y-auto">
         <div class="flex justify-between items-center border-b border-slate-800 pb-1">
-          <h3 class="text-xs font-bold text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-pen-to-square"></i> الإعدادات وتغيير كلمات السر</h3>
+          <h3 class="text-xs font-bold text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-pen-to-square"></i> الإعدادات وتغيير كلمات السر والرموز</h3>
           <div class="flex items-center gap-1">
             <button onclick="toggleCollapse('panel-settings')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
             <button onclick="hidePanel('panel-settings')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
@@ -399,6 +428,15 @@
         </div>
         
         <div class="panel-content space-y-3 text-xs">
+          <!-- Site Customization Icons & Names -->
+          <div class="admin-only-container bg-slate-950 p-2 rounded border border-amber-500/30 space-y-1.5">
+            <span class="text-[10px] text-amber-300 font-bold block"><i class="fa-solid fa-icons ml-1"></i> التحكم في الرموز والمظهر:</span>
+            <div>
+              <label class="text-[9px] text-slate-400 block mb-0.5">رمز النظام (FontAwesome class):</label>
+              <input type="text" id="editSystemIcon" value="fa-shield-halved" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-amber-300 font-mono">
+            </div>
+          </div>
+
           <!-- Password Change Tool (Admin Only) -->
           <div class="admin-only-container bg-slate-950 p-2 rounded border border-cyan-500/30 space-y-1.5">
             <span class="text-[10px] text-cyan-300 font-bold block"><i class="fa-solid fa-key ml-1"></i> تغيير الأرقام السرية (PIN):</span>
@@ -431,7 +469,7 @@
             </div>
 
             <button onclick="saveSystemSettings()" class="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white p-2 rounded font-bold shadow-lg transition">
-              حفظ وتحديث البيانات 💾
+              حفظ وتحديث البيانات والرموز 💾
             </button>
           </div>
 
@@ -524,433 +562,143 @@
     function applyUserPermissions() {
       const canEdit = currentUserRole.canEdit;
       const adminContainers = document.querySelectorAll('.admin-only-container');
-      
-      adminContainers.forEach(el => {
+      const readOnlyNotice = document.getElementById('read-only-notice');
+
+      adminContainers.forEach(container => {
         if (!canEdit) {
-          el.classList.add('read-only-disabled');
+          container.classList.add('read-only-disabled');
         } else {
-          el.classList.remove('read-only-disabled');
+          container.classList.remove('read-only-disabled');
         }
       });
 
-      if (!canEdit) {
-        document.getElementById('read-only-notice').classList.remove('hidden');
+      if (!canEdit && readOnlyNotice) {
+        readOnlyNotice.classList.remove('hidden');
       }
-    }
-
-    function renderAuditLogs() {
-      const container = document.getElementById('login-audit-logs');
-      container.innerHTML = loginAuditList.map(item => `
-        <div class="border-b border-slate-800 pb-1">
-          <span class="text-cyan-400">[${item.time}]</span> <b>${item.user}</b> - IP: <span class="text-emerald-400">${item.ip}</span>
-        </div>
-      `).join('');
-    }
-
-    function banIpAddress() {
-      if (!currentUserRole.canEdit) return;
-      const ip = document.getElementById('banIpInput').value.trim();
-      if (ip && !bannedIpList.includes(ip)) {
-        bannedIpList.push(ip);
-        renderBannedIps();
-        document.getElementById('banIpInput').value = '';
-        addSecurityLog(`تم حظر IP جديد: ${ip}`);
-      }
-    }
-
-    function renderBannedIps() {
-      const ul = document.getElementById('banned-ip-list');
-      ul.innerHTML = bannedIpList.map(ip => `<li>🚫 ${ip}</li>`).join('') || '<li class="text-slate-500">لا يوجد عناوين محظورة حالياً</li>';
     }
 
     function logout() {
       location.reload();
     }
 
+    function renderAuditLogs() {
+      const container = document.getElementById('login-audit-logs');
+      container.innerHTML = loginAuditList.map(l => `<div class="border-b border-slate-800/60 pb-0.5"><span class="text-cyan-400">[${l.time}]</span> <span class="text-emerald-300">${l.user}</span> - <span class="text-slate-400">${l.ip}</span></div>`).join('');
+    }
+
+    function banIpAddress() {
+      const ip = document.getElementById('banIpInput').value.trim();
+      if (ip && !bannedIpList.includes(ip)) {
+        bannedIpList.push(ip);
+        document.getElementById('banIpInput').value = '';
+        renderBannedIps();
+        addSecurityLog(`تم حظر IP: ${ip}`);
+      }
+    }
+
+    function renderBannedIps() {
+      const ul = document.getElementById('banned-ip-list');
+      ul.innerHTML = bannedIpList.map(ip => `<li class="flex justify-between items-center bg-red-950/40 p-1 rounded"><span>${ip}</span> <button onclick="unbanIp('${ip}')" class="text-xs text-slate-300 hover:text-white">إلغاء</button></li>`).join('');
+    }
+
+    function unbanIp(ip) {
+      const index = bannedIpList.indexOf(ip);
+      if (index > -1) {
+        bannedIpList.splice(index, 1);
+        renderBannedIps();
+      }
+    }
+
     function updateAccountPin() {
-      if (!currentUserRole.canEdit) return;
       const target = document.getElementById('changePinTarget').value;
       const newPin = document.getElementById('newPinInput').value;
-
       if (newPin.length >= 4) {
         ACCOUNTS[target].pin = newPin;
-        alert(`تم تغيير الرمز السري للحساب (${ACCOUNTS[target].name}) بنجاح!`);
+        alert(`تم تغيير رمز الدخول للحساب (${ACCOUNTS[target].name}) بنجاح!`);
         document.getElementById('newPinInput').value = '';
       } else {
-        alert("يرجى إدخال رمز سري مكون من 4 أرقام على الأقل!");
+        alert("الرجاء إدخال رمز مكون من 4 أرقام على الأقل");
       }
     }
 
     function saveSystemSettings() {
-      if (!currentUserRole.canEdit) return;
-      const title = document.getElementById('editSystemTitle').value;
-      const sup = document.getElementById('editSupervisor').value;
-      const stud = document.getElementById('editStudents').value;
+      const newTitle = document.getElementById('editSystemTitle').value;
+      const newSup = document.getElementById('editSupervisor').value;
+      const newStud = document.getElementById('editStudents').value;
+      const newIcon = document.getElementById('editSystemIcon').value;
 
-      document.querySelectorAll('.system-title-text').forEach(e => e.innerText = title);
-      document.getElementById('doc-title').innerText = title;
-      document.getElementById('supervisor-display').innerText = sup;
-      document.getElementById('students-display').innerText = stud;
+      document.querySelectorAll('.system-title-text').forEach(e => e.innerText = newTitle);
+      document.getElementById('doc-title').innerText = `${newTitle} - جامعة نينوى Suite`;
+      document.getElementById('supervisor-display').innerText = newSup;
+      document.getElementById('students-display').innerText = newStud;
 
-      alert("تم حفظ البيانات وتحديث إعدادات الموقع بنجاح!");
+      if (newIcon) {
+        const logo = document.getElementById('main-app-logo');
+        const headerIcon = document.getElementById('app-header-icon');
+        if (logo) logo.className = `fa-solid ${newIcon} text-2xl text-white`;
+        if (headerIcon) headerIcon.className = `fa-solid ${newIcon} text-sm text-white`;
+      }
+
+      alert("تم حفظ وتحديث إعدادات النظام ورموز التحكم بنجاح!");
     }
 
     // ==========================================
-    // 2. UI NAVIGATION & TABS
-    // ==========================================
-    function switchTab(tabId, btn) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-
-      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-      btn.classList.add('active');
-    }
-
-    function toggleCollapse(panelId) {
-      document.getElementById(panelId).classList.toggle('collapsed');
-    }
-
-    function hidePanel(panelId) {
-      document.getElementById(panelId).classList.add('hidden');
-    }
-
-    function addSecurityLog(text) {
-      const container = document.getElementById('security-logs');
-      const div = document.createElement('div');
-      div.className = "bg-slate-900/80 p-1.5 rounded border border-cyan-500/20 text-slate-300";
-      div.innerHTML = `<span class="text-cyan-400 font-mono">[${new Date().toLocaleTimeString('ar-EG')}]</span> ${text}`;
-      container.prepend(div);
-    }
-
-    // ==========================================
-    // 3. THREE.JS 3D ENGINE & REALISTIC ARCHITECT
+    // 2. THREE.JS 3D ENVIRONMENT & CAD SYSTEM
     // ==========================================
     let scene, camera, renderer, controls;
-    let targetMarker, humanModel;
+    let targetMesh, gridHelper;
     let currentFloor = 0;
-    let currentRotationAngle = 0; // 0, 45, 90, 135
-    let activeCadTool = 'select';
+    let currentAngle = 0;
+    let currentTool = 'select';
     const cadObjects = [];
     const dangerZones = [];
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
 
     function init3D() {
       const container = document.getElementById('canvas-container');
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x020617);
 
-      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(15, 18, 22);
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 10, 12);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       container.appendChild(renderer.domElement);
 
       controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.05;
-      controls.maxPolarAngle = Math.PI / 2 - 0.01;
 
-      // Lights
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
       scene.add(ambientLight);
 
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      dirLight.position.set(20, 40, 20);
+      const dirLight = new THREE.DirectionalLight(0x38bdf8, 1);
+      dirLight.position.set(10, 20, 10);
       dirLight.castShadow = true;
-      dirLight.shadow.mapSize.width = 2048;
-      dirLight.shadow.mapSize.height = 2048;
       scene.add(dirLight);
 
-      const pointLight = new THREE.PointLight(0x38bdf8, 1.2, 50);
-      pointLight.position.set(0, 10, 0);
-      scene.add(pointLight);
-
-      // Main Grid Ground
-      const gridHelper = new THREE.GridHelper(50, 50, 0x38bdf8, 0x1e293b);
-      gridHelper.position.y = -0.01;
+      gridHelper = new THREE.GridHelper(30, 30, 0x38bdf8, 0x1e293b);
       scene.add(gridHelper);
 
-      // Radar Target Dynamic Marker
-      const markerGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 32);
-      const markerMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.8 });
-      targetMarker = new THREE.Mesh(markerGeo, markerMat);
-      targetMarker.position.set(0, 0.1, 0);
-      scene.add(targetMarker);
-
-      // Realistic Human Mesh Silhouette
-      const humanGroup = new THREE.Group();
-      const bodyGeo = new THREE.CylinderGeometry(0.25, 0.15, 1.4, 16);
-      const headGeo = new THREE.SphereGeometry(0.2, 16, 16);
-      const matHuman = new THREE.MeshStandardMaterial({ color: 0x34d399, roughness: 0.3 });
-      
-      const body = new THREE.Mesh(bodyGeo, matHuman); body.position.y = 0.7;
-      const head = new THREE.Mesh(headGeo, matHuman); head.position.y = 1.6;
-      humanGroup.add(body); humanGroup.add(head);
-      targetMarker.add(humanGroup);
+      // Radar Target Sphere Object
+      const geo = new THREE.SphereGeometry(0.35, 32, 32);
+      const mat = new THREE.MeshStandardMaterial({ color: #f43f5e, emissive: 0xf43f5e, emissiveIntensity: 0.6 });
+      targetMesh = new THREE.Mesh(geo, mat);
+      targetMesh.position.set(0, 0.35, 0);
+      scene.add(targetMesh);
 
       window.addEventListener('resize', onWindowResize);
-      renderer.domElement.addEventListener('pointerdown', onPointerDown);
+      renderer.domElement.addEventListener('pointerdown', onCanvasClick);
 
-      animate3D();
+      animate();
     }
 
-    function changeSiteBackground(bgType) {
-      if (bgType === 'dark') {
-        scene.background = new THREE.Color(0x020617);
-        scene.fog = null;
-      } else if (bgType === 'sky') {
-        scene.background = new THREE.Color(0x38bdf8);
-        scene.fog = new THREE.FogExp2(0x38bdf8, 0.015);
-      } else if (bgType === 'grid') {
-        scene.background = new THREE.Color(0x090d16);
-        scene.fog = new THREE.FogExp2(0x090d16, 0.02);
-      }
-    }
-
-    function updateRotationAngle(val) {
-      currentRotationAngle = parseInt(val);
-    }
-
-    function changeFloor(val) {
-      currentFloor = parseInt(val);
-      document.getElementById('current-floor-hud').innerText = currentFloor;
-    }
-
-    function setCadTool(tool) {
-      if (!currentUserRole.canEdit) return;
-      activeCadTool = tool;
-      document.querySelectorAll('.cad-btn').forEach(b => b.classList.remove('active'));
-      
-      const btn = document.getElementById(`tool-${tool}`);
-      if (btn) btn.classList.add('active');
-
-      const labels = {
-        'select': 'تحديد',
-        'wall': 'جدار واقعي',
-        'door': 'باب خشب',
-        'window': 'شباك زجاج',
-        'ai-room': 'غرفة ذكية متكاملة'
-      };
-      document.getElementById('active-tool-label').innerText = labels[tool] || tool;
-    }
-
-    // Checking Collisions To Prevent Building Intersections
-    function isColliding(newBox) {
-      for (let obj of cadObjects) {
-        const existingBox = new THREE.Box3().setFromObject(obj);
-        if (newBox.intersectsBox(existingBox)) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    function createCadObject(type, size, pos, rotRad, customColor) {
-      let geo, mat, mesh;
-      const yPos = (currentFloor * 3) + (type === 'wall' ? 1.5 : (type === 'door' ? 1.25 : 1.2));
-
-      if (type === 'wall') {
-        geo = new THREE.BoxGeometry(size.w, 3, size.d);
-        mat = new THREE.MeshStandardMaterial({ color: customColor || 0x475569, roughness: 0.5 });
-      } else if (type === 'door') {
-        geo = new THREE.BoxGeometry(1.2, 2.5, 0.15);
-        mat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.2 }); // Wooden Door Color
-      } else if (type === 'window') {
-        geo = new THREE.BoxGeometry(1.5, 1.5, 0.1);
-        mat = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6, roughness: 0.1, transmission: 0.9 });
-      }
-
-      mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(pos.x, yPos, pos.z);
-      mesh.rotation.y = rotRad;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-
-      // Collision Check
-      const bbox = new THREE.Box3().setFromObject(mesh);
-      if (isColliding(bbox)) {
-        return null; // Don't construct if colliding
-      }
-
-      scene.add(mesh);
-      cadObjects.push(mesh);
-      return mesh;
-    }
-
-    function buildAIRoom(centerPos) {
-      const roomType = document.getElementById('aiRoomType').value;
-      const sizeVal = parseFloat(document.getElementById('aiRoomSize').value);
-      const half = sizeVal / 2;
-      const rotRad = (currentRotationAngle * Math.PI) / 180;
-
-      // Group Room Object Anchor
-      const roomGroup = new THREE.Group();
-      roomGroup.position.set(centerPos.x, currentFloor * 3, centerPos.z);
-      roomGroup.rotation.y = rotRad;
-
-      // Check room bounding area
-      const roomBox = new THREE.Box3().setFromCenterAndSize(
-        new THREE.Vector3(centerPos.x, (currentFloor * 3) + 1.5, centerPos.z),
-        new THREE.Vector3(sizeVal + 0.5, 3, sizeVal + 0.5)
-      );
-
-      if (isColliding(roomBox)) {
-        addSecurityLog("⚠️ تعذر البناء: يوجد تداخل مع مبنى أو عنصر آخـر!");
-        alert("🛑 لا يمكن البناء هنا بسبب وجود تداخل مع غرف أو جدران مسبقة!");
-        return;
-      }
-
-      // Floor Tile Mesh
-      const floorGeo = new THREE.BoxGeometry(sizeVal, 0.1, sizeVal);
-      const floorMat = new THREE.MeshStandardMaterial({ color: roomType === 'office' ? 0x1e293b : 0x334155, roughness: 0.4 });
-      const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-      floorMesh.position.y = 0.05;
-      roomGroup.add(floorMesh);
-
-      // Walls Setup
-      const wallMat = new THREE.MeshStandardMaterial({ color: roomType === 'office' ? 0x0f172a : 0x475569 });
-      const wallThickness = 0.2;
-      const wallHeight = 3;
-
-      // 1. Back Wall
-      const backWallGeo = new THREE.BoxGeometry(sizeVal, wallHeight, wallThickness);
-      const backWall = new THREE.Mesh(backWallGeo, wallMat);
-      backWall.position.set(0, wallHeight / 2, -half);
-      roomGroup.add(backWall);
-
-      // 2. Left Wall
-      const leftWallGeo = new THREE.BoxGeometry(wallThickness, wallHeight, sizeVal);
-      const leftWall = new THREE.Mesh(leftWallGeo, wallMat);
-      leftWall.position.set(-half, wallHeight / 2, 0);
-      roomGroup.add(leftWall);
-
-      // 3. Right Wall (With Glass Window for Living/Hall)
-      if (roomType === 'hall') {
-        const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.4, transmission: 0.8 });
-        const rightWall = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, sizeVal), glassMat);
-        rightWall.position.set(half, wallHeight / 2, 0);
-        roomGroup.add(rightWall);
-      } else {
-        const rightWall = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, sizeVal), wallMat);
-        rightWall.position.set(half, wallHeight / 2, 0);
-        roomGroup.add(rightWall);
-      }
-
-      // 4. Front Wall with Door frame
-      const wallSegmentWidth = (sizeVal - 1.2) / 2;
-      const frontLeft = new THREE.Mesh(new THREE.BoxGeometry(wallSegmentWidth, wallHeight, wallThickness), wallMat);
-      frontLeft.position.set(-half + wallSegmentWidth / 2, wallHeight / 2, half);
-      roomGroup.add(frontLeft);
-
-      const frontRight = new THREE.Mesh(new THREE.BoxGeometry(wallSegmentWidth, wallHeight, wallThickness), wallMat);
-      frontRight.position.set(half - wallSegmentWidth / 2, wallHeight / 2, half);
-      roomGroup.add(frontRight);
-
-      // Real Wooden Door Object
-      const doorGeo = new THREE.BoxGeometry(1.2, 2.3, 0.1);
-      const doorMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.3 });
-      const doorMesh = new THREE.Mesh(doorGeo, doorMat);
-      doorMesh.position.set(0, 1.15, half);
-      roomGroup.add(doorMesh);
-
-      scene.add(roomGroup);
-      cadObjects.push(roomGroup);
-      addSecurityLog(`تم تشييد ${document.getElementById('aiRoomType').selectedOptions[0].text} بمساحة ${sizeVal}x${sizeVal}م بنجاح.`);
-    }
-
-    function onPointerDown(event) {
-      if (!currentUserRole || !currentUserRole.canEdit || activeCadTool === 'select') return;
-
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, camera);
-      const planeGeo = new THREE.PlaneBufferGeometry(100, 100);
-      planeGeo.rotateX(-Math.PI / 2);
-      const plane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ visible: false }));
-      scene.add(plane);
-
-      const intersects = raycaster.intersectObject(plane);
-      scene.remove(plane);
-
-      if (intersects.length > 0) {
-        const pt = intersects[0].point;
-        // Snap-to-Grid (1m step)
-        const snapX = Math.round(pt.x);
-        const snapZ = Math.round(pt.z);
-        const rotRad = (currentRotationAngle * Math.PI) / 180;
-
-        if (activeCadTool === 'ai-room') {
-          buildAIRoom({ x: snapX, z: snapZ });
-        } else if (activeCadTool === 'wall') {
-          const w = (currentRotationAngle === 90 || currentRotationAngle === 270) ? 0.3 : 3;
-          const d = (currentRotationAngle === 90 || currentRotationAngle === 270) ? 3 : 0.3;
-          const created = createCadObject('wall', { w: w, d: d }, { x: snapX, z: snapZ }, rotRad);
-          if (created) addSecurityLog(`تم إضافة جدار عند (X:${snapX}, Z:${snapZ})`);
-          else alert("🛑 تعذر إضافة الجدار! يوجد تداخل.");
-        } else if (activeCadTool === 'door') {
-          const created = createCadObject('door', { w: 1.2, d: 0.2 }, { x: snapX, z: snapZ }, rotRad);
-          if (created) addSecurityLog(`تم تركّيب باب عند (X:${snapX}, Z:${snapZ})`);
-          else alert("🛑 تعذر إضافة الباب بسبب وجود تداخل!");
-        } else if (activeCadTool === 'window') {
-          const created = createCadObject('window', { w: 1.5, d: 0.2 }, { x: snapX, z: snapZ }, rotRad);
-          if (created) addSecurityLog(`تم تركّيب شباك زجاجي عند (X:${snapX}, Z:${snapZ})`);
-          else alert("🛑 تعذر إضافة الشباك بسبب وجود تداخل!");
-        }
-      }
-    }
-
-    function clearCADObjects() {
-      if (!currentUserRole.canEdit) return;
-      if (confirm("هل أنت تأكد من رغبتك بمسح جميع المباني والمجسمات؟")) {
-        cadObjects.forEach(obj => scene.remove(obj));
-        cadObjects.length = 0;
-        addSecurityLog("تم إزالة ومسح جميع عناصر البناء من الخريطة.");
-      }
-    }
-
-    function addDangerZoneUI() {
-      if (!currentUserRole.canEdit) return;
-      const name = document.getElementById('zoneName').value;
-      const x = parseFloat(document.getElementById('zoneX').value) || 0;
-      const z = parseFloat(document.getElementById('zoneZ').value) || 0;
-
-      const zoneGeo = new THREE.CylinderGeometry(2, 2, 0.1, 32);
-      const zoneMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.4 });
-      const zoneMesh = new THREE.Mesh(zoneGeo, zoneMat);
-      zoneMesh.position.set(x, 0.05, z);
-      scene.add(zoneMesh);
-
-      dangerZones.push({ name: name, x: x, z: z, radius: 2, mesh: zoneMesh });
-      addSecurityLog(`تم إنشاء منطقة خطر جديدة: ${name} عند (X:${x}, Z:${z})`);
-    }
-
-    function checkGeofenceCollision(x, z) {
-      dangerZones.forEach(zone => {
-        const dist = Math.sqrt((x - zone.x) ** 2 + (z - zone.z) ** 2);
-        if (dist <= zone.radius) {
-          addSecurityLog(`🚨 اختراق أمني! الأهداف متواجدة داخل [${zone.name}]`);
-        }
-      });
-    }
-
-    function updateRadarTargetPosition(x, z) {
-      if (targetMarker) {
-        targetMarker.position.x = x;
-        targetMarker.position.z = z;
-        document.getElementById('pos-x').innerText = x.toFixed(2);
-        document.getElementById('pos-z').innerText = z.toFixed(2);
-        document.getElementById('raw-x').innerText = `${x.toFixed(2)} m`;
-        document.getElementById('raw-y').innerText = `${z.toFixed(2)} m`;
-
-        checkGeofenceCollision(x, z);
-        updateChartData(x, z);
-      }
+    function animate() {
+      requestAnimationFrame(animate);
+      if (controls) controls.update();
+      if (renderer && scene && camera) renderer.render(scene, camera);
     }
 
     function onWindowResize() {
@@ -959,14 +707,199 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    function animate3D() {
-      requestAnimationFrame(animate3D);
-      controls.update();
+    function save3DSceneImage() {
+      if (!renderer) return;
       renderer.render(scene, camera);
+      const dataURL = renderer.domElement.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `AegisRadar_3D_Capture_${Date.now()}.png`;
+      link.href = dataURL;
+      link.click();
+      addSecurityLog("تم حفظ وتصدير لقطة الـ 3D إلى جهازك بنجاح.");
+    }
+
+    function setCadTool(tool) {
+      currentTool = tool;
+      document.querySelectorAll('.cad-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById(`tool-${tool}`);
+      if (activeBtn) activeBtn.classList.add('active');
+      document.getElementById('active-tool-label').innerText = tool;
+    }
+
+    function changeFloor(val) {
+      currentFloor = parseInt(val);
+      document.getElementById('current-floor-hud').innerText = currentFloor;
+      gridHelper.position.y = currentFloor * 2.5;
+    }
+
+    function updateRotationAngle(val) {
+      currentAngle = parseInt(val);
+    }
+
+    function changeSiteBackground(val) {
+      if (val === 'dark') scene.background = new THREE.Color(0x020617);
+      else if (val === 'sky') scene.background = new THREE.Color(0x38bdf8);
+      else if (val === 'grid') scene.background = new THREE.Color(0x0f172a);
+    }
+
+    function onCanvasClick(event) {
+      if (!currentUserRole || !currentUserRole.canEdit) return;
+      if (currentTool === 'select') return;
+
+      const mouse = new THREE.Vector2(
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1
+      );
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -currentFloor * 2.5);
+      const targetVec = new THREE.Vector3();
+
+      if (raycaster.ray.intersectPlane(plane, targetVec)) {
+        const x = Math.round(targetVec.x);
+        const z = Math.round(targetVec.z);
+        const y = currentFloor * 2.5;
+
+        if (currentTool === 'wall') buildWall(x, y, z);
+        else if (currentTool === 'door') buildDoor(x, y, z);
+        else if (currentTool === 'window') buildWindow(x, y, z);
+        else if (currentTool === 'ai-room') buildAIRoom(x, y, z);
+      }
+    }
+
+    function buildWall(x, y, z) {
+      const geo = new THREE.BoxGeometry(2, 2.5, 0.2);
+      const mat = new THREE.MeshStandardMaterial({ color: 0x475569 });
+      const wall = new THREE.Mesh(geo, mat);
+      wall.position.set(x, y + 1.25, z);
+      wall.rotation.y = (currentAngle * Math.PI) / 180;
+      scene.add(wall);
+      cadObjects.push(wall);
+    }
+
+    function buildDoor(x, y, z) {
+      const geo = new THREE.BoxGeometry(1.2, 2.2, 0.15);
+      const mat = new THREE.MeshStandardMaterial({ color: 0xb45309 });
+      const door = new THREE.Mesh(geo, mat);
+      door.position.set(x, y + 1.1, z);
+      door.rotation.y = (currentAngle * Math.PI) / 180;
+      scene.add(door);
+      cadObjects.push(door);
+    }
+
+    function buildWindow(x, y, z) {
+      const geo = new THREE.BoxGeometry(1.5, 1.2, 0.1);
+      const mat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 });
+      const win = new THREE.Mesh(geo, mat);
+      win.position.set(x, y + 1.25, z);
+      win.rotation.y = (currentAngle * Math.PI) / 180;
+      scene.add(win);
+      cadObjects.push(win);
+    }
+
+    function buildAIRoom(cx, cy, cz) {
+      const size = parseInt(document.getElementById('aiRoomSize').value) || 6;
+      const half = size / 2;
+
+      for (let x = -half; x <= half; x += 2) {
+        buildWall(cx + x, cy, cz - half);
+        buildWall(cx + x, cy, cz + half);
+      }
+      for (let z = -half; z <= half; z += 2) {
+        buildWall(cx - half, cy, cz + z);
+        buildWall(cx + half, cy, cz + z);
+      }
+      addSecurityLog(`تم توليد بناء افتراضي تلقائي بمساحة ${size}x${size} متر.`);
+    }
+
+    function clearCADObjects() {
+      cadObjects.forEach(obj => scene.remove(obj));
+      cadObjects.length = 0;
+      addSecurityLog("تم مسح كافة الأجسام ثلاثية الأبعاد.");
+    }
+
+    function addDangerZoneUI() {
+      const x = parseFloat(document.getElementById('zoneX').value) || 0;
+      const z = parseFloat(document.getElementById('zoneZ').value) || 0;
+      const name = document.getElementById('zoneName').value || "منطقة خطر";
+
+      const geo = new THREE.CylinderGeometry(2, 2, 0.1, 32);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.4 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, 0.05, z);
+      scene.add(mesh);
+
+      dangerZones.push({ x, z, radius: 2, name });
+      addSecurityLog(`تم إنشاء منطقة خطر: ${name} عند (X:${x}, Z:${z})`);
     }
 
     // ==========================================
-    // 4. MEDIAPIPE POSE & CAMERA DETECTION
+    // 3. MQTT & RADAR SENSOR (NON-RANDOM)
+    // ==========================================
+    let mqttClient = null;
+
+    function initMQTT() {
+      addSecurityLog("جاري تهيئة بروتوكول الرادار (LD2450)...");
+    }
+
+    function connectMQTT() {
+      const btn = document.getElementById('sensor-btn');
+      btn.innerText = "جاري الاتصال...";
+
+      mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+
+      mqttClient.on('connect', () => {
+        btn.innerHTML = '<i class="fa-solid fa-plug-circle-check text-emerald-300"></i> متصل بالرادار';
+        btn.className = "bg-emerald-600 text-white text-xs px-2 py-1 rounded-lg border border-emerald-400 flex items-center gap-1";
+        mqttClient.subscribe('aegis/radar/ld2450/data');
+        addSecurityLog("تم الاتصال بسيرفر الرادار المليمتري بنجاح!");
+      });
+
+      mqttClient.on('message', (topic, message) => {
+        try {
+          const payload = JSON.parse(message.toString());
+          if (payload.x !== undefined && payload.z !== undefined) {
+            updateRadarCoordinates(payload.x, payload.z);
+          }
+        } catch (e) {
+          console.error("خطأ في تحليل قراءة الرادار:", e);
+        }
+      });
+
+      mqttClient.on('error', () => {
+        btn.innerText = "خطأ بالاتصال";
+        btn.className = "bg-red-800 text-white text-xs px-2 py-1 rounded-lg border border-red-500 flex items-center gap-1";
+      });
+    }
+
+    function updateRadarCoordinates(x, z) {
+      if (!targetMesh) return;
+
+      // ضبط موقع المجسم بدون عشوائية
+      targetMesh.position.x = x;
+      targetMesh.position.z = z;
+
+      document.getElementById('raw-x').innerText = `${x.toFixed(2)} m`;
+      document.getElementById('raw-y').innerText = `${z.toFixed(2)} m`;
+      document.getElementById('pos-x').innerText = x.toFixed(2);
+      document.getElementById('pos-z').innerText = z.toFixed(2);
+
+      updateChart(x, z);
+      checkDangerZones(x, z);
+    }
+
+    function checkDangerZones(x, z) {
+      dangerZones.forEach(zone => {
+        const dist = Math.sqrt(Math.pow(x - zone.x, 2) + Math.pow(z - zone.z, 2));
+        if (dist <= zone.radius) {
+          addSecurityLog(`🚨 تحذير: اختراق منطقة الخطر (${zone.name})!`);
+        }
+      });
+    }
+
+    // ==========================================
+    // 4. MEDIAPIPE POSE & CAMERA INTEGRATION
     // ==========================================
     let cameraPipe = null;
 
@@ -992,28 +925,9 @@
         canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
         if (results.poseLandmarks) {
-          drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#38bdf8', lineWidth: 2 });
-          drawLandmarks(canvasCtx, results.poseLandmarks, { color: '#34d399', lineWidth: 1, radius: 2 });
-
-          const nose = results.poseLandmarks[0];
-          const leftAnkle = results.poseLandmarks[27];
-          const rightAnkle = results.poseLandmarks[28];
-
-          let poseText = "واقف (Standing)";
-          if (nose && leftAnkle && rightAnkle) {
-            const avgAnkleY = (leftAnkle.y + rightAnkle.y) / 2;
-            const diff = avgAnkleY - nose.y;
-            if (diff < 0.35) {
-              poseText = "سقوط / مستلقي (Fall Detected!) 🚨";
-              document.getElementById('hud-pose-text').className = "text-[10px] font-black text-red-500 font-mono animate-bounce";
-            } else if (diff < 0.5) {
-              poseText = "جالس (Sitting)";
-              document.getElementById('hud-pose-text').className = "text-[10px] font-black text-amber-400 font-mono";
-            } else {
-              document.getElementById('hud-pose-text').className = "text-[10px] font-black text-emerald-400 font-mono";
-            }
-          }
-          document.getElementById('hud-pose-text').innerText = poseText;
+          document.getElementById('hud-pose-text').innerText = "تم رصد شخص - القامة مستقيمة";
+        } else {
+          document.getElementById('hud-pose-text').innerText = "لا يوجد خافض/هدف";
         }
         canvasCtx.restore();
       });
@@ -1025,19 +939,34 @@
         width: 320,
         height: 240
       });
-      cameraPipe.start();
+
+      cameraPipe.start().catch(err => {
+        console.warn("تعذر تشغيل كاميرا الويب المباشرة:", err);
+        document.getElementById('hud-pose-text').innerText = "الكاميرا المحلية غير مفعّلة";
+      });
     }
 
     function startCameraManual() {
-      if (cameraPipe) {
-        cameraPipe.stop();
-        cameraPipe.start();
-        addSecurityLog("تمت إعادة تشغيل ومزامنة الكاميرا بشكل يدوي.");
+      if (cameraPipe) cameraPipe.start();
+    }
+
+    function captureFace() {
+      const name = document.getElementById('faceNameInput').value.trim();
+      if (!name) {
+        alert("يرجى كتابة الاسم أولاً!");
+        return;
       }
+      const gallery = document.getElementById('faces-gallery');
+      const card = document.createElement('div');
+      card.className = "bg-slate-900 border border-slate-700 rounded p-1 text-center text-[9px]";
+      card.innerHTML = `<div class="w-full h-12 bg-emerald-950 flex items-center justify-center rounded mb-1 text-emerald-400 font-bold"><i class="fa-solid fa-user text-base"></i></div><span class="block truncate text-slate-200">${name}</span>`;
+      gallery.appendChild(card);
+      document.getElementById('faceNameInput').value = '';
+      addSecurityLog(`تم تسجيل بصمة الوجه الجديدة لـ: ${name}`);
     }
 
     // ==========================================
-    // 5. CHART ANALYTICS
+    // 5. ANALYTICS CHART & UI TABS
     // ==========================================
     let chartInstance = null;
 
@@ -1046,100 +975,67 @@
       chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: ['0s', '1s', '2s', '3s', '4s', '5s'],
+          labels: [],
           datasets: [{
-            label: 'المسافة المحسوبة (m)',
-            data: [0, 1.2, 2.1, 2.5, 3.0, 3.2],
+            label: 'مسافة الهدف (متر)',
+            data: [],
             borderColor: '#38bdf8',
             backgroundColor: 'rgba(56, 189, 248, 0.1)',
-            fill: true,
-            tension: 0.4
+            borderWidth: 1.5,
+            fill: true
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
           scales: {
-            x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 8 } } },
-            y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 8 } } }
-          }
+            x: { display: false },
+            y: { ticks: { color: '#94a3b8', font: { size: 9 } } }
+          },
+          plugins: { legend: { display: false } }
         }
       });
     }
 
-    function updateChartData(x, z) {
+    function updateChart(x, z) {
       if (!chartInstance) return;
       const distance = Math.sqrt(x * x + z * z);
-      const labels = chartInstance.data.labels;
-      const data = chartInstance.data.datasets[0].data;
+      const timeStr = new Date().toLocaleTimeString('ar-EG');
 
-      labels.shift();
-      labels.push(new Date().toLocaleTimeString('ar-EG').split(' ')[0]);
-      data.shift();
-      data.push(distance);
+      if (chartInstance.data.labels.length > 15) {
+        chartInstance.data.labels.shift();
+        chartInstance.data.datasets[0].data.shift();
+      }
 
+      chartInstance.data.labels.push(timeStr);
+      chartInstance.data.datasets[0].data.push(distance.toFixed(2));
       chartInstance.update();
     }
 
-    // ==========================================
-    // 6. FACE CAPTURE & DATABASE
-    // ==========================================
-    const faceDatabase = [];
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-    function captureFace() {
-      if (!currentUserRole.canEdit) return;
-      const name = document.getElementById('faceNameInput').value.trim();
-      if (!name) {
-        alert("يرجى إدخال اسم الشخص أولاً!");
-        return;
-      }
-
-      const canvas = document.getElementById('ai-canvas');
-      const imgData = canvas.toDataURL('image/png');
-
-      const faceEntry = { id: Date.now(), name: name, image: imgData };
-      faceDatabase.push(faceEntry);
-
-      renderFacesGallery();
-      document.getElementById('faceNameInput').value = '';
-      addSecurityLog(`تم حفظ وتقييد بصمة وجه جديدة: ${name}`);
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      if (btn) btn.classList.add('active');
     }
 
-    function renderFacesGallery() {
-      const container = document.getElementById('faces-gallery');
-      container.innerHTML = faceDatabase.map(item => `
-        <div class="bg-slate-950 p-1 rounded border border-slate-800 text-center">
-          <img src="${item.image}" class="w-full h-16 object-cover rounded mb-1 border border-cyan-500/30">
-          <span class="text-[9px] text-cyan-300 font-bold block truncate">${item.name}</span>
-        </div>
-      `).join('');
+    function toggleCollapse(panelId) {
+      document.getElementById(panelId).classList.toggle('collapsed');
     }
 
-    // ==========================================
-    // 7. MQTT SENSOR SIMULATION / REAL CONNECT
-    // ==========================================
-    let mqttClient = null;
-
-    function initMQTT() {
-      // Automatic Simulation Movement for Dynamic Demo
-      setInterval(() => {
-        const simX = (Math.sin(Date.now() / 2000) * 6);
-        const simZ = (Math.cos(Date.now() / 2000) * 6);
-        updateRadarTargetPosition(simX, simZ);
-      }, 100);
+    function hidePanel(panelId) {
+      document.getElementById(panelId).classList.add('hidden');
     }
 
-    function connectMQTT() {
-      const btn = document.getElementById('sensor-btn');
-      btn.className = "bg-amber-600 text-white text-xs px-2 py-1 rounded-lg border border-amber-500 flex items-center gap-1";
-      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> جاري الاتصال...`;
-
-      setTimeout(() => {
-        btn.className = "bg-emerald-600 text-white text-xs px-2 py-1 rounded-lg border border-emerald-400 flex items-center gap-1";
-        btn.innerHTML = `<i class="fa-solid fa-wifi text-white"></i> الرادار متصل`;
-        addSecurityLog("تم الاتصال بنجاح مع وحدة حساس الرادار المليمتري LD2450.");
-      }, 1500);
+    function addSecurityLog(msg) {
+      const logContainer = document.getElementById('security-logs');
+      if (!logContainer) return;
+      const time = new Date().toLocaleTimeString('ar-EG');
+      const div = document.createElement('div');
+      div.className = "bg-slate-950/80 p-1 rounded border border-slate-800 text-slate-300 leading-tight";
+      div.innerHTML = `<span class="text-cyan-400">[${time}]</span> ${msg}`;
+      logContainer.prepend(div);
     }
   </script>
 </body>
