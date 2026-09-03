@@ -202,9 +202,26 @@
     <div id="tab-architect" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
       <div class="absolute top-20 right-3 pointer-events-auto w-80 glass-panel p-4 flex flex-col gap-3">
         <h3 class="text-xs font-bold text-cyan-400 border-b border-slate-800 pb-2"><i class="fa-solid fa-pen-ruler ml-1"></i> أدوات CAD والتصميم المباشر</h3>
-        <p class="text-[10px] text-slate-400">اختر الأداة ثم اضغط بثلاثية الأبعاد على المكان المخصص في الأرضية لبناء العنصر مباشرة.</p>
         
-        <div id="cad-tools-panel" class="grid grid-cols-2 gap-2">
+        <!-- الطوابق والدوران -->
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="block text-slate-400 text-[10px] mb-1">الطابق الحالي:</label>
+            <select id="floorSelect" onchange="changeFloor(this.value)" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-cyan-400 font-bold">
+              <option value="0">الطابق الأرضي (0)</option>
+              <option value="1">الطابق الأول (1)</option>
+              <option value="2">الطابق الثاني (2)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 text-[10px] mb-1">زاوية الاتجاه:</label>
+            <button onclick="toggleRotation()" id="rotBtn" class="w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 p-1.5 rounded text-emerald-400 font-bold">
+              🔄 أفقياً (0°)
+            </button>
+          </div>
+        </div>
+
+        <div id="cad-tools-panel" class="grid grid-cols-2 gap-2 pt-1">
           <button id="tool-select" onclick="setCadTool('select')" class="cad-btn active p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-arrow-pointer text-cyan-400"></i> تحديد</button>
           <button id="tool-wall" onclick="setCadTool('wall')" class="cad-btn p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-ruler-combined text-emerald-400"></i> جدار</button>
           <button id="tool-door" onclick="setCadTool('door')" class="cad-btn p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-door-open text-amber-300"></i> باب</button>
@@ -259,7 +276,8 @@
     <div class="glass-panel absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-6 py-2 flex items-center gap-6 text-xs text-slate-300 border border-cyan-500/30">
       <div>X: <span id="pos-x" class="text-cyan-400 font-mono font-bold">0.00</span> m</div>
       <div>Z: <span id="pos-z" class="text-emerald-400 font-mono font-bold">0.00</span> m</div>
-      <div>الأداة النشطة: <span id="active-tool-label" class="text-amber-400 font-bold">تحديد</span></div>
+      <div>الطابق: <span id="current-floor-hud" class="text-cyan-300 font-bold">0</span></div>
+      <div>الأداة: <span id="active-tool-label" class="text-amber-400 font-bold">تحديد</span></div>
     </div>
 
   </div>
@@ -388,11 +406,14 @@
     }
 
     // ==========================================
-    // 3. THREE.JS ENGINE & INTERACTIVE CAD DESIGN
+    // 3. THREE.JS ENGINE & MULTI-FLOOR CAD DESIGN
     // ==========================================
-    let scene, camera3D, renderer, controls, mapGroup, floorMesh;
+    let scene, camera3D, renderer, controls, mapGroup;
     let activeTool = 'select';
-    let savedMap = { items: [], zones: [] };
+    let currentFloor = 0;
+    let currentRotation = 0; // 0 rad or Math.PI / 2 rad
+    let floorPlanes = [];
+    const FLOOR_HEIGHT = 3.0;
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -402,7 +423,7 @@
       scene.background = new THREE.Color(0x020617);
 
       camera3D = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera3D.position.set(0, 12, 16);
+      camera3D.position.set(0, 15, 20);
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -420,11 +441,21 @@
       mapGroup = new THREE.Group();
       scene.add(mapGroup);
 
-      // Floor Setup
-      const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
-      floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), floorMat);
-      floorMesh.rotation.x = -Math.PI / 2;
-      scene.add(floorMesh);
+      // Create Planes for Multi-Floor system
+      for (let i = 0; i < 3; i++) {
+        const floorMat = new THREE.MeshStandardMaterial({ 
+          color: 0x0f172a, 
+          roughness: 0.8,
+          transparent: true,
+          opacity: i === 0 ? 1.0 : 0.6 
+        });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = i * FLOOR_HEIGHT;
+        floor.visible = (i === 0);
+        scene.add(floor);
+        floorPlanes.push(floor);
+      }
 
       window.addEventListener('resize', () => {
         camera3D.aspect = window.innerWidth / window.innerHeight;
@@ -432,7 +463,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
 
-      // Pointer Click Listener for CAD Building
       window.addEventListener('pointerdown', onDocumentPointerDown);
 
       function animate() {
@@ -441,6 +471,28 @@
         renderer.render(scene, camera3D);
       }
       animate();
+    }
+
+    function toggleRotation() {
+      currentRotation = currentRotation === 0 ? Math.PI / 2 : 0;
+      const btn = document.getElementById('rotBtn');
+      if (currentRotation === 0) {
+        btn.innerHTML = '🔄 أفقياً (0°)';
+        btn.className = 'w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 p-1.5 rounded text-emerald-400 font-bold';
+      } else {
+        btn.innerHTML = '🔄 عمودياً (90°)';
+        btn.className = 'w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 p-1.5 rounded text-cyan-400 font-bold';
+      }
+    }
+
+    function changeFloor(floorIdx) {
+      currentFloor = parseInt(floorIdx);
+      document.getElementById('current-floor-hud').innerText = currentFloor;
+      
+      floorPlanes.forEach((fl, idx) => {
+        fl.visible = idx <= currentFloor;
+      });
+      addSecurityLog(`تم الانتقال إلى الطابق (${currentFloor})`);
     }
 
     function setCadTool(tool) {
@@ -458,66 +510,65 @@
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera3D);
-      const intersects = raycaster.intersectObject(floorMesh);
+      const activeFloorMesh = floorPlanes[currentFloor];
+      const intersects = raycaster.intersectObject(activeFloorMesh);
 
       if (intersects.length > 0) {
         const point = intersects[0].point;
-        createCadObject(activeTool, point.x, point.z);
+        createCadObject(activeTool, point.x, point.z, currentFloor);
       }
     }
 
-    function createCadObject(type, x, z) {
+    function createCadObject(type, x, z, floorLevel) {
       const wallColorHex = parseInt(document.getElementById('wallColorPicker').value.replace('#', '0x'));
+      const baseY = floorLevel * FLOOR_HEIGHT;
       let mesh;
 
       if (type === 'wall') {
         const geom = new THREE.BoxGeometry(4, 2.5, 0.3);
         const mat = new THREE.MeshStandardMaterial({ color: wallColorHex });
         mesh = new THREE.Mesh(geom, mat);
-        mesh.position.set(x, 1.25, z);
+        mesh.position.set(x, baseY + 1.25, z);
       } else if (type === 'door') {
         mesh = new THREE.Group();
-        // Frame
         const frameGeom = new THREE.BoxGeometry(1.4, 2.2, 0.15);
         const frameMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
         const frame = new THREE.Mesh(frameGeom, frameMat);
         frame.position.y = 1.1;
         mesh.add(frame);
-        // Panel
+
         const panelGeom = new THREE.BoxGeometry(1.2, 2.0, 0.08);
         const panelMat = new THREE.MeshStandardMaterial({ color: 0xd97706 });
         const panel = new THREE.Mesh(panelGeom, panelMat);
         panel.position.set(0.1, 1.0, 0);
         mesh.add(panel);
-        mesh.position.set(x, 0, z);
+        mesh.position.set(x, baseY, z);
       } else if (type === 'window') {
         mesh = new THREE.Group();
-        // Frame
         const frameGeom = new THREE.BoxGeometry(1.6, 1.2, 0.15);
         const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
         const frame = new THREE.Mesh(frameGeom, frameMat);
         frame.position.y = 1.5;
         mesh.add(frame);
-        // Glass
+
         const glassGeom = new THREE.BoxGeometry(1.4, 1.0, 0.05);
         const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5, roughness: 0.1 });
         const glass = new THREE.Mesh(glassGeom, glassMat);
         glass.position.y = 1.5;
         mesh.add(glass);
-        mesh.position.set(x, 0, z);
+        mesh.position.set(x, baseY, z);
       }
 
       if (mesh) {
+        mesh.rotation.y = currentRotation; // Apply 0° or 90° rotation
         mapGroup.add(mesh);
-        savedMap.items.push({ type, x, z });
-        addSecurityLog(`تمت إضافة عنصر CAD: ${type} في X:${x.toFixed(1)}, Z:${z.toFixed(1)}`);
+        addSecurityLog(`تم إضافة ${type} (طابق ${floorLevel}) بزاوية ${currentRotation === 0 ? '0°' : '90°'}`);
       }
     }
 
     function updateColors() {
-      const wallColor = document.getElementById('wallColorPicker').value;
       const floorColor = document.getElementById('floorColorPicker').value;
-      floorMesh.material.color.setHex(parseInt(floorColor.replace('#', '0x')));
+      floorPlanes.forEach(fl => fl.material.color.setHex(parseInt(floorColor.replace('#', '0x'))));
     }
 
     function addDangerZoneUI() {
@@ -526,22 +577,22 @@
       const x = parseFloat(document.getElementById('zoneX').value);
       const z = parseFloat(document.getElementById('zoneZ').value);
       const size = parseFloat(document.getElementById('zoneSize').value);
+      const baseY = currentFloor * FLOOR_HEIGHT;
 
       const zoneMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.4 });
       const geom = shape === 'rectangle' ? new THREE.BoxGeometry(size, 0.1, size) : new THREE.CylinderGeometry(size, size, 0.1, 32);
       const mesh = new THREE.Mesh(geom, zoneMat);
-      mesh.position.set(x, 0.05, z);
+      mesh.position.set(x, baseY + 0.05, z);
       mapGroup.add(mesh);
 
-      addSecurityLog(`🚨 تم إنشاء منطقة خطر: ${name}`);
+      addSecurityLog(`🚨 تم إنشاء منطقة خطر طابق ${currentFloor}: ${name}`);
     }
 
     function clearCADObjects() {
       while(mapGroup.children.length > 0) {
         mapGroup.remove(mapGroup.children[0]);
       }
-      savedMap.items = [];
-      addSecurityLog("تم مسح جميع العناصر المعمارية ومناطق الخطر.");
+      addSecurityLog("تم مسح جميع العناصر.");
     }
 
     // ==========================================
