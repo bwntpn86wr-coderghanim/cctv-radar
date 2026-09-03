@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -5,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title id="doc-title">AegisRadar 360 AI - جامعة نينوى Suite</title>
 
+  <!-- المكتبات البرمجية الأساسية -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -16,80 +18,152 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-    body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; position: fixed; }
-    #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      -webkit-tap-highlight-color: transparent; 
+    }
     
-    /* تنسيق القوائم مع حماية من الخروج عن الشاشة */
+    html, body { 
+      width: 100vw; 
+      height: 100vh; 
+      overflow: hidden; 
+      position: fixed; 
+      background-color: #020617; 
+      color: #f8fafc; 
+      touch-action: none;
+    }
+    
+    #canvas-container { 
+      width: 100vw; 
+      height: 100vh; 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      z-index: 1; 
+      touch-action: none; 
+    }
+    
+    /* تصميم اللوحات الزجاجية مع دعم الاستجابة للهواتف المحمولة والآيفون */
     .glass-panel {
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: 12px;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
-      transition: all 0.3s ease;
-      max-width: calc(100vw - 16px) !important;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      transition: all 0.25s ease-in-out;
       max-height: 80vh;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
+
     .hud-title {
       background: linear-gradient(90deg, #38bdf8, #34d399, #f43f5e);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .cad-btn { transition: all 0.2s ease; border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; }
+
+    .cad-btn { 
+      transition: all 0.2s ease; 
+      border: 1px solid rgba(255, 255, 255, 0.1); 
+      cursor: pointer; 
+    }
+    
     .cad-btn.active {
       background: linear-gradient(135deg, #0284c7, #0369a1) !important;
       border-color: #38bdf8 !important;
       box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
     }
+
     .nav-btn {
-      background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 6px 12px;
-      border-radius: 8px; cursor: pointer; font-size: 11px; transition: 0.2s; white-space: nowrap;
+      background: #1e293b; 
+      color: #94a3b8; 
+      border: 1px solid #334155; 
+      padding: 6px 12px;
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-size: 11px; 
+      transition: 0.2s; 
+      white-space: nowrap;
     }
-    .nav-btn.active, .nav-btn:hover { background: #0284c7; color: #fff; border-color: #38bdf8; }
+    
+    .nav-btn.active, .nav-btn:hover { 
+      background: #0284c7; 
+      color: #fff; 
+      border-color: #38bdf8; 
+    }
+
     .step-screen {
-      position: fixed; inset: 0; z-index: 100; background: #020617;
-      display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 16px;
+      position: fixed; 
+      inset: 0; 
+      z-index: 100; 
+      background: #020617;
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center; 
+      align-items: center; 
+      padding: 16px;
     }
-    .scanline {
-      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.3));
-      background-size: 100% 4px; pointer-events: none;
+
+    /* تحسين العرض على شاشات الأجهزة المحمولة والآيفون */
+    @media (max-width: 640px) {
+      .glass-panel {
+        width: 92vw !important;
+        max-width: 92vw !important;
+        left: 4vw !important;
+        right: 4vw !important;
+        top: 75px !important;
+        margin: 0 auto !important;
+        position: fixed !important;
+        z-index: 90 !important;
+        padding: 1rem !important;
+      }
+      .tab-content {
+        padding-top: 4.5rem !important;
+      }
     }
-    .collapsed .panel-content { display: none !important; }
+
+    /* أزرار الإغلاق السريعة للآيفون */
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 32px;
+      height: 32px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #ef4444;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 100;
+    }
+
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    .read-only-disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
-
-    /* تحسين العرض والتفاعل في شاشات الهواتف المحمولة */
-    @media (max-width: 640px) {
-      .tab-content {
-        padding-top: 5rem !important;
-      }
-      .glass-panel {
-        position: fixed !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: 92vw !important;
-        z-index: 50 !important;
-      }
-    }
   </style>
 </head>
 <body>
 
+  <!-- حاوي العرض ثلاثي الأبعاد -->
+  <div id="canvas-container"></div>
+
+  <!-- 1. الشاشات التعريفية والمصادقة -->
   <div id="step-1" class="step-screen">
-    <div class="glass-panel max-w-lg w-full p-6 text-center border border-cyan-500/40 shadow-2xl">
+    <div class="glass-panel max-w-lg w-full p-6 text-center border border-cyan-500/40 shadow-2xl relative">
       <div class="w-14 h-14 bg-gradient-to-tr from-cyan-600 to-emerald-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-3 animate-pulse">
         <i class="fa-solid fa-shield-halved text-2xl text-white"></i>
       </div>
-      <h1 class="text-2xl font-black hud-title mb-1 system-title-text">AegisRadar 360 AI</h1>
+      <h1 class="text-2xl font-black hud-title mb-1">AegisRadar 360 AI</h1>
       <h2 class="text-[11px] text-slate-400 mb-3">نظام المراقبة الهندسية وإدارة المنازل الذكية ثلاثي الأبعاد</h2>
       
       <div class="bg-slate-900/80 border-r-4 border-cyan-500 p-2.5 text-right text-xs leading-relaxed text-slate-300 mb-3 rounded">
-        نظام أمني هجين يدمج حساس الرادار المليمتري (LD2450) مع محرك تقييم الوضعية والرؤية الحاسوبية.
+        نظام أمني هجين يدمج حساس الرادار المليمتري (LD2450) مع محرك تقييم الوضعية والحظر الجغرافي.
       </div>
 
       <div class="bg-slate-950 p-2.5 rounded-lg text-right text-xs border border-slate-800 mb-4 space-y-1">
@@ -98,19 +172,19 @@
         <p class="text-[9px] text-slate-500 pt-0.5">جامعة نينوى - كلية الهندسة</p>
       </div>
 
-      <button onclick="goToStep(2)" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2.5 rounded-lg transition text-xs">
+      <button onclick="goToStep(2)" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 rounded-xl transition text-xs">
         المتابعة لإعدادات الدخول ➔
       </button>
     </div>
   </div>
 
   <div id="step-2" class="step-screen hidden">
-    <div class="glass-panel max-w-md w-full p-5 text-center border border-cyan-500/30">
+    <div class="glass-panel max-w-md w-full p-5 text-center border border-cyan-500/30 relative">
       <h2 class="text-lg font-bold hud-title mb-3">🔒 مصادقة حماية النظام</h2>
       
       <div class="mb-3 text-right">
         <label class="text-xs text-slate-300 font-bold block mb-1">حساب المستخدم:</label>
-        <select id="user-role-select" onchange="updatePinHint()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
+        <select id="user-role-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
           <option value="admin">المهندس غانم (مدير النظام - Admin)</option>
           <option value="operator">المشرف الأمني (Security Operator)</option>
           <option value="viewer">حساب مراقب (View Only)</option>
@@ -119,17 +193,14 @@
 
       <div class="mb-4 text-right">
         <label class="text-xs text-slate-300 font-bold block mb-1">رمز الدخول الأمني (PIN):</label>
-        <input type="password" id="pin-input" maxlength="8" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 p-2.5 text-center text-lg text-cyan-400 font-mono" />
-        <p class="text-[10px] text-slate-400 mt-1">عنوان IP الحالي: <span id="user-ip-display" class="text-cyan-400 font-mono">جاري الجلب...</span></p>
+        <input type="password" id="pin-input" maxlength="8" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 p-2.5 text-center text-lg text-cyan-400 font-mono rounded-lg" />
       </div>
 
       <button onclick="authenticateUser()" class="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 text-white font-bold py-2.5 rounded-lg text-xs">
         دخول النظام 🔓
       </button>
-      <p id="auth-error" class="text-xs text-red-400 mt-2 hidden">رمز الدخول غير صحيح أو أن حسابك محظور!</p>
     </div>
   </div>
-
 
 
   
@@ -1173,6 +1244,54 @@ function initMQTT() {
   });
 }
 
+// ==========================================
+// نظام حفظ واسترجاع البناء التلقائي واليدوي
+// ==========================================
+
+// 1. حفظ التصميم الحالي
+function saveCADDesign() {
+  if (!builtObjects || builtObjects.length === 0) {
+    addSecurityLog("⚠️ لا يوجد عناصر في البناء للحفظ!");
+    return;
+  }
+
+  const cadData = builtObjects.map(obj => ({
+    type: obj.userData.type,
+    position: { x: obj.position.x, y: obj.position.y, z: obj.position.z },
+    rotation: { x: obj.rotation.x, y: obj.rotation.y, z: obj.rotation.z },
+    scale: { x: obj.scale.x, y: obj.scale.y, z: obj.scale.z }
+  }));
+
+  localStorage.setItem('aegis_cad_layout', JSON.stringify(cadData));
+  addSecurityLog("💾 تم حفظ تصميم البناء الحالي بنجاح!");
+}
+
+// 2. استرجاع البناء المحفوظ تلقائياً عند فتح الموقع
+function loadCADDesign() {
+  const savedData = localStorage.getItem('aegis_cad_layout');
+  if (!savedData) return;
+
+  try {
+    const cadData = JSON.parse(savedData);
+    cadData.forEach(item => {
+      // إعادة بناء المجسمات بناءً على البيانات المحفوظة
+      createObjectFromData(item.type, item.position, item.rotation, item.scale);
+    });
+    addSecurityLog("🔄 تم استرجاع تصميم البناء المحفوظ تلقائياً.");
+  } catch (e) {
+    console.error("خطأ أثناء استرجاع تصميم البناء:", e);
+  }
+}
+
+// تشغيل الاسترجاع التلقائي فور تحميل الصفحة
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    loadCADDesign();
+  }, 1000);
+});
+
+
+  
     function connectMQTT() {
       const btn = document.getElementById('sensor-btn');
       btn.className = "bg-amber-600 text-white text-xs px-2 py-1 rounded-lg border border-amber-500 flex items-center gap-1";
