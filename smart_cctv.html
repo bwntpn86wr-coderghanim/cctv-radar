@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title id="doc-title">AegisRadar 360 AI - جامعة نينوى Suite</title>
 
-  <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -21,14 +20,18 @@
     body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; position: fixed; }
     #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
     
+    /* تنسيق القوائم مع حماية من الخروج عن الشاشة */
     .glass-panel {
-      background: rgba(15, 23, 42, 0.9);
+      background: rgba(15, 23, 42, 0.95);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(56, 189, 248, 0.25);
       border-radius: 12px;
       box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
       transition: all 0.3s ease;
+      max-width: calc(100vw - 16px) !important;
+      max-height: 80vh;
+      overflow-y: auto;
     }
     .hud-title {
       background: linear-gradient(90deg, #38bdf8, #34d399, #f43f5e);
@@ -58,11 +61,25 @@
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     .read-only-disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+
+    /* تحسين العرض والتفاعل في شاشات الهواتف المحمولة */
+    @media (max-width: 640px) {
+      .tab-content {
+        padding-top: 5rem !important;
+      }
+      .glass-panel {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 92vw !important;
+        z-index: 50 !important;
+      }
+    }
   </style>
 </head>
 <body>
 
-  <!-- 1. الشاشات التعريفية -->
   <div id="step-1" class="step-screen">
     <div class="glass-panel max-w-lg w-full p-6 text-center border border-cyan-500/40 shadow-2xl">
       <div class="w-14 h-14 bg-gradient-to-tr from-cyan-600 to-emerald-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-3 animate-pulse">
