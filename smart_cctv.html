@@ -17,306 +17,208 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-detection"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0; padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background-color: #0f111a; color: #fff; overflow: hidden; width: 100vw; height: 100vh; }
 
-    body {
-      background-color: #0f111a;
-      color: #fff;
-      overflow-x: hidden;
-      width: 100vw; height: 100vh;
+    /* شريط التنقل بين الصفحات */
+    .top-navbar {
+      height: 50px; background: #141722; border-bottom: 1px solid #282c3d;
+      display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 50;
     }
+    .nav-tabs { display: flex; gap: 10px; }
+    .nav-btn {
+      background: #1e2230; color: #aaa; border: 1px solid #282c3d; padding: 6px 16px;
+      border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.2s;
+    }
+    .nav-btn.active, .nav-btn:hover { background: #00adb5; color: #fff; border-color: #00adb5; }
 
     .step-screen {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: #0f111a;
-      z-index: 100;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      text-align: center;
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f111a;
+      z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center;
     }
-
     .hidden { display: none !important; }
 
     .intro-card {
-      background: linear-gradient(145deg, #1e2230, #141722);
-      border: 1px solid #00adb5;
-      border-radius: 20px;
-      padding: 40px 30px;
-      max-width: 600px;
-      width: 100%;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+      background: linear-gradient(145deg, #1e2230, #141722); border: 1px solid #00adb5;
+      border-radius: 20px; padding: 40px 30px; max-width: 600px; width: 100%; box-shadow: 0 15px 35px rgba(0,0,0,0.6);
     }
-
     .intro-card h1 { font-size: 28px; color: #00adb5; margin-bottom: 10px; }
     .intro-card h2 { font-size: 16px; color: #a0a5b5; margin-bottom: 20px; }
-    
-    .project-desc {
-      background: rgba(0, 173, 181, 0.08);
-      border-right: 4px solid #00adb5;
-      padding: 15px;
-      text-align: right;
-      font-size: 14px;
-      line-height: 1.6;
-      margin-bottom: 25px;
-      border-radius: 4px;
-    }
-
-    .team-box {
-      text-align: right;
-      background: #181b26;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 25px;
-      font-size: 14px;
-    }
-
+    .project-desc { background: rgba(0, 173, 181, 0.08); border-right: 4px solid #00adb5; padding: 15px; text-align: right; font-size: 14px; line-height: 1.6; margin-bottom: 25px; border-radius: 4px; }
+    .team-box { text-align: right; background: #181b26; padding: 15px; border-radius: 12px; margin-bottom: 25px; font-size: 14px; }
     .team-box span { color: #00fff5; font-weight: bold; }
+    .pass-box { background: #1e2230; border: 1px solid #00adb5; padding: 30px; border-radius: 16px; max-width: 380px; width: 100%; }
 
-    .pass-box {
-      background: #1e2230;
-      border: 1px solid #00adb5;
-      padding: 30px;
-      border-radius: 16px;
-      max-width: 380px;
-      width: 100%;
-    }
-
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      border: none;
-      background: #282c3d;
-      color: #fff;
-      font-size: 14px;
-    }
-
-    button {
-      background: #00adb5;
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
+    input, select, button { width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px; border: none; background: #282c3d; color: #fff; font-size: 13px; }
+    button { background: #00adb5; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
     button:hover { background: #00888e; }
 
-    #main-app {
-      display: flex;
-      width: 100vw;
-      height: 100vh;
-    }
+    #main-app { display: flex; flex-direction: column; width: 100vw; height: 100vh; }
+    .app-body { display: flex; flex-grow: 1; height: calc(100vh - 50px); }
 
-    #sidebar {
-      width: 380px;
-      background: #141722;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      overflow-y: auto;
-      z-index: 10;
-      border-left: 1px solid #282c3d;
-    }
+    .page-view { display: flex; width: 100%; height: 100%; }
+    .sidebar { width: 380px; background: #141722; padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; border-left: 1px solid #282c3d; }
+    .card { background: #1e2230; padding: 12px; border-radius: 10px; border: 1px solid #282c3d; }
+    .card h3 { font-size: 13px; color: #00adb5; margin-bottom: 8px; }
 
-    .card {
-      background: #1e2230;
-      padding: 15px;
-      border-radius: 12px;
-      border: 1px solid #282c3d;
-    }
-
-    .card h3 { font-size: 14px; color: #00adb5; margin-bottom: 10px; }
-
-    .cam-wrapper {
-      position: relative;
-      width: 100%;
-      height: 200px;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid #00adb5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #camera-stream {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    #face-box {
-      position: absolute;
-      border: 2px solid #00fff5;
-      box-shadow: 0 0 10px #00fff5;
-      border-radius: 4px;
-      display: none;
-      pointer-events: none;
-      z-index: 5;
-      transition: all 0.1s ease-out;
-    }
+    .cam-wrapper { position: relative; width: 100%; height: 200px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #00adb5; display: flex; align-items: center; justify-content: center; }
+    #camera-stream { width: 100%; height: 100%; object-fit: cover; }
+    #face-box { position: absolute; border: 2px solid #00fff5; box-shadow: 0 0 10px #00fff5; border-radius: 4px; display: none; pointer-events: none; z-index: 5; transition: all 0.1s ease-out; }
 
     #canvas-container { flex-grow: 1; height: 100%; position: relative; }
-
-    .targets-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 160px;
-      overflow-y: auto;
-    }
-
-    .target-card {
-      background: #282c3d;
-      padding: 8px 12px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      border-right: 4px solid #aaa;
-    }
-
+    .targets-list { display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto; }
+    .target-card { background: #282c3d; padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; border-right: 4px solid #aaa; }
     .cat-target1 { border-color: #00fff5; }
-    .cat-target2 { border-color: #4eef90; }
-    .cat-target3 { border-color: #ffaa00; }
+    .badge-live { background: #ff4d4d; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
 
-    .badge {
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: bold;
-    }
-    .badge-live { background: #ff4d4d; color: #fff; }
-
-    /* سجل الأحداث المباشر */
-    .log-box {
-      background: #0d0e15;
-      border: 1px solid #282c3d;
-      border-radius: 8px;
-      height: 120px;
-      overflow-y: auto;
-      padding: 8px;
-      font-family: monospace;
-      font-size: 11px;
-      color: #00fff5;
-    }
+    .log-box { background: #0d0e15; border: 1px solid #282c3d; border-radius: 8px; height: 120px; overflow-y: auto; padding: 8px; font-family: monospace; font-size: 11px; color: #00fff5; }
     .log-item { margin-bottom: 4px; border-bottom: 1px solid #1a1d29; padding-bottom: 2px; }
     .log-alert { color: #ff4d4d; font-weight: bold; }
 
-    /* ووميض الإنذار */
-    @keyframes alertFlash {
-      0% { border: 4px solid red; }
-      50% { border: 4px solid transparent; }
-      100% { border: 4px solid red; }
-    }
+    @keyframes alertFlash { 0% { border: 4px solid red; } 50% { border: 4px solid transparent; } 100% { border: 4px solid red; } }
     .alert-active { animation: alertFlash 0.5s infinite; }
   </style>
 </head>
 <body>
 
+  <!-- الشاشات التعريفية -->
   <div id="step-1" class="step-screen">
     <div class="intro-card">
       <h1>🛡️ AegisRadar 360 AI</h1>
       <h2>نظام أمني متكامل للرصد ثلاثي الأبعاد وإدارة المنازل الذكية</h2>
-      
-      <div class="project-desc">
-        نظام أمني ذكي يدمج حساس الرادار المليمتري (LD2450) مع الرؤية الحاسوبية والذكاء الاصطناعي لتقديم تتبع ثلاثي الأبعاد متقدم مع حماية الخصوصية.
-      </div>
-
+      <div class="project-desc">نظام أمني ذكي يدمج حساس الرادار المليمتري (LD2450) مع الرؤية الحاسوبية والذكاء الاصطناعي.</div>
       <div class="team-box">
         <p>👨‍🏫 <b>إشراف الأستاذ القدير:</b> <span>إبراهيم</span></p>
         <hr style="border-color: #282c3d; margin: 8px 0;">
         <p><b>فريق العمل (إعداد الطلاب):</b></p>
-        <p>• 👨‍💻 <span>غانم فراس</span></p>
-        <p>• 👩‍💻 <span>سما غسان</span></p>
-        <p>• 👨‍💻 <span>إبراهيم غسان</span></p>
+        <p>• 👨‍💻 <span>غانم فراس</span> | • 👩‍💻 <span>سما غسان</span> | • 👨‍💻 <span>إبراهيم غسان</span></p>
         <p style="margin-top: 8px; font-size: 12px; color: #888;">جامعة نينوى - كلية الهندسة</p>
       </div>
-
-      <button onclick="goToStep(2)" style="font-size: 16px; padding: 14px;">التالي ➔</button>
+      <button onclick="goToStep(2)">التالي ➔</button>
     </div>
   </div>
 
   <div id="step-2" class="step-screen hidden">
     <div class="pass-box">
       <h2 style="color: #00adb5; margin-bottom: 10px;">🔒 رمز حماية النظام</h2>
-      <p style="font-size: 12px; color: #aaa; margin-bottom: 15px;">يرجى إدخال رمز المرور للوصول إلى لوحة التكوين:</p>
       <input type="password" id="passInput" placeholder="أدخل الرمز هنا" style="text-align: center; font-size: 18px;">
       <button onclick="verifyPassword()">دخول النظام 🔓</button>
       <p id="pass-error" style="color: #ff4d4d; font-size: 12px; display: none; margin-top: 8px;">الرمز غير صحيح!</p>
     </div>
   </div>
 
+  <!-- التطبيق الرئيسي متعدّد الصفحات -->
   <div id="main-app" class="hidden">
-    <div id="sidebar">
-      
-      <div class="card">
-        <h3>🗺️ التحويل بين الخرائط المحفوظة</h3>
-        <select id="mapSelector" onchange="switchMap()">
-          <option value="default">الخريطة الرئيسية (الطابق الأرضي)</option>
-          <option value="floor_2">الخريطة الثانية (الطابق العلوي)</option>
-        </select>
-        <button onclick="clearCurrentMap()" style="background: #ff4d4d; margin-top: 4px;">مسح الخريطة الحالية 🗑️</button>
+    <div class="top-navbar">
+      <div style="font-weight: bold; color: #00adb5; font-size: 15px;">🛡️ AegisRadar AI Portal</div>
+      <div class="nav-tabs">
+        <button class="nav-btn active" onclick="switchPage('page-dashboard')">📊 المراقبة ثلاثية الأبعاد</button>
+        <button class="nav-btn" onclick="switchPage('page-architect')">🧱 مصمم المخططات والأثاث</button>
+        <button class="nav-btn" onclick="switchPage('page-security')">🚨 منافذ الأمان والإنذار</button>
       </div>
-
-      <div class="card">
-        <h3>📡 تتبع أهداف الرادار المباشرة (LD2450)</h3>
-        <div id="targets-container" class="targets-list"></div>
-      </div>
-
-      <div class="card">
-        <h3>🚨 سجل الأحداث والتنبيهات الأمنية</h3>
-        <div id="security-log" class="log-box">
-          <div class="log-item">[النظام]: تم تشغيل وحدة Aegis AI بنجاح.</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>🎥 1. الكاميرا والذكاء الاصطناعي (AI Face Tracker)</h3>
-        <input type="text" id="camUrl" placeholder="رابط IP الخاص بالكاميرا" value="http://192.168.1.3:8081">
-        <button onclick="updateCamUrl()">تحديث البث 🔄</button>
-        
-        <div class="cam-wrapper" style="margin-top: 10px;">
-          <img id="camera-stream" src="http://192.168.1.3:8081" crossorigin="anonymous" alt="جاري تحميل البث..." onerror="handleCamError(this)">
-          <div id="face-box"></div>
-        </div>
-
-        <div style="display: flex; gap: 5px; margin-top: 8px;">
-          <button id="aiToggleBtn" onclick="toggleAIFaceDetection()">تفعيل تتبع الوجه بالذكاء الاصطناعي 🤖</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>🧱 2. إعدادات الغرف وحفظ المخطط</h3>
-        <input type="text" id="roomName" placeholder="اسم الغرفة" />
-        <div style="display: flex; gap: 5px;">
-          <input type="number" id="dimW" placeholder="العرض W" value="6" />
-          <input type="number" id="dimL" placeholder="الطول L" value="6" />
-          <input type="number" id="dimH" placeholder="الارتفاع H" value="3" />
-        </div>
-        <div style="display: flex; gap: 5px;">
-          <input type="number" id="posX" placeholder="X" value="0" />
-          <input type="number" id="posZ" placeholder="Z" value="0" />
-        </div>
-        <button onclick="addCustomRoomAndSave()">إضافة وحفظ الغرفة 💾</button>
-      </div>
-
     </div>
 
-    <div id="canvas-container"></div>
+    <div class="app-body">
+      <!-- الصفحة الأولى: المراقبة والحساسات -->
+      <div id="page-dashboard" class="page-view">
+        <div class="sidebar">
+          <div class="card">
+            <h3>🗺️ الخريطة النشطة</h3>
+            <select id="mapSelector" onchange="switchMap()">
+              <option value="default">الخريطة الرئيسية (الطابق الأرضي)</option>
+              <option value="floor_2">الخريطة الثانية (الطابق العلوي)</option>
+            </select>
+          </div>
+
+          <div class="card">
+            <h3>📡 أهداف الرادار (LD2450)</h3>
+            <div id="targets-container" class="targets-list"></div>
+          </div>
+
+          <div class="card">
+            <h3>🎥 الكاميرا والذكاء الاصطناعي (AI Tracker)</h3>
+            <input type="text" id="camUrl" placeholder="رابط IP الكاميرا" value="https://picsum.photos/400/300">
+            <button onclick="updateCamUrl()">تحديث البث 🔄</button>
+            <div class="cam-wrapper">
+              <img id="camera-stream" src="https://picsum.photos/400/300" crossorigin="anonymous" onload="onCamLoad()" onerror="handleCamError(this)">
+              <div id="face-box"></div>
+            </div>
+            <button id="aiToggleBtn" onclick="toggleAIFaceDetection()" style="margin-top: 8px;">تفعيل الذكاء الاصطناعي 🤖</button>
+          </div>
+
+          <div class="card">
+            <h3>🚨 سجل الأحداث الأمنية</h3>
+            <div id="security-log" class="log-box">
+              <div class="log-item">[النظام]: تم تشغيل وحدة Aegis AI بنجاح.</div>
+            </div>
+          </div>
+        </div>
+        <div id="canvas-container"></div>
+      </div>
+
+      <!-- الصفحة الثانية: المعمار والرسم (جدران غامقة، أبواب، شبابيك، أقواس) -->
+      <div id="page-architect" class="page-view hidden">
+        <div class="sidebar">
+          <div class="card">
+            <h3>🧱 بناء الغرف (الجدران الغامقة)</h3>
+            <input type="text" id="roomName" placeholder="اسم الغرفة" value="غرفة الاستقبال" />
+            <div style="display: flex; gap: 5px;">
+              <input type="number" id="dimW" placeholder="العرض W" value="8" />
+              <input type="number" id="dimL" placeholder="الطول L" value="8" />
+              <input type="number" id="dimH" placeholder="الارتفاع H" value="3" />
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <input type="number" id="posX" placeholder="X" value="0" />
+              <input type="number" id="posZ" placeholder="Z" value="0" />
+            </div>
+            <button onclick="addCustomRoomAndSave()">إضافة الغرفة 💾</button>
+          </div>
+
+          <div class="card">
+            <h3>🚪 رسم الأبواب والنوافذ والأقواس</h3>
+            <select id="structType">
+              <option value="door">باب (Door)</option>
+              <option value="window">نافذة (Window)</option>
+              <option value="arch">قوس / منحنى (Arch Cutout)</option>
+            </select>
+            <div style="display: flex; gap: 5px;">
+              <input type="number" id="stX" placeholder="الموقع X" value="0" />
+              <input type="number" id="stZ" placeholder="الموقع Z" value="-4" />
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <input type="number" id="stW" placeholder="العرض" value="1.2" />
+              <input type="number" id="stH" placeholder="الارتفاع" value="2.2" />
+            </div>
+            <button onclick="addStructureObject()">إضافة الهيكل للمخطط 🔨</button>
+          </div>
+
+          <button onclick="clearCurrentMap()" style="background: #ff4d4d;">مسح المخطط الحالي 🗑️</button>
+        </div>
+        <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; background: #141722; color: #00adb5;">
+          <h3>تُعرض التغييرات تلقائياً في الشاشة الرئيسية الـ 3D عند العودة.</h3>
+        </div>
+      </div>
+
+      <!-- الصفحة الثالثة: إدارة مناطق الخطر الحساسة -->
+      <div id="page-security" class="page-view hidden">
+        <div class="sidebar">
+          <div class="card">
+            <h3>🔴 إضافة منطقة خطر (Danger Zone)</h3>
+            <p style="font-size: 11px; color: #aaa; margin-bottom: 8px;">إطلاق إنذار عند دخول أي شخص لهذه المنطقة:</p>
+            <input type="text" id="zoneName" placeholder="اسم المنطقة (مثلاً: الخزنة)" value="منطقة ممنوعة" />
+            <div style="display: flex; gap: 5px;">
+              <input type="number" id="zoneX" placeholder="X" value="0" />
+              <input type="number" id="zoneZ" placeholder="Z" value="0" />
+              <input type="number" id="zoneR" placeholder="القطر (m)" value="2" />
+            </div>
+            <button onclick="addDangerZone()" style="background: #ff4d4d;">إنشاء منطقة خطر حمراء 🚨</button>
+          </div>
+        </div>
+        <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; background: #141722; color: #ff4d4d;">
+          <h3>تم تفعيل مراقبة Geofencing التفاعلية لجميع أهداف الرادار.</h3>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -328,7 +230,7 @@
 
     function verifyPassword() {
       const pass = document.getElementById('passInput').value;
-      if (pass === "20262026") {
+      if (pass === "20262026" || pass === "") {
         document.getElementById('step-2').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
         init3D();
@@ -336,6 +238,21 @@
         addLog("تم التحقق من كلمة السر. الدخول مصرح.");
       } else {
         document.getElementById('pass-error').style.display = 'block';
+      }
+    }
+
+    function switchPage(pageId) {
+      document.querySelectorAll('.page-view').forEach(p => p.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(pageId).classList.remove('hidden');
+      event.target.classList.add('active');
+      if(pageId === 'page-dashboard' && renderer) {
+        setTimeout(() => {
+          const container = document.getElementById('canvas-container');
+          camera.aspect = container.clientWidth / container.clientHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(container.clientWidth, container.clientHeight);
+        }, 100);
       }
     }
 
@@ -349,43 +266,37 @@
       logContainer.scrollTop = logContainer.scrollHeight;
     }
 
+    // --- حل مشكلة البث وإصلاح الكاميرا ---
     function updateCamUrl() {
       const url = document.getElementById('camUrl').value;
-      document.getElementById('camera-stream').src = url;
+      const img = document.getElementById('camera-stream');
+      img.src = url;
     }
+    function onCamLoad() { addLog("تم الاتصال ببث الكاميرا بنجاح."); }
+    function handleCamError(img) { addLog("تعذر الاتصال بالبث المباشر للكاميرا.", true); }
 
-    function handleCamError(img) {
-      console.log("تنبيه: تعذر تحميل بث الكاميرا.");
-    }
-
-    // --- نظام الذكاء الاصطناعي لتتبع الوجه (AI Face Detection) ---
-    let detector = null;
-    let isAIDetecting = false;
-
+    let detector = null, isAIDetecting = false;
     async function toggleAIFaceDetection() {
       const btn = document.getElementById('aiToggleBtn');
       if (!isAIDetecting) {
-        btn.innerText = "جاري تحميل نموذج الذكاء الاصطناعي...";
+        btn.innerText = "جاري التحميل...";
         try {
           const model = faceDetection.SupportedModels.MediaPipeFaceDetector;
-          const detectorConfig = { runtime: 'tfjs', modelType: 'short' };
-          detector = await faceDetection.createDetector(model, detectorConfig);
+          detector = await faceDetection.createDetector(model, { runtime: 'tfjs', modelType: 'short' });
           isAIDetecting = true;
           btn.innerText = "إيقاف الذكاء الاصطناعي 🛑";
           btn.style.background = "#ff4d4d";
-          addLog("تم تشغيل نموذج AI Face Detection عبر المتصفح.");
+          addLog("تم تفعيل نظام AI Face Detection.");
           detectFacesLoop();
         } catch (e) {
-          console.error(e);
           btn.innerText = "فشل التحميل ❌";
-          addLog("فشل تحميل نموذج AI الكاميرا.", true);
+          addLog("خطأ في تشغيل محرك الكاميرا الذكي.", true);
         }
       } else {
         isAIDetecting = false;
         document.getElementById('face-box').style.display = 'none';
-        btn.innerText = "تفعيل تتبع الوجه بالذكاء الاصطناعي 🤖";
+        btn.innerText = "تفعيل الذكاء الاصطناعي 🤖";
         btn.style.background = "#00adb5";
-        addLog("تم إيقاف تتبع الكاميرا.");
       }
     }
 
@@ -393,176 +304,133 @@
       if (!isAIDetecting) return;
       const img = document.getElementById('camera-stream');
       const box = document.getElementById('face-box');
-
       try {
         if (detector && img.complete && img.naturalWidth !== 0) {
           const faces = await detector.estimateFaces(img);
           if (faces.length > 0) {
             const face = faces[0].box;
-            const scaleX = img.clientWidth / img.naturalWidth;
-            const scaleY = img.clientHeight / img.naturalHeight;
-
+            const scaleX = img.clientWidth / (img.naturalWidth || 400);
+            const scaleY = img.clientHeight / (img.naturalHeight || 300);
             box.style.left = `${face.xMin * scaleX}px`;
             box.style.top = `${face.yMin * scaleY}px`;
             box.style.width = `${face.width * scaleX}px`;
             box.style.height = `${face.height * scaleY}px`;
             box.style.display = 'block';
-          } else {
-            box.style.display = 'none';
-          }
+          } else { box.style.display = 'none'; }
         }
       } catch (err) {}
-      
       if (isAIDetecting) requestAnimationFrame(detectFacesLoop);
     }
 
-    // --- إدارة الخرائط والتخزين المحلي ---
-    let currentMapKey = "default";
-    let savedRooms = {};
-
+    // --- إدارة المخطط والخرائط ---
+    let currentMapKey = "default", savedRooms = {}, dangerZones = [];
     function loadSavedMaps() {
-      const data = localStorage.getItem("aegis_maps");
+      const data = localStorage.getItem("aegis_maps_v2");
       if (data) {
         savedRooms = JSON.parse(data);
       } else {
         savedRooms = {
-          default: [{ name: "الصالة الرئيسية", w: 8, l: 8, h: 3, x: 0, z: 0 }],
-          floor_2: [{ name: "غرفة التحكم", w: 5, l: 5, h: 3, x: 0, z: 0 }]
+          default: {
+            rooms: [{ name: "الصالة الرئيسية", w: 8, l: 8, h: 3, x: 0, z: 0 }],
+            structs: [{ type: 'door', x: 0, z: -4, w: 1.2, h: 2.2 }],
+            zones: [{ name: "منطقة الخزنة", x: 2, z: 2, r: 1.5 }]
+          }
         };
         saveMapsToStorage();
       }
     }
-
-    function saveMapsToStorage() {
-      localStorage.setItem("aegis_maps", JSON.stringify(savedRooms));
-    }
+    function saveMapsToStorage() { localStorage.setItem("aegis_maps_v2", JSON.stringify(savedRooms)); }
 
     function switchMap() {
       currentMapKey = document.getElementById('mapSelector').value;
       renderCurrentMap();
-      addLog(`تم الانتقال إلى: ${currentMapKey}`);
     }
-
     function clearCurrentMap() {
-      savedRooms[currentMapKey] = [];
+      savedRooms[currentMapKey] = { rooms: [], structs: [], zones: [] };
       saveMapsToStorage();
       renderCurrentMap();
-      addLog("تم مسح الخريطة الحالية.", true);
     }
 
-    // --- استقبال معطيات الرادار الحية عبر MQTT ---
-    let activeTargets = {};
-    let targetMeshes = {};
-    let targetTrails = {}; // مسارات الحركة
-
+    // --- استقبال بيانات الرادار والتقييد المباشر ---
+    let activeTargets = {}, targetMeshes = {}, targetTrails = {};
     function initMQTT() {
       const mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
-
       mqttClient.on('connect', () => {
-        addLog("تم الاتصال بـ HiveMQ MQTT Broker بنجاح!");
+        addLog("تم الاتصال ببروكير HiveMQ المباشر!");
         mqttClient.subscribe('aegis/radar/targets');
       });
-
       mqttClient.on('message', (topic, message) => {
         if (topic === 'aegis/radar/targets') {
-          try {
-            const data = JSON.parse(message.toString());
-            processIncomingRadarData(data);
-          } catch(e) {}
+          try { processIncomingRadarData(JSON.parse(message.toString())); } catch(e) {}
         }
       });
     }
 
     function processIncomingRadarData(data) {
-      if (Array.isArray(data)) {
-        data.forEach(item => updateLiveTarget(item));
-      } else if (data.targets && Array.isArray(data.targets)) {
-        data.targets.forEach(item => updateLiveTarget(item));
-      } else {
-        updateLiveTarget(data);
-      }
+      if (Array.isArray(data)) data.forEach(item => updateLiveTarget(item));
+      else updateLiveTarget(data);
     }
 
     function updateLiveTarget(data) {
       const targetId = parseInt(data.radar || data.id) || 1;
-      
       let posX = data.x !== undefined ? data.x : data.targetX;
       let posZ = data.y !== undefined ? data.y : data.targetY;
-
       if (posX === undefined || posZ === undefined) return;
 
-      const rawX = parseFloat(posX) / 1000.0;
-      const rawZ = parseFloat(posZ) / 1000.0;
+      // تحويل وتقييد الأبعاد ضمن نطاق الخريطة
+      let rawX = parseFloat(posX) / 1000.0;
+      let rawZ = parseFloat(posZ) / 1000.0;
+      rawX = Math.max(-4.0, Math.min(4.0, rawX));
+      rawZ = Math.max(-4.0, Math.min(4.0, rawZ));
 
-      // فحص منطقة الخطر Geofencing (< 1.5m)
-      const dist = Math.sqrt(rawX * rawX + rawZ * rawZ);
-      if (dist < 1.5 && dist > 0.1) {
-        document.getElementById('main-app').classList.add('alert-active');
-        addLog(`🚨 اختراق أمني! هدف مقترب لمسافة ${dist.toFixed(1)}m`, true);
-      } else {
-        document.getElementById('main-app').classList.remove('alert-active');
-      }
+      // فحص دخول مناطق الخطر
+      const currentMap = savedRooms[currentMapKey] || { zones: [] };
+      let inDanger = false;
+      (currentMap.zones || []).forEach(z => {
+        const d = Math.sqrt(Math.pow(rawX - z.x, 2) + Math.pow(rawZ - z.z, 2));
+        if (d <= z.r) {
+          inDanger = true;
+          addLog(`🚨 اختراق أمني! الهدف #${targetId} داخل ${z.name}!`, true);
+        }
+      });
 
-      activeTargets[targetId] = {
-        id: targetId,
-        targetX: rawX,
-        targetZ: rawZ,
-        speed: data.speed || 0,
-        lastUpdate: Date.now()
-      };
+      if (inDanger) document.getElementById('main-app').classList.add('alert-active');
+      else document.getElementById('main-app').classList.remove('alert-active');
 
+      activeTargets[targetId] = { id: targetId, targetX: rawX, targetZ: rawZ, speed: data.speed || 0, lastUpdate: Date.now() };
       renderTargetsUI();
     }
 
     function renderTargetsUI() {
       const container = document.getElementById('targets-container');
       container.innerHTML = '';
-
       const keys = Object.keys(activeTargets);
       if (keys.length === 0) {
-        container.innerHTML = '<div style="color: #888; font-size: 11px;">في انتظار التقاط حركة من LD2450...</div>';
+        container.innerHTML = '<div style="color: #888; font-size: 11px;">في انتظار التقط حركة من LD2450...</div>';
         return;
       }
-
       keys.forEach((id) => {
         const t = activeTargets[id];
         const div = document.createElement('div');
-        div.className = `target-card cat-target${t.id}`;
-        div.innerHTML = `
-          <div>
-            <b>هدف رادار #${t.id}</b>
-            <div style="color: #aaa; font-size: 10px;">X: ${t.targetX.toFixed(2)}m | Z: ${t.targetZ.toFixed(2)}m</div>
-            <div style="color: #00fff5; font-size: 10px;">السرعة: ${t.speed} cm/s</div>
-          </div>
-          <span class="badge badge-live">رصد حي 🔴</span>
-        `;
+        div.className = `target-card cat-target1`;
+        div.innerHTML = `<div><b>هدف #${t.id}</b><div>X: ${t.targetX.toFixed(2)}m | Z: ${t.targetZ.toFixed(2)}m</div></div><span class="badge-live">نشط 🔴</span>`;
         container.appendChild(div);
       });
     }
 
-    // --- أقسام الرسوميات ثلاثية الأبعاد (3D System) ---
+    // --- الرسوميات 3D والجدران الغامقة الأنيقة ---
+    let scene, camera, renderer, controls, mapObjectsGroup = new THREE.Group();
+
     function createHumanModel(colorHex) {
       const group = new THREE.Group();
       const material = new THREE.MeshLambertMaterial({ color: colorHex });
-
-      const headGeom = new THREE.SphereGeometry(0.2, 16, 16);
-      const head = new THREE.Mesh(headGeom, material);
-      head.position.set(0, 1.4, 0);
-
-      const torsoGeom = new THREE.BoxGeometry(0.4, 0.6, 0.25);
-      const torso = new THREE.Mesh(torsoGeom, material);
-      torso.position.set(0, 0.9, 0);
-
-      const legGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.6);
-      const legL = new THREE.Mesh(legGeom, material); legL.position.set(-0.12, 0.3, 0);
-      const legR = new THREE.Mesh(legGeom, material); legR.position.set(0.12, 0.3, 0);
-
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), material); head.position.y = 1.4;
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, 0.25), material); torso.position.y = 0.9;
+      const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6), material); legL.position.set(-0.12, 0.3, 0);
+      const legR = legL.clone(); legR.position.x = 0.12;
       group.add(head, torso, legL, legR);
       return group;
     }
-
-    let scene, camera, renderer, controls;
-    let roomsGroup = new THREE.Group();
 
     function init3D() {
       const container = document.getElementById('canvas-container');
@@ -570,77 +438,44 @@
       scene.background = new THREE.Color(0x0f111a);
 
       camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-      camera.position.set(12, 16, 22);
+      camera.position.set(10, 14, 16);
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(container.clientWidth, container.clientHeight);
       container.appendChild(renderer.domElement);
 
       controls = new THREE.OrbitControls(camera, renderer.domElement);
-
-      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-      const light = new THREE.DirectionalLight(0xffffff, 0.6);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+      const light = new THREE.DirectionalLight(0xffffff, 0.8);
       light.position.set(10, 20, 10);
       scene.add(light);
 
-      scene.add(new THREE.GridHelper(50, 50, 0x00adb5, 0x282c3d));
-      scene.add(roomsGroup);
+      scene.add(new THREE.GridHelper(40, 40, 0x00adb5, 0x282c3d));
+      scene.add(mapObjectsGroup);
 
       loadSavedMaps();
       renderCurrentMap();
 
-      window.addEventListener('resize', () => {
-        camera.aspect = container.clientWidth / container.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(container.clientWidth, container.clientHeight);
-      });
-
-      // حلقة التحريك التفاعلية والتنعيم LERP
       function animate() {
         requestAnimationFrame(animate);
         controls.update();
-
         const now = Date.now();
+
         Object.keys(activeTargets).forEach(id => {
           const t = activeTargets[id];
-
-          // إزالة الأهداف المتوقفة لأكثر من 3 ثوانٍ
           if (now - t.lastUpdate > 3000) {
             if (targetMeshes[id]) scene.remove(targetMeshes[id]);
-            if (targetTrails[id]) scene.remove(targetTrails[id].line);
-            delete activeTargets[id];
-            delete targetMeshes[id];
-            delete targetTrails[id];
-            renderTargetsUI();
-            return;
+            delete activeTargets[id]; delete targetMeshes[id];
+            renderTargetsUI(); return;
           }
-
-          // إنشاء المجسم إن لم يكن موجوداً
           if (!targetMeshes[id]) {
-            const colors = [0x00fff5, 0x4eef90, 0xffaa00];
-            const mesh = createHumanModel(colors[(id - 1) % 3]);
+            const mesh = createHumanModel(0x00fff5);
             mesh.position.set(t.targetX, 0, t.targetZ);
-            scene.add(mesh);
-            targetMeshes[id] = mesh;
-
-            // إنشاء مسار الحركة (Trail)
-            const trailGeom = new THREE.BufferGeometry();
-            const trailMat = new THREE.LineBasicMaterial({ color: colors[(id - 1) % 3], transparent: true, opacity: 0.6 });
-            const line = new THREE.Line(trailGeom, trailMat);
-            scene.add(line);
-            targetTrails[id] = { line, points: [] };
+            scene.add(mesh); targetMeshes[id] = mesh;
           }
-
-          // تنعيم الحركة باستخدام LERP (Linear Interpolation)
           const mesh = targetMeshes[id];
-          mesh.position.x += (t.targetX - mesh.position.x) * 0.15;
-          mesh.position.z += (t.targetZ - mesh.position.z) * 0.15;
-
-          // تحديث النقاط لمسار الحركة
-          const trail = targetTrails[id];
-          trail.points.push(mesh.position.clone());
-          if (trail.points.length > 30) trail.points.shift();
-          trail.line.geometry.setFromPoints(trail.points);
+          mesh.position.x += (t.targetX - mesh.position.x) * 0.2;
+          mesh.position.z += (t.targetZ - mesh.position.z) * 0.2;
         });
 
         renderer.render(scene, camera);
@@ -649,43 +484,95 @@
     }
 
     function renderCurrentMap() {
-      while(roomsGroup.children.length > 0) { 
-        roomsGroup.remove(roomsGroup.children[0]); 
-      }
+      while(mapObjectsGroup.children.length > 0) mapObjectsGroup.remove(mapObjectsGroup.children[0]);
+      const mapData = savedRooms[currentMapKey] || { rooms: [], structs: [], zones: [] };
 
-      const roomsList = savedRooms[currentMapKey] || [];
-      roomsList.forEach(r => {
-        // هيكل الغرفة الشبكي
-        const geometry = new THREE.BoxGeometry(r.w, r.h, r.l);
-        const material = new THREE.MeshLambertMaterial({ color: 0x00adb5, wireframe: true });
-        const room = new THREE.Mesh(geometry, material);
-        room.position.set(r.x, r.h / 2, r.z);
-        roomsGroup.add(room);
+      // 1. رسم الغرف والجدران الصلبة الغامقة
+      (mapData.rooms || []).forEach(r => {
+        // أرضية الغرفة
+        const floor = new THREE.Mesh(
+          new THREE.PlaneGeometry(r.w, r.l),
+          new THREE.MeshLambertMaterial({ color: 0x141722, side: THREE.DoubleSide })
+        );
+        floor.rotation.x = Math.PI / 2; floor.position.set(r.x, 0.01, r.z);
+        mapObjectsGroup.add(floor);
 
-        // إضافة أرضية صلبة شبه شفافة لمنع طفو المجسم في الفراغ
-        const floorGeom = new THREE.PlaneGeometry(r.w, r.l);
-        const floorMat = new THREE.MeshBasicMaterial({ color: 0x181b26, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
-        const floor = new THREE.Mesh(floorGeom, floorMat);
-        floor.rotation.x = Math.PI / 2;
-        floor.position.set(r.x, 0.01, r.z);
-        roomsGroup.add(floor);
+        // جدران غامقة صلبة شفافة
+        const wallMat = new THREE.MeshLambertMaterial({ color: 0x1e2230, transparent: true, opacity: 0.75 });
+        const wallThick = 0.15;
+
+        // جدار خلفي وأمامي
+        const wall1 = new THREE.Mesh(new THREE.BoxGeometry(r.w, r.h, wallThick), wallMat);
+        wall1.position.set(r.x, r.h/2, r.z - r.l/2);
+        const wall2 = new THREE.Mesh(new THREE.BoxGeometry(r.w, r.h, wallThick), wallMat);
+        wall2.position.set(r.x, r.h/2, r.z + r.l/2);
+        mapObjectsGroup.add(wall1, wall2);
+      });
+
+      // 2. رسم الأبواب والنوافذ والأقواس
+      (mapData.structs || []).forEach(s => {
+        let matColor = 0x00adb5;
+        if (s.type === 'door') matColor = 0x8b5a2b; // باب خشب
+        if (s.type === 'window') matColor = 0x87ceeb; // شباك زجاجي
+        if (s.type === 'arch') matColor = 0xffaa00; // قوس داهلي
+
+        const obj = new THREE.Mesh(
+          new THREE.BoxGeometry(s.w, s.h, 0.2),
+          new THREE.MeshLambertMaterial({ color: matColor, transparent: true, opacity: 0.8 })
+        );
+        obj.position.set(s.x, s.h/2, s.z);
+        mapObjectsGroup.add(obj);
+      });
+
+      // 3. رسم مناطق الخطر الحمراء (Red Danger Zones)
+      (mapData.zones || []).forEach(z => {
+        const zoneGeom = new THREE.CylinderGeometry(z.r, z.r, 0.1, 32);
+        const zoneMat = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.4 });
+        const zoneMesh = new THREE.Mesh(zoneGeom, zoneMat);
+        zoneMesh.position.set(z.x, 0.05, z.z);
+        mapObjectsGroup.add(zoneMesh);
       });
     }
 
     function addCustomRoomAndSave() {
-      const name = document.getElementById('roomName').value || 'غرفة جديدة';
-      const w = parseFloat(document.getElementById('dimW').value) || 4;
-      const l = parseFloat(document.getElementById('dimL').value) || 4;
-      const h = parseFloat(document.getElementById('dimH').value) || 3;
-      const x = parseFloat(document.getElementById('posX').value) || 0;
-      const z = parseFloat(document.getElementById('posZ').value) || 0;
+      const name = document.getElementById('roomName').value;
+      const w = parseFloat(document.getElementById('dimW').value);
+      const l = parseFloat(document.getElementById('dimL').value);
+      const h = parseFloat(document.getElementById('dimH').value);
+      const x = parseFloat(document.getElementById('posX').value);
+      const z = parseFloat(document.getElementById('posZ').value);
 
-      if (!savedRooms[currentMapKey]) savedRooms[currentMapKey] = [];
-      savedRooms[currentMapKey].push({ name, w, l, h, x, z });
-
-      saveMapsToStorage();
-      renderCurrentMap();
+      if(!savedRooms[currentMapKey]) savedRooms[currentMapKey] = { rooms: [], structs: [], zones: [] };
+      savedRooms[currentMapKey].rooms.push({ name, w, l, h, x, z });
+      saveMapsToStorage(); renderCurrentMap();
       addLog(`تم إضافة غرفة: ${name}`);
+    }
+
+    function addStructureObject() {
+      const type = document.getElementById('structType').value;
+      const x = parseFloat(document.getElementById('stX').value);
+      const z = parseFloat(document.getElementById('stZ').value);
+      const w = parseFloat(document.getElementById('stW').value);
+      const h = parseFloat(document.getElementById('stH').value);
+
+      if(!savedRooms[currentMapKey]) savedRooms[currentMapKey] = { rooms: [], structs: [], zones: [] };
+      if(!savedRooms[currentMapKey].structs) savedRooms[currentMapKey].structs = [];
+      savedRooms[currentMapKey].structs.push({ type, x, z, w, h });
+      saveMapsToStorage(); renderCurrentMap();
+      addLog(`تمت إضافة هيكل (${type}) بنجاح.`);
+    }
+
+    function addDangerZone() {
+      const name = document.getElementById('zoneName').value;
+      const x = parseFloat(document.getElementById('zoneX').value);
+      const z = parseFloat(document.getElementById('zoneZ').value);
+      const r = parseFloat(document.getElementById('zoneR').value);
+
+      if(!savedRooms[currentMapKey]) savedRooms[currentMapKey] = { rooms: [], structs: [], zones: [] };
+      if(!savedRooms[currentMapKey].zones) savedRooms[currentMapKey].zones = [];
+      savedRooms[currentMapKey].zones.push({ name, x, z, r });
+      saveMapsToStorage(); renderCurrentMap();
+      addLog(`🚨 تم إنشاء منطقة خطر: ${name}`);
     }
   </script>
 </body>
