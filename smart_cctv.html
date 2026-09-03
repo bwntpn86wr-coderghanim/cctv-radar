@@ -1146,14 +1146,31 @@
     // ==========================================
     let mqttClient = null;
 
-    function initMQTT() {
-      // Automatic Simulation Movement for Dynamic Demo
-      setInterval(() => {
-        const simX = (Math.sin(Date.now() / 2000) * 6);
-        const simZ = (Math.cos(Date.now() / 2000) * 6);
-        updateRadarTargetPosition(simX, simZ);
-      }, 100);
+    // ==========================================
+// دالة المحاكاة المحدثة لحركة عشوائية وسلسة
+// ==========================================
+function initMQTT() {
+  // استخدام INTERVAL لتحديث الموقع باستمرار
+  setInterval(() => {
+    // استخدام الوقت الحالي (Math.sin/cos) كقاعدة لعشوائية سلسة
+    const time = Date.now() * 0.0008; // تعديل السرعة العامة
+
+    // دمج دوال متعددة بترددات مختلفة لرسم مسار غير منتظم
+    // simX و simZ يتحركان بشكل عشوائي بين -9 و +9 أمتار
+    const simX = (Math.sin(time * 0.9) + Math.cos(time * 0.4) + Math.sin(time * 1.5)) * 3;
+    const simZ = (Math.cos(time * 0.6) + Math.sin(time * 1.1) + Math.cos(time * 0.8)) * 3;
+
+    // تحديث موقع الهدف على الخريطة والرادار والرسم البياني
+    if (typeof updateRadarTargetPosition === 'function') {
+      updateRadarTargetPosition(simX, simZ);
     }
+    
+    // محاكاة لبيانات الارتفاع (الطابق) إذا كانت مفعلة
+    // (يمكن تفعيلها في الجزء الرابع لإضافة عمق واقعي للحركة)
+    // const simFloor = 0; // لتبسيط المحاكاة الآن
+
+  }, 100); // تحديث سريع وسلس كل 100 ميلي ثانية (10 مرات في الثانية)
+}
 
     function connectMQTT() {
       const btn = document.getElementById('sensor-btn');
