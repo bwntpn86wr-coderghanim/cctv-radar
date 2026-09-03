@@ -1146,30 +1146,31 @@
     // ==========================================
     let mqttClient = null;
 
-    // ==========================================
-// دالة المحاكاة المحدثة لحركة عشوائية وسلسة
-// ==========================================
+   // --- كود الموقع لاستقبال بيانات الحساس الحقيقية ---
 function initMQTT() {
-  // استخدام INTERVAL لتحديث الموقع باستمرار
-  setInterval(() => {
-    // استخدام الوقت الحالي (Math.sin/cos) كقاعدة لعشوائية سلسة
-    const time = Date.now() * 0.0008; // تعديل السرعة العامة
+  // 1. الاتصال بسيرفر MQTT (يجب أن يكون نفس السيرفر في كود ESP32)
+  const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt'); // مثال باستخدام WebSocket
 
-    // دمج دوال متعددة بترددات مختلفة لرسم مسار غير منتظم
-    // simX و simZ يتحركان بشكل عشوائي بين -9 و +9 أمتار
-    const simX = (Math.sin(time * 0.9) + Math.cos(time * 0.4) + Math.sin(time * 1.5)) * 3;
-    const simZ = (Math.cos(time * 0.6) + Math.sin(time * 1.1) + Math.cos(time * 0.8)) * 3;
+  client.on('connect', () => {
+    addSecurityLog("📡 تم الاتصال بسيرفر MQTT - في انتظار بيانات الحساس...");
+    // 2. الاشتراك في الموضوع (Topic) الخاص بالحساس
+    client.subscribe('aegisradar/radar/data');
+  });
 
-    // تحديث موقع الهدف على الخريطة والرادار والرسم البياني
-    if (typeof updateRadarTargetPosition === 'function') {
-      updateRadarTargetPosition(simX, simZ);
+  // 3. استقبال البيانات وتحليلها
+  client.on('message', (topic, message) => {
+    try {
+      const data = JSON.parse(message.toString());
+      // لنفرض أن الحساس يرسل مصفوفة أهداف باسم targets
+      if (data.targets && data.targets.length > 0) {
+        const firstTarget = data.targets[0];
+        // 4. تحديث موقع الهدف على الخريطة بالبيانات الحقيقية
+        updateRadarTargetPosition(firstTarget.x, firstTarget.z);
+      }
+    } catch (e) {
+      console.error("خطأ في تحليل بيانات MQTT:", e);
     }
-    
-    // محاكاة لبيانات الارتفاع (الطابق) إذا كانت مفعلة
-    // (يمكن تفعيلها في الجزء الرابع لإضافة عمق واقعي للحركة)
-    // const simFloor = 0; // لتبسيط المحاكاة الآن
-
-  }, 100); // تحديث سريع وسلس كل 100 ميلي ثانية (10 مرات في الثانية)
+  });
 }
 
     function connectMQTT() {
