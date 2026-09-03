@@ -50,6 +50,8 @@
     .pass-box { background: #1e2230; border: 1px solid #00adb5; padding: 30px; border-radius: 16px; max-width: 380px; width: 100%; }
 
     input, select, button { width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px; border: none; background: #282c3d; color: #fff; font-size: 13px; }
+    label { font-size: 12px; color: #00adb5; margin-bottom: 4px; display: block; }
+    input[type="color"] { height: 35px; padding: 2px; cursor: pointer; }
     button { background: #00adb5; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
     button:hover { background: #00888e; }
 
@@ -66,6 +68,8 @@
     #face-box { position: absolute; border: 2px solid #00fff5; box-shadow: 0 0 10px #00fff5; border-radius: 4px; display: none; pointer-events: none; z-index: 5; transition: all 0.1s ease-out; }
 
     #canvas-container { flex-grow: 1; height: 100%; position: relative; }
+    .coord-overlay { position: absolute; bottom: 15px; right: 15px; background: rgba(20, 23, 34, 0.85); border: 1px solid #00adb5; padding: 8px 15px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #00fff5; pointer-events: none; z-index: 10; }
+
     .targets-list { display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto; }
     .target-card { background: #282c3d; padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; border-right: 4px solid #aaa; }
     .cat-target1 { border-color: #00fff5; }
@@ -136,14 +140,36 @@
           </div>
 
           <div class="card">
-            <h3>🎥 الكاميرا والذكاء الاصطناعي (AI Tracker)</h3>
-            <input type="text" id="camUrl" placeholder="رابط IP الكاميرا" value="https://picsum.photos/400/300">
-            <button onclick="updateCamUrl()">تحديث البث 🔄</button>
+            <h3>🎥 الكاميرا والذكاء الاصطناعي (IP Camera Lite / iPhone)</h3>
+            <input type="text" id="camUrl" placeholder="رابط IP الكاميرا (مثل http://192.168.1.50:8080/live)" value="http://192.168.1.50:8080/live">
+            <button onclick="updateCamUrl()">تحديث بث آيفون 🔄</button>
             <div class="cam-wrapper">
               <img id="camera-stream" src="https://picsum.photos/400/300" crossorigin="anonymous" onload="onCamLoad()" onerror="handleCamError(this)">
               <div id="face-box"></div>
             </div>
             <button id="aiToggleBtn" onclick="toggleAIFaceDetection()" style="margin-top: 8px;">تفعيل الذكاء الاصطناعي 🤖</button>
+          </div>
+
+          <div class="card">
+            <h3>🎨 تخصيص ألوان الموقع والمخطط</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div>
+                <label>لون الجدران</label>
+                <input type="color" id="wallColorPicker" value="#1e2230" onchange="updateColors()">
+              </div>
+              <div>
+                <label>لون الأرضية</label>
+                <input type="color" id="floorColorPicker" value="#141722" onchange="updateColors()">
+              </div>
+              <div>
+                <label>لون الأبواب</label>
+                <input type="color" id="doorColorPicker" value="#8b5a2b" onchange="updateColors()">
+              </div>
+              <div>
+                <label>لون النوافذ</label>
+                <input type="color" id="winColorPicker" value="#87ceeb" onchange="updateColors()">
+              </div>
+            </div>
           </div>
 
           <div class="card">
@@ -153,12 +179,24 @@
             </div>
           </div>
         </div>
-        <div id="canvas-container"></div>
+        <div id="canvas-container">
+          <div id="mouse-coords" class="coord-overlay">الموقع الحقيقي: X: 0.00m | Z: 0.00m</div>
+        </div>
       </div>
 
-      <!-- الصفحة الثانية: المعمار والرسم (جدران غامقة، أبواب، شبابيك، أقواس) -->
+      <!-- الصفحة الثانية: المعمار والرسم بالماوس -->
       <div id="page-architect" class="page-view hidden">
         <div class="sidebar">
+          <div class="card">
+            <h3>🖱️ وضع البناء بالماوس</h3>
+            <select id="mouseBuildMode">
+              <option value="none">تعطيل البناء بالماوس (تحديد فقط)</option>
+              <option value="room">إضافة غرفة عند موقع النقر</option>
+              <option value="struct">إضافة هيكل (باب/نافذة) عند النقر</option>
+            </select>
+            <p style="font-size: 11px; color: #00fff5; margin-top: 5px;">عند التفعيل: انقر داخل شاشة الـ 3D لبناء العنصر مباشرة بمركز الإحداثيات المحدد!</p>
+          </div>
+
           <div class="card">
             <h3>🧱 بناء الغرف (الجدران الغامقة)</h3>
             <input type="text" id="roomName" placeholder="اسم الغرفة" value="غرفة الاستقبال" />
@@ -199,17 +237,25 @@
         </div>
       </div>
 
-      <!-- الصفحة الثالثة: إدارة مناطق الخطر الحساسة -->
+      <!-- الصفحة الثالثة: إدارة مناطق الخطر الحساسة بالأشكال المختلفة -->
       <div id="page-security" class="page-view hidden">
         <div class="sidebar">
           <div class="card">
             <h3>🔴 إضافة منطقة خطر (Danger Zone)</h3>
             <p style="font-size: 11px; color: #aaa; margin-bottom: 8px;">إطلاق إنذار عند دخول أي شخص لهذه المنطقة:</p>
             <input type="text" id="zoneName" placeholder="اسم المنطقة (مثلاً: الخزنة)" value="منطقة ممنوعة" />
+            <select id="zoneShape">
+              <option value="circle">دائرية (Circle)</option>
+              <option value="rectangle">مستطيلة / مربعة (Rectangle)</option>
+              <option value="polygon">مضلعة / مسدس (Hexagon Polygon)</option>
+            </select>
             <div style="display: flex; gap: 5px;">
               <input type="number" id="zoneX" placeholder="X" value="0" />
               <input type="number" id="zoneZ" placeholder="Z" value="0" />
-              <input type="number" id="zoneR" placeholder="القطر (m)" value="2" />
+            </div>
+            <div style="display: flex; gap: 5px;">
+              <input type="number" id="zoneSize1" placeholder="القطر/العرض (m)" value="2" />
+              <input type="number" id="zoneSize2" placeholder="الطول (للمستطيل)" value="2" />
             </div>
             <button onclick="addDangerZone()" style="background: #ff4d4d;">إنشاء منطقة خطر حمراء 🚨</button>
           </div>
@@ -245,7 +291,7 @@
       document.querySelectorAll('.page-view').forEach(p => p.classList.add('hidden'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(pageId).classList.remove('hidden');
-      event.target.classList.add('active');
+      if (event && event.target) event.target.classList.add('active');
       if(pageId === 'page-dashboard' && renderer) {
         setTimeout(() => {
           const container = document.getElementById('canvas-container');
@@ -266,14 +312,29 @@
       logContainer.scrollTop = logContainer.scrollHeight;
     }
 
-    // --- حل مشكلة البث وإصلاح الكاميرا ---
+    // --- حل مشكلة بث iPhone IP Camera Lite مع جلب الصور الدوري ---
+    let camInterval = null;
     function updateCamUrl() {
       const url = document.getElementById('camUrl').value;
       const img = document.getElementById('camera-stream');
-      img.src = url;
+      
+      if(camInterval) clearInterval(camInterval);
+      
+      // إذا كان الرابط هو IP Camera Lite الآيفون المتكرر Snapshot
+      if(url.includes('/shot.jpg') || url.includes('/live') || url.includes(':8080')) {
+        let baseUrl = url.endsWith('/') ? url : url + '/';
+        if(url.includes('/live')) baseUrl = url.replace('/live', '/shot.jpg');
+        
+        camInterval = setInterval(() => {
+          img.src = baseUrl + '?t=' + new Date().getTime();
+        }, 150);
+        addLog("تم الربط مع تطبيق iPhone IP Camera Lite بنجاح.");
+      } else {
+        img.src = url;
+      }
     }
-    function onCamLoad() { addLog("تم الاتصال ببث الكاميرا بنجاح."); }
-    function handleCamError(img) { addLog("تعذر الاتصال بالبث المباشر للكاميرا.", true); }
+    function onCamLoad() { }
+    function handleCamError(img) { addLog("تعذر الاتصال بالبث المباشر لآيفون. تحقق من IP والشبكة.", true); }
 
     let detector = null, isAIDetecting = false;
     async function toggleAIFaceDetection() {
@@ -322,10 +383,20 @@
       if (isAIDetecting) requestAnimationFrame(detectFacesLoop);
     }
 
-    // --- إدارة المخطط والخرائط ---
+    // --- إدارة المخطط والخرائط والألوان ---
     let currentMapKey = "default", savedRooms = {}, dangerZones = [];
+    let customColors = { wall: "#1e2230", floor: "#141722", door: "#8b5a2b", window: "#87ceeb" };
+
+    function updateColors() {
+      customColors.wall = document.getElementById('wallColorPicker').value;
+      customColors.floor = document.getElementById('floorColorPicker').value;
+      customColors.door = document.getElementById('doorColorPicker').value;
+      customColors.window = document.getElementById('winColorPicker').value;
+      renderCurrentMap();
+    }
+
     function loadSavedMaps() {
-      const data = localStorage.getItem("aegis_maps_v2");
+      const data = localStorage.getItem("aegis_maps_v3");
       if (data) {
         savedRooms = JSON.parse(data);
       } else {
@@ -333,13 +404,13 @@
           default: {
             rooms: [{ name: "الصالة الرئيسية", w: 8, l: 8, h: 3, x: 0, z: 0 }],
             structs: [{ type: 'door', x: 0, z: -4, w: 1.2, h: 2.2 }],
-            zones: [{ name: "منطقة الخزنة", x: 2, z: 2, r: 1.5 }]
+            zones: [{ name: "منطقة الخزنة", shape: 'circle', x: 2, z: 2, r: 1.5, w: 2, l: 2 }]
           }
         };
         saveMapsToStorage();
       }
     }
-    function saveMapsToStorage() { localStorage.setItem("aegis_maps_v2", JSON.stringify(savedRooms)); }
+    function saveMapsToStorage() { localStorage.setItem("aegis_maps_v3", JSON.stringify(savedRooms)); }
 
     function switchMap() {
       currentMapKey = document.getElementById('mapSelector').value;
@@ -352,7 +423,7 @@
     }
 
     // --- استقبال بيانات الرادار والتقييد المباشر ---
-    let activeTargets = {}, targetMeshes = {}, targetTrails = {};
+    let activeTargets = {}, targetMeshes = {};
     function initMQTT() {
       const mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
       mqttClient.on('connect', () => {
@@ -377,21 +448,26 @@
       let posZ = data.y !== undefined ? data.y : data.targetY;
       if (posX === undefined || posZ === undefined) return;
 
-      // تحويل وتقييد الأبعاد ضمن نطاق الخريطة
+      // تحويل وتقييد الأبعاد ضمن نطاق الخريطة (LD2450 بالمليمتر)
       let rawX = parseFloat(posX) / 1000.0;
       let rawZ = parseFloat(posZ) / 1000.0;
-      rawX = Math.max(-4.0, Math.min(4.0, rawX));
-      rawZ = Math.max(-4.0, Math.min(4.0, rawZ));
+      rawX = Math.max(-10.0, Math.min(10.0, rawX));
+      rawZ = Math.max(-10.0, Math.min(10.0, rawZ));
 
-      // فحص دخول مناطق الخطر
+      // فحص دخول مناطق الخطر حسب أشكالها الحقيقية
       const currentMap = savedRooms[currentMapKey] || { zones: [] };
       let inDanger = false;
       (currentMap.zones || []).forEach(z => {
-        const d = Math.sqrt(Math.pow(rawX - z.x, 2) + Math.pow(rawZ - z.z, 2));
-        if (d <= z.r) {
-          inDanger = true;
-          addLog(`🚨 اختراق أمني! الهدف #${targetId} داخل ${z.name}!`, true);
+        if(z.shape === 'circle' || !z.shape) {
+          const d = Math.sqrt(Math.pow(rawX - z.x, 2) + Math.pow(rawZ - z.z, 2));
+          if (d <= (z.r || 1.5)) inDanger = true;
+        } else if (z.shape === 'rectangle') {
+          if (Math.abs(rawX - z.x) <= (z.w / 2) && Math.abs(rawZ - z.z) <= (z.l / 2)) inDanger = true;
+        } else if (z.shape === 'polygon') {
+          const d = Math.sqrt(Math.pow(rawX - z.x, 2) + Math.pow(rawZ - z.z, 2));
+          if (d <= (z.r || 1.5)) inDanger = true;
         }
+        if(inDanger) addLog(`🚨 اختراق أمني! الهدف #${targetId} داخل ${z.name}!`, true);
       });
 
       if (inDanger) document.getElementById('main-app').classList.add('alert-active');
@@ -418,8 +494,10 @@
       });
     }
 
-    // --- الرسوميات 3D والجدران الغامقة الأنيقة ---
+    // --- الرسوميات 3D والتفاعل بالماوس ---
     let scene, camera, renderer, controls, mapObjectsGroup = new THREE.Group();
+    let raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    let mouseWorldPos = new THREE.Vector3();
 
     function createHumanModel(colorHex) {
       const group = new THREE.Group();
@@ -453,6 +531,10 @@
       scene.add(new THREE.GridHelper(40, 40, 0x00adb5, 0x282c3d));
       scene.add(mapObjectsGroup);
 
+      // الاستماع للماوس للحصول على الإحداثيات والبناء
+      container.addEventListener('mousemove', onMouseMove, false);
+      container.addEventListener('click', onMouseClick, false);
+
       loadSavedMaps();
       renderCurrentMap();
 
@@ -483,25 +565,46 @@
       animate();
     }
 
+    function onMouseMove(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      raycaster.ray.intersectPlane(plane, mouseWorldPos);
+
+      document.getElementById('mouse-coords').innerText = `الموقع الحقيقي: X: ${mouseWorldPos.x.toFixed(2)}m | Z: ${mouseWorldPos.z.toFixed(2)}m`;
+      document.getElementById('posX').value = mouseWorldPos.x.toFixed(1);
+      document.getElementById('posZ').value = mouseWorldPos.z.toFixed(1);
+      document.getElementById('stX').value = mouseWorldPos.x.toFixed(1);
+      document.getElementById('stZ').value = mouseWorldPos.z.toFixed(1);
+      document.getElementById('zoneX').value = mouseWorldPos.x.toFixed(1);
+      document.getElementById('zoneZ').value = mouseWorldPos.z.toFixed(1);
+    }
+
+    function onMouseClick() {
+      const mode = document.getElementById('mouseBuildMode') ? document.getElementById('mouseBuildMode').value : 'none';
+      if (mode === 'room') {
+        addCustomRoomAndSave();
+      } else if (mode === 'struct') {
+        addStructureObject();
+      }
+    }
+
     function renderCurrentMap() {
       while(mapObjectsGroup.children.length > 0) mapObjectsGroup.remove(mapObjectsGroup.children[0]);
       const mapData = savedRooms[currentMapKey] || { rooms: [], structs: [], zones: [] };
 
-      // 1. رسم الغرف والجدران الصلبة الغامقة
+      // 1. رسم الغرف
       (mapData.rooms || []).forEach(r => {
-        // أرضية الغرفة
-        const floor = new THREE.Mesh(
-          new THREE.PlaneGeometry(r.w, r.l),
-          new THREE.MeshLambertMaterial({ color: 0x141722, side: THREE.DoubleSide })
-        );
+        const floorMat = new THREE.MeshLambertMaterial({ color: parseInt(customColors.floor.replace('#', '0x')), side: THREE.DoubleSide });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(r.w, r.l), floorMat);
         floor.rotation.x = Math.PI / 2; floor.position.set(r.x, 0.01, r.z);
         mapObjectsGroup.add(floor);
 
-        // جدران غامقة صلبة شفافة
-        const wallMat = new THREE.MeshLambertMaterial({ color: 0x1e2230, transparent: true, opacity: 0.75 });
+        const wallMat = new THREE.MeshLambertMaterial({ color: parseInt(customColors.wall.replace('#', '0x')), transparent: true, opacity: 0.8 });
         const wallThick = 0.15;
 
-        // جدار خلفي وأمامي
         const wall1 = new THREE.Mesh(new THREE.BoxGeometry(r.w, r.h, wallThick), wallMat);
         wall1.position.set(r.x, r.h/2, r.z - r.l/2);
         const wall2 = new THREE.Mesh(new THREE.BoxGeometry(r.w, r.h, wallThick), wallMat);
@@ -511,23 +614,31 @@
 
       // 2. رسم الأبواب والنوافذ والأقواس
       (mapData.structs || []).forEach(s => {
-        let matColor = 0x00adb5;
-        if (s.type === 'door') matColor = 0x8b5a2b; // باب خشب
-        if (s.type === 'window') matColor = 0x87ceeb; // شباك زجاجي
-        if (s.type === 'arch') matColor = 0xffaa00; // قوس داهلي
+        let matColor = parseInt(customColors.door.replace('#', '0x'));
+        if (s.type === 'window') matColor = parseInt(customColors.window.replace('#', '0x'));
+        if (s.type === 'arch') matColor = 0xffaa00;
 
         const obj = new THREE.Mesh(
           new THREE.BoxGeometry(s.w, s.h, 0.2),
-          new THREE.MeshLambertMaterial({ color: matColor, transparent: true, opacity: 0.8 })
+          new THREE.MeshLambertMaterial({ color: matColor, transparent: true, opacity: 0.85 })
         );
         obj.position.set(s.x, s.h/2, s.z);
         mapObjectsGroup.add(obj);
       });
 
-      // 3. رسم مناطق الخطر الحمراء (Red Danger Zones)
+      // 3. رسم مناطق الخطر بالأشكال المختلفة (دائرة، مستطيل، مضلع)
       (mapData.zones || []).forEach(z => {
-        const zoneGeom = new THREE.CylinderGeometry(z.r, z.r, 0.1, 32);
-        const zoneMat = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.4 });
+        let zoneGeom;
+        const zoneMat = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.45, side: THREE.DoubleSide });
+        
+        if (z.shape === 'rectangle') {
+          zoneGeom = new THREE.BoxGeometry(z.w || 2, 0.1, z.l || 2);
+        } else if (z.shape === 'polygon') {
+          zoneGeom = new THREE.CylinderGeometry(z.r || 1.5, z.r || 1.5, 0.1, 6);
+        } else {
+          zoneGeom = new THREE.CylinderGeometry(z.r || 1.5, z.r || 1.5, 0.1, 32);
+        }
+
         const zoneMesh = new THREE.Mesh(zoneGeom, zoneMat);
         zoneMesh.position.set(z.x, 0.05, z.z);
         mapObjectsGroup.add(zoneMesh);
@@ -545,7 +656,7 @@
       if(!savedRooms[currentMapKey]) savedRooms[currentMapKey] = { rooms: [], structs: [], zones: [] };
       savedRooms[currentMapKey].rooms.push({ name, w, l, h, x, z });
       saveMapsToStorage(); renderCurrentMap();
-      addLog(`تم إضافة غرفة: ${name}`);
+      addLog(`تم إضافة غرفة: ${name} عند (${x}, ${z})`);
     }
 
     function addStructureObject() {
@@ -564,15 +675,18 @@
 
     function addDangerZone() {
       const name = document.getElementById('zoneName').value;
+      const shape = document.getElementById('zoneShape').value;
       const x = parseFloat(document.getElementById('zoneX').value);
       const z = parseFloat(document.getElementById('zoneZ').value);
-      const r = parseFloat(document.getElementById('zoneR').value);
+      const size1 = parseFloat(document.getElementById('zoneSize1').value);
+      const size2 = parseFloat(document.getElementById('zoneSize2').value);
 
       if(!savedRooms[currentMapKey]) savedRooms[currentMapKey] = { rooms: [], structs: [], zones: [] };
       if(!savedRooms[currentMapKey].zones) savedRooms[currentMapKey].zones = [];
-      savedRooms[currentMapKey].zones.push({ name, x, z, r });
+      
+      savedRooms[currentMapKey].zones.push({ name, shape, x, z, r: size1, w: size1, l: size2 });
       saveMapsToStorage(); renderCurrentMap();
-      addLog(`🚨 تم إنشاء منطقة خطر: ${name}`);
+      addLog(`🚨 تم إنشاء منطقة خطر [${shape}]: ${name}`);
     }
   </script>
 </body>
