@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AegisRadar 360 AI - جامعة نينوى Suite</title>
 
-  <!-- Libraries: Three.js, Controls, MQTT, Chart.js & MediaPipe -->
+  <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -18,14 +18,17 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-    body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; }
+    body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; position: fixed; }
     #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+    
+    /* Responsive Glass Panels */
     .glass-panel {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(25px);
-      border: 1px solid rgba(56, 189, 248, 0.2);
-      border-radius: 14px;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
     }
     .hud-title {
       background: linear-gradient(90deg, #38bdf8, #34d399, #f43f5e);
@@ -36,236 +39,267 @@
     .cad-btn.active {
       background: linear-gradient(135deg, #0284c7, #0369a1) !important;
       border-color: #38bdf8 !important;
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
     }
     .nav-btn {
-      background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 6px 14px;
-      border-radius: 8px; cursor: pointer; font-size: 12px; transition: 0.2s;
+      background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 6px 10px;
+      border-radius: 8px; cursor: pointer; font-size: 11px; transition: 0.2s; white-space: nowrap;
     }
     .nav-btn.active, .nav-btn:hover { background: #0284c7; color: #fff; border-color: #38bdf8; }
     .step-screen {
       position: fixed; inset: 0; z-index: 100; background: #020617;
-      display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+      display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 16px;
     }
     .scanline {
       background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.3));
       background-size: 100% 4px; pointer-events: none;
     }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
   </style>
 </head>
 <body>
 
-  <!-- 1. الشاشات التعريفية والترحيبية -->
+  <!-- 1. الشاشات التعريفية -->
   <div id="step-1" class="step-screen">
-    <div class="glass-panel max-w-lg w-full p-8 text-center border border-cyan-500/40 shadow-2xl">
-      <div class="w-16 h-16 bg-gradient-to-tr from-cyan-600 to-emerald-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-4 animate-pulse">
-        <i class="fa-solid fa-shield-halved text-3xl text-white"></i>
+    <div class="glass-panel max-w-lg w-full p-6 text-center border border-cyan-500/40 shadow-2xl">
+      <div class="w-14 h-14 bg-gradient-to-tr from-cyan-600 to-emerald-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-3 animate-pulse">
+        <i class="fa-solid fa-shield-halved text-2xl text-white"></i>
       </div>
-      <h1 class="text-3xl font-black hud-title mb-2">AegisRadar 360 AI</h1>
-      <h2 class="text-xs text-slate-400 mb-4">نظام المراقبة الهندسية وإدارة المنازل الذكية ثلاثي الأبعاد</h2>
+      <h1 class="text-2xl font-black hud-title mb-1">AegisRadar 360 AI</h1>
+      <h2 class="text-[11px] text-slate-400 mb-3">نظام المراقبة الهندسية وإدارة المنازل الذكية ثلاثي الأبعاد</h2>
       
-      <div class="bg-slate-900/80 border-r-4 border-cyan-500 p-3 text-right text-xs leading-relaxed text-slate-300 mb-4 rounded">
-        نظام أمني هجين يدمج حساس الرادار المليمتري (LD2450) مع محرك تقييم الوضعية والرؤية الحاسوبية المتقدمة.
+      <div class="bg-slate-900/80 border-r-4 border-cyan-500 p-2.5 text-right text-xs leading-relaxed text-slate-300 mb-3 rounded">
+        نظام أمني هجين يدمج حساس الرادار المليمتري (LD2450) مع محرك تقييم الوضعية والرؤية الحاسوبية.
       </div>
 
-      <div class="bg-slate-950 p-3 rounded-lg text-right text-xs border border-slate-800 mb-6 space-y-1">
+      <div class="bg-slate-950 p-2.5 rounded-lg text-right text-xs border border-slate-800 mb-4 space-y-1">
         <p>👨‍🏫 <b>إشراف الأستاذ القدير:</b> <span class="text-cyan-400 font-bold">إبراهيم</span></p>
         <p>👨‍💻 <b>إعداد الطلاب:</b> <span class="text-emerald-400">غانم فراس | سما غسان | إبراهيم غسان</span></p>
-        <p class="text-[10px] text-slate-500 pt-1">جامعة نينوى - كلية الهندسة</p>
+        <p class="text-[9px] text-slate-500 pt-0.5">جامعة نينوى - كلية الهندسة</p>
       </div>
 
-      <button onclick="goToStep(2)" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 rounded-lg transition text-sm">
+      <button onclick="goToStep(2)" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2.5 rounded-lg transition text-xs">
         المتابعة لإعدادات الدخول ➔
       </button>
     </div>
   </div>
 
   <div id="step-2" class="step-screen hidden">
-    <div class="glass-panel max-w-md w-full p-6 text-center border border-cyan-500/30">
-      <h2 class="text-xl font-bold hud-title mb-4">🔒 مصادقة حماية النظام</h2>
+    <div class="glass-panel max-w-md w-full p-5 text-center border border-cyan-500/30">
+      <h2 class="text-lg font-bold hud-title mb-3">🔒 مصادقة حماية النظام</h2>
       
-      <div class="mb-4 text-right">
+      <div class="mb-3 text-right">
         <label class="text-xs text-slate-300 font-bold block mb-1">حساب المستخدم:</label>
-        <select id="user-role-select" onchange="updatePinHint()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200">
+        <select id="user-role-select" onchange="updatePinHint()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
           <option value="admin">المهندس غانم (مدير النظام - Admin)</option>
           <option value="operator">المشرف الأمني (Security Operator)</option>
           <option value="viewer">حساب مراقب (View Only)</option>
         </select>
       </div>
 
-      <div class="mb-6 text-right">
+      <div class="mb-4 text-right">
         <label class="text-xs text-slate-300 font-bold block mb-1">رمز الدخول الأمني (PIN):</label>
-        <input type="password" id="pin-input" maxlength="8" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-center text-xl text-cyan-400 font-mono" />
-        <p class="text-[10px] text-slate-400 mt-1">الرمز الافتراضي: <span id="pin-hint-text" class="text-emerald-400 font-bold font-mono">1234</span> (أو رمز الجامعة: <span class="text-cyan-400 font-mono">20262026</span>)</p>
+        <input type="password" id="pin-input" maxlength="8" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-center text-lg text-cyan-400 font-mono" />
+        <p class="text-[10px] text-slate-400 mt-1">الرمز الافتراضي: <span id="pin-hint-text" class="text-emerald-400 font-bold font-mono">1234</span></p>
       </div>
 
-      <button onclick="authenticateUser()" class="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold py-3 rounded-lg text-sm">
+      <button onclick="authenticateUser()" class="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 text-white font-bold py-2.5 rounded-lg text-xs">
         دخول النظام 🔓
       </button>
-      <p id="auth-error" class="text-xs text-red-400 mt-3 hidden">رمز الدخول غير صحيح، حاول مرة أخرى.</p>
+      <p id="auth-error" class="text-xs text-red-400 mt-2 hidden">رمز الدخول غير صحيح، حاول مرة أخرى.</p>
     </div>
   </div>
 
-  <!-- 2. البيئة الرئيسية للتطبيق -->
+  <!-- 2. البيئة الرئيسية -->
   <div id="main-app" class="hidden relative w-full h-full">
     <div id="canvas-container"></div>
     <video id="webcam-video" class="hidden" autoplay playsinline></video>
 
-    <!-- Header Panel -->
-    <div class="glass-panel absolute top-3 right-3 left-3 z-20 p-2.5 flex flex-wrap justify-between items-center gap-2">
-      <div class="flex items-center space-x-3 space-x-reverse">
-        <div class="bg-gradient-to-tr from-cyan-600 to-emerald-500 p-2 rounded-xl shadow-lg shadow-cyan-500/30">
-          <i class="fa-solid fa-layer-group text-lg text-white"></i>
+    <!-- Header Panel - Responsive Grid -->
+    <div class="glass-panel absolute top-2 right-2 left-2 z-20 p-2 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div class="flex items-center justify-between w-full sm:w-auto">
+        <div class="flex items-center space-x-2 space-x-reverse">
+          <div class="bg-gradient-to-tr from-cyan-600 to-emerald-500 p-1.5 rounded-lg shadow-md shadow-cyan-500/30">
+            <i class="fa-solid fa-layer-group text-sm text-white"></i>
+          </div>
+          <div>
+            <h1 class="font-black text-xs hud-title">AegisRadar 360 AI</h1>
+            <p class="text-[9px] text-slate-400">المستخدم: <span id="active-user-display" class="text-emerald-400 font-bold">---</span></p>
+          </div>
         </div>
-        <div>
-          <h1 class="font-black text-sm hud-title">AegisRadar 360 AI</h1>
-          <p class="text-[10px] text-slate-400">المستخدم: <span id="active-user-display" class="text-emerald-400 font-bold">---</span> | الصلاحية: <span id="active-role-badge" class="text-cyan-400 font-bold">---</span></p>
-        </div>
+        <button onclick="logout()" class="sm:hidden bg-slate-800 text-red-400 text-xs px-2 py-1 rounded border border-slate-700">
+          <i class="fa-solid fa-power-off"></i>
+        </button>
       </div>
 
       <!-- Navigation Tabs -->
-      <div class="flex gap-1.5">
-        <button class="nav-btn active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-line ml-1"></i> المراقبة والتحليل</button>
-        <button class="nav-btn" onclick="switchTab('architect', this)"><i class="fa-solid fa-compass-drafting ml-1"></i> الأدوات والتصميم</button>
-        <button class="nav-btn" onclick="switchTab('security', this)"><i class="fa-solid fa-shield-cat ml-1"></i> مناطق الخطر</button>
+      <div class="flex gap-1 overflow-x-auto w-full sm:w-auto justify-start sm:justify-center py-1">
+        <button class="nav-btn active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-line ml-1"></i> المراقبة</button>
+        <button class="nav-btn" onclick="switchTab('architect', this)"><i class="fa-solid fa-compass-drafting ml-1"></i> التصميم</button>
+        <button class="nav-btn" onclick="switchTab('faces', this)"><i class="fa-solid fa-user-gear ml-1"></i> الوجوه</button>
+        <button class="nav-btn" onclick="switchTab('security', this)"><i class="fa-solid fa-shield-cat ml-1"></i> الخطر</button>
       </div>
 
-      <div class="flex items-center gap-2">
-        <button id="sensor-btn" onclick="connectMQTT()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2.5 py-1.5 rounded-lg border border-emerald-500 flex items-center gap-1">
-          <i class="fa-solid fa-plug text-amber-300"></i> ربط الرادار
+      <div class="hidden sm:flex items-center gap-2">
+        <button id="sensor-btn" onclick="connectMQTT()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2 py-1 rounded-lg border border-emerald-500 flex items-center gap-1">
+          <i class="fa-solid fa-plug text-amber-300"></i> الرادار
         </button>
-        <button onclick="logout()" class="bg-slate-800 hover:bg-slate-700 text-red-400 text-xs p-1.5 rounded-lg border border-slate-700" title="تسجيل الخروج">
+        <button onclick="logout()" class="bg-slate-800 hover:bg-slate-700 text-red-400 text-xs p-1.5 rounded-lg border border-slate-700">
           <i class="fa-solid fa-power-off"></i>
         </button>
       </div>
     </div>
 
-    <!-- TAB 1: DASHBOARD OVERLAY -->
-    <div id="tab-dashboard" class="tab-content relative z-10 pointer-events-none w-full h-full">
-      <div class="absolute top-20 left-3 pointer-events-auto flex flex-col gap-3 w-80">
+    <!-- TAB 1: DASHBOARD -->
+    <div id="tab-dashboard" class="tab-content relative z-10 pointer-events-none w-full h-full pt-20 pb-16 px-2 overflow-y-auto max-h-screen">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pointer-events-auto max-w-7xl mx-auto">
+        
+        <!-- Pose & Camera Panel -->
         <div class="glass-panel p-3">
-          <div class="flex justify-between items-center mb-2">
-            <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-camera text-cyan-400"></i> تحليل الوضعية والكاميرا 3D</span>
-            <span id="pose-status-badge" class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold">نشط</span>
+          <div class="flex justify-between items-center mb-1.5">
+            <span class="text-xs font-bold text-slate-200 flex items-center gap-1"><i class="fa-solid fa-camera text-cyan-400"></i> تحليل الوضعية والكاميرا</span>
+            <span id="pose-status-badge" class="text-[9px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.5 rounded-full font-mono font-bold">نشط</span>
           </div>
           
-          <div class="relative w-full h-40 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 shadow-inner">
+          <div class="relative w-full h-36 bg-slate-950 rounded-lg overflow-hidden border border-slate-800">
             <canvas id="ai-canvas" class="w-full h-full object-cover relative z-10"></canvas>
             <div class="scanline absolute inset-0 z-20"></div>
-            <div class="absolute top-2 left-2 z-30 bg-slate-950/80 px-2 py-1 rounded border border-cyan-500/40">
-              <p class="text-[9px] text-slate-400">الوضعية الحالية:</p>
-              <p id="hud-pose-text" class="text-xs font-black text-emerald-400 font-mono">SCANNING...</p>
+            <div class="absolute top-1.5 left-1.5 z-30 bg-slate-950/80 px-1.5 py-0.5 rounded border border-cyan-500/40">
+              <p class="text-[8px] text-slate-400">الوضعية:</p>
+              <p id="hud-pose-text" class="text-[10px] font-black text-emerald-400 font-mono">SCANNING...</p>
             </div>
-            <div class="absolute bottom-2 right-2 z-30 bg-slate-950/80 px-2 py-1 rounded border border-slate-700">
-              <p id="hud-angle-text" class="text-[9px] text-cyan-300 font-mono">Knee Angle: --°</p>
+            <div class="absolute bottom-1.5 right-1.5 z-30 bg-slate-950/80 px-1.5 py-0.5 rounded border border-slate-700">
+              <p id="hud-angle-text" class="text-[8px] text-cyan-300 font-mono">Knee Angle: --°</p>
             </div>
           </div>
         </div>
 
+        <!-- Chart Analytics -->
         <div class="glass-panel p-3">
-          <h3 class="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-chart-line text-cyan-400"></i> تحليلات مسافة الهدف (متر)</h3>
-          <div class="h-24 w-full">
+          <h3 class="text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1"><i class="fa-solid fa-chart-line text-cyan-400"></i> تحليلات المسافة المباشرة</h3>
+          <div class="h-36 w-full">
             <canvas id="analyticsChart"></canvas>
           </div>
         </div>
-      </div>
 
-      <div class="absolute top-20 right-3 pointer-events-auto w-72 glass-panel p-3 flex flex-col gap-3">
-        <h3 class="text-xs font-bold text-slate-300 flex items-center justify-between border-b border-slate-800 pb-2">
-          <span><i class="fa-solid fa-shield-cat text-amber-400 ml-1"></i> سجل الأحداث الأمنية</span>
-          <span class="text-[10px] bg-cyan-900/50 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-700/50">مباشر</span>
-        </h3>
-        
-        <div id="security-logs" class="space-y-2 h-44 overflow-y-auto text-[11px] pr-1">
-          <div class="p-2 rounded bg-slate-900/80 border-r-2 border-cyan-500 text-slate-300">
-            <span class="text-slate-500 block text-[9px]">13:00:00</span>
-            تم إقلاع نظام AegisRadar High-Graphics AI بنجاح.
+        <!-- Security Logs -->
+        <div class="glass-panel p-3 flex flex-col justify-between">
+          <h3 class="text-xs font-bold text-slate-300 flex items-center justify-between border-b border-slate-800 pb-1.5 mb-1.5">
+            <span><i class="fa-solid fa-shield-cat text-amber-400 ml-1"></i> سجل الأحداث الأمنية</span>
+            <span class="text-[9px] bg-cyan-900/50 text-cyan-300 px-1 py-0.5 rounded border border-cyan-700/50">مباشر</span>
+          </h3>
+          
+          <div id="security-logs" class="space-y-1.5 h-24 overflow-y-auto text-[10px] pr-1">
+            <div class="p-1.5 rounded bg-slate-900/80 border-r-2 border-cyan-500 text-slate-300">
+              <span class="text-slate-500 block text-[8px]">13:00:00</span>
+              تم تشغيل نظام AegisRadar بنجاح.
+            </div>
+          </div>
+
+          <div class="pt-1.5 border-t border-slate-800 grid grid-cols-2 gap-1.5 text-center text-xs">
+            <div class="bg-slate-900/60 p-1 rounded border border-slate-800">
+              <span class="text-slate-400 block text-[9px]">إحداثي X</span>
+              <span class="text-xs font-bold text-emerald-400 font-mono" id="raw-x">0.00 m</span>
+            </div>
+            <div class="bg-slate-900/60 p-1 rounded border border-slate-800">
+              <span class="text-slate-400 block text-[9px]">إحداثي Z</span>
+              <span class="text-xs font-bold text-cyan-400 font-mono" id="raw-y">0.00 m</span>
+            </div>
           </div>
         </div>
 
-        <div class="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2 text-center text-xs">
-          <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-            <span class="text-slate-400 block text-[10px]">إحداثي X الحساس</span>
-            <span class="text-sm font-bold text-emerald-400 font-mono" id="raw-x">0.00 m</span>
-          </div>
-          <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-            <span class="text-slate-400 block text-[10px]">إحداثي Z الحساس</span>
-            <span class="text-sm font-bold text-cyan-400 font-mono" id="raw-y">0.00 m</span>
-          </div>
-        </div>
       </div>
     </div>
 
-    <!-- TAB 2: ARCHITECT & CAD TOOLS OVERLAY -->
+    <!-- TAB 2: ARCHITECT & AI BUILD -->
     <div id="tab-architect" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
-      <div class="absolute top-20 right-3 pointer-events-auto w-80 glass-panel p-4 flex flex-col gap-3">
-        <h3 class="text-xs font-bold text-cyan-400 border-b border-slate-800 pb-2"><i class="fa-solid fa-pen-ruler ml-1"></i> أدوات CAD والتصميم المباشر</h3>
+      <div class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[80vh] overflow-y-auto">
+        <h3 class="text-xs font-bold text-cyan-400 border-b border-slate-800 pb-1 flex justify-between items-center">
+          <span><i class="fa-solid fa-pen-ruler ml-1"></i> أدوات البناء الذكي</span>
+          <span id="ai-status-tag" class="text-[9px] bg-cyan-950 text-cyan-400 border border-cyan-800 px-1 rounded">جاهز</span>
+        </h3>
         
-        <!-- الطوابق والدوران -->
-        <div class="grid grid-cols-2 gap-2 text-xs">
+        <!-- Floor & Rotation Controls -->
+        <div class="grid grid-cols-2 gap-1.5 text-xs">
           <div>
-            <label class="block text-slate-400 text-[10px] mb-1">الطابق الحالي:</label>
-            <select id="floorSelect" onchange="changeFloor(this.value)" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-cyan-400 font-bold">
-              <option value="0">الطابق الأرضي (0)</option>
-              <option value="1">الطابق الأول (1)</option>
-              <option value="2">الطابق الثاني (2)</option>
+            <label class="block text-slate-400 text-[9px] mb-0.5">الطابق:</label>
+            <select id="floorSelect" onchange="changeFloor(this.value)" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-cyan-400 font-bold text-xs">
+              <option value="0">الأرضي (0)</option>
+              <option value="1">الأول (1)</option>
+              <option value="2">الثاني (2)</option>
             </select>
           </div>
           <div>
-            <label class="block text-slate-400 text-[10px] mb-1">زاوية الاتجاه:</label>
-            <button onclick="toggleRotation()" id="rotBtn" class="w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 p-1.5 rounded text-emerald-400 font-bold">
-              🔄 أفقياً (0°)
+            <label class="block text-slate-400 text-[9px] mb-0.5">الاتجاه:</label>
+            <button onclick="toggleRotation()" id="rotBtn" class="w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 p-1 rounded text-emerald-400 font-bold text-xs">
+              🔄 0°
             </button>
           </div>
         </div>
 
-        <div id="cad-tools-panel" class="grid grid-cols-2 gap-2 pt-1">
-          <button id="tool-select" onclick="setCadTool('select')" class="cad-btn active p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-arrow-pointer text-cyan-400"></i> تحديد</button>
-          <button id="tool-wall" onclick="setCadTool('wall')" class="cad-btn p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-ruler-combined text-emerald-400"></i> جدار</button>
-          <button id="tool-door" onclick="setCadTool('door')" class="cad-btn p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-door-open text-amber-300"></i> باب</button>
-          <button id="tool-window" onclick="setCadTool('window')" class="cad-btn p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-window-maximize text-cyan-300"></i> شباك</button>
+        <!-- Manual & AI Tools -->
+        <div id="cad-tools-panel" class="grid grid-cols-2 gap-1.5">
+          <button id="tool-select" onclick="setCadTool('select')" class="cad-btn active p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-arrow-pointer text-cyan-400"></i> تحديد</button>
+          <button id="tool-wall" onclick="setCadTool('wall')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-ruler-combined text-emerald-400"></i> جدار</button>
+          <button id="tool-door" onclick="setCadTool('door')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-door-open text-amber-300"></i> باب</button>
+          <button id="tool-window" onclick="setCadTool('window')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-window-maximize text-cyan-300"></i> شباك</button>
         </div>
 
-        <div class="space-y-2 pt-2 border-t border-slate-800 text-xs">
-          <label class="block text-slate-400">تخصيص الألوان:</label>
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <span class="text-[10px] text-slate-500">الجدران</span>
-              <input type="color" id="wallColorPicker" value="#334155" onchange="updateColors()" class="w-full h-8 bg-transparent cursor-pointer rounded">
-            </div>
-            <div>
-              <span class="text-[10px] text-slate-500">الأرضية</span>
-              <input type="color" id="floorColorPicker" value="#0f172a" onchange="updateColors()" class="w-full h-8 bg-transparent cursor-pointer rounded">
-            </div>
-          </div>
+        <!-- AI Auto Room Generator -->
+        <div class="bg-slate-900/90 p-2 rounded-lg border border-cyan-500/30 text-xs space-y-1.5">
+          <span class="text-cyan-300 font-bold block text-[10px]"><i class="fa-solid fa-wand-magic-sparkles text-amber-300 ml-1"></i> بناء غرفة كاملة بالذكاء الاصطناعي</span>
+          <p class="text-[9px] text-slate-400">حدد الزاوية بالنقر على الأرضية لبناء غرفة متكاملة مع أبواب وشبابيك تلقائياً:</p>
+          <button id="tool-ai-room" onclick="setCadTool('ai-room')" class="cad-btn w-full bg-gradient-to-r from-cyan-600 to-blue-600 p-1.5 rounded text-white font-bold text-xs flex items-center justify-center gap-1">
+            <i class="fa-solid fa-robot"></i> تفعيل أداة البناء الذكي
+          </button>
         </div>
 
-        <button onclick="clearCADObjects()" class="w-full bg-red-950/40 hover:bg-red-900/60 text-red-300 p-2 rounded-lg text-xs font-semibold border border-red-800/50 mt-2">
+        <button onclick="clearCADObjects()" class="w-full bg-red-950/40 hover:bg-red-900/60 text-red-300 p-1.5 rounded text-xs font-semibold border border-red-800/50">
           <i class="fa-solid fa-trash-can ml-1"></i> مسح جميع العناصر
         </button>
       </div>
     </div>
 
-    <!-- TAB 3: DANGER ZONES OVERLAY -->
-    <div id="tab-security" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
-      <div class="absolute top-20 right-3 pointer-events-auto w-80 glass-panel p-4 flex flex-col gap-3">
-        <h3 class="text-xs font-bold text-red-400 border-b border-slate-800 pb-2"><i class="fa-solid fa-triangle-exclamation ml-1"></i> إعداد مناطق الخطر (Geofencing)</h3>
+    <!-- TAB 3: FACE CAPTURE & DATABASE -->
+    <div id="tab-faces" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
+      <div class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[80vh] overflow-y-auto">
+        <h3 class="text-xs font-bold text-emerald-400 border-b border-slate-800 pb-1"><i class="fa-solid fa-camera-retro ml-1"></i> التقاط وخزن وجوه المستخدمين</h3>
         
-        <div class="space-y-2 text-xs">
-          <input type="text" id="zoneName" placeholder="اسم المنطقة" value="منطقة أمنية محظورة" class="w-full bg-slate-900 border border-slate-700 p-2 rounded text-slate-200">
-          <select id="zoneShape" class="w-full bg-slate-900 border border-slate-700 p-2 rounded text-slate-200">
+        <div class="space-y-1.5 text-xs">
+          <input type="text" id="faceNameInput" placeholder="اسم الشخص" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
+          <button onclick="captureFace()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-1.5 rounded font-bold transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-expand"></i> التقاط وصنع بصمة وجه 📸
+          </button>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800">
+          <span class="text-[10px] text-slate-400 block mb-1">الوجوه المحفوظة بالنظام:</span>
+          <div id="faces-gallery" class="grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto">
+            <!-- Dynamic captured face images -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: DANGER ZONES -->
+    <div id="tab-security" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
+      <div class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2">
+        <h3 class="text-xs font-bold text-red-400 border-b border-slate-800 pb-1"><i class="fa-solid fa-triangle-exclamation ml-1"></i> مناطق الخطر (Geofencing)</h3>
+        
+        <div class="space-y-1.5 text-xs">
+          <input type="text" id="zoneName" placeholder="اسم المنطقة" value="منطقة محظورة" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
+          <select id="zoneShape" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
             <option value="circle">دائرية (Circle)</option>
             <option value="rectangle">مستطيلة (Rectangle)</option>
           </select>
-          <div class="grid grid-cols-2 gap-2">
-            <input type="number" id="zoneX" placeholder="الموقع X" value="0" class="bg-slate-900 border border-slate-700 p-2 rounded text-slate-200">
-            <input type="number" id="zoneZ" placeholder="الموقع Z" value="0" class="bg-slate-900 border border-slate-700 p-2 rounded text-slate-200">
+          <div class="grid grid-cols-2 gap-1.5">
+            <input type="number" id="zoneX" placeholder="X" value="0" class="bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
+            <input type="number" id="zoneZ" placeholder="Z" value="0" class="bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
           </div>
-          <input type="number" id="zoneSize" placeholder="الحجم/القطر (m)" value="3" class="w-full bg-slate-900 border border-slate-700 p-2 rounded text-slate-200">
+          <input type="number" id="zoneSize" placeholder="الحجم (m)" value="3" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
           
-          <button onclick="addDangerZoneUI()" class="w-full bg-red-600 hover:bg-red-500 text-white p-2 rounded text-xs font-bold transition">
+          <button onclick="addDangerZoneUI()" class="w-full bg-red-600 hover:bg-red-500 text-white p-1.5 rounded font-bold transition">
             إضافة منطقة الخطر 🚨
           </button>
         </div>
@@ -273,9 +307,9 @@
     </div>
 
     <!-- Bottom HUD Coordinates -->
-    <div class="glass-panel absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-6 py-2 flex items-center gap-6 text-xs text-slate-300 border border-cyan-500/30">
-      <div>X: <span id="pos-x" class="text-cyan-400 font-mono font-bold">0.00</span> m</div>
-      <div>Z: <span id="pos-z" class="text-emerald-400 font-mono font-bold">0.00</span> m</div>
+    <div class="glass-panel absolute bottom-2 left-1/2 -translate-x-1/2 z-20 px-3 py-1 flex items-center gap-3 text-[10px] text-slate-300 border border-cyan-500/30 whitespace-nowrap">
+      <div>X: <span id="pos-x" class="text-cyan-400 font-mono font-bold">0.00</span></div>
+      <div>Z: <span id="pos-z" class="text-emerald-400 font-mono font-bold">0.00</span></div>
       <div>الطابق: <span id="current-floor-hud" class="text-cyan-300 font-bold">0</span></div>
       <div>الأداة: <span id="active-tool-label" class="text-amber-400 font-bold">تحديد</span></div>
     </div>
@@ -315,13 +349,12 @@
         document.getElementById('step-2').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
         document.getElementById('active-user-display').innerText = account.name;
-        document.getElementById('active-role-badge').innerText = account.role;
 
         init3D();
         initMediaPipe();
         initChart();
         initMQTT();
-        addSecurityLog(`تم تسجيل دخول: ${account.name} صلاحية (${account.role})`);
+        addSecurityLog(`تسجيل دخول: ${account.name}`);
       } else {
         document.getElementById('auth-error').classList.remove('hidden');
       }
@@ -340,13 +373,13 @@
       const container = document.getElementById('security-logs');
       const time = new Date().toLocaleTimeString('ar-EG');
       const item = document.createElement('div');
-      item.className = `p-2 rounded bg-slate-900/80 border-r-2 ${isAlert ? 'border-red-500 text-red-300 font-bold' : 'border-cyan-500 text-slate-300'}`;
-      item.innerHTML = `<span class="text-slate-500 block text-[9px]">${time}</span>${text}`;
+      item.className = `p-1.5 rounded bg-slate-900/80 border-r-2 ${isAlert ? 'border-red-500 text-red-300 font-bold' : 'border-cyan-500 text-slate-300'}`;
+      item.innerHTML = `<span class="text-slate-500 block text-[8px]">${time}</span>${text}`;
       container.prepend(item);
     }
 
     // ==========================================
-    // 2. MEDIAPIPE POSE CLASSIFICATION
+    // 2. MEDIAPIPE POSE & FACE CAPTURE SYSTEM
     // ==========================================
     const videoElement = document.getElementById('webcam-video');
     const aiCanvas = document.getElementById('ai-canvas');
@@ -383,7 +416,7 @@
 
       landmarks.forEach((lm) => {
         aiCtx.beginPath();
-        aiCtx.arc(lm.x * w, lm.y * h, 3, 0, 2 * Math.PI);
+        aiCtx.arc(lm.x * w, lm.y * h, 2, 0, 2 * Math.PI);
         aiCtx.fillStyle = statusColor;
         aiCtx.fill();
       });
@@ -405,13 +438,35 @@
       cameraUtils.start();
     }
 
+    // Capture & Store Face Images
+    function captureFace() {
+      const name = document.getElementById('faceNameInput').value.trim() || 'شخص مجهول';
+      const capCanvas = document.createElement('canvas');
+      capCanvas.width = aiCanvas.width;
+      capCanvas.height = aiCanvas.height;
+      const ctx = capCanvas.getContext('2d');
+      ctx.drawImage(videoElement, 0, 0, capCanvas.width, capCanvas.height);
+      
+      const imgData = capCanvas.toDataURL('image/png');
+      const gallery = document.getElementById('faces-gallery');
+
+      const card = document.createElement('div');
+      card.className = "bg-slate-900 border border-slate-700 p-1 rounded flex flex-col items-center text-center";
+      card.innerHTML = `
+        <img src="${imgData}" class="w-full h-16 object-cover rounded border border-slate-800 mb-1" />
+        <span class="text-[8px] text-emerald-400 font-bold truncate w-full">${name}</span>
+      `;
+      gallery.prepend(card);
+      addSecurityLog(`📸 تم التقاط وحفظ وجه: ${name}`);
+    }
+
     // ==========================================
-    // 3. THREE.JS ENGINE & MULTI-FLOOR CAD DESIGN
+    // 3. THREE.JS ENGINE & AI AUTO-BUILD SYSTEM
     // ==========================================
     let scene, camera3D, renderer, controls, mapGroup;
     let activeTool = 'select';
     let currentFloor = 0;
-    let currentRotation = 0; // 0 rad or Math.PI / 2 rad
+    let currentRotation = 0;
     let floorPlanes = [];
     const FLOOR_HEIGHT = 3.0;
     const raycaster = new THREE.Raycaster();
@@ -427,6 +482,7 @@
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       container.appendChild(renderer.domElement);
 
       controls = new THREE.OrbitControls(camera3D, renderer.domElement);
@@ -441,13 +497,9 @@
       mapGroup = new THREE.Group();
       scene.add(mapGroup);
 
-      // Create Planes for Multi-Floor system
       for (let i = 0; i < 3; i++) {
         const floorMat = new THREE.MeshStandardMaterial({ 
-          color: 0x0f172a, 
-          roughness: 0.8,
-          transparent: true,
-          opacity: i === 0 ? 1.0 : 0.6 
+          color: 0x0f172a, roughness: 0.8, transparent: true, opacity: i === 0 ? 1.0 : 0.6 
         });
         const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), floorMat);
         floor.rotation.x = -Math.PI / 2;
@@ -475,24 +527,13 @@
 
     function toggleRotation() {
       currentRotation = currentRotation === 0 ? Math.PI / 2 : 0;
-      const btn = document.getElementById('rotBtn');
-      if (currentRotation === 0) {
-        btn.innerHTML = '🔄 أفقياً (0°)';
-        btn.className = 'w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 p-1.5 rounded text-emerald-400 font-bold';
-      } else {
-        btn.innerHTML = '🔄 عمودياً (90°)';
-        btn.className = 'w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 p-1.5 rounded text-cyan-400 font-bold';
-      }
+      document.getElementById('rotBtn').innerText = currentRotation === 0 ? '🔄 0°' : '🔄 90°';
     }
 
     function changeFloor(floorIdx) {
       currentFloor = parseInt(floorIdx);
       document.getElementById('current-floor-hud').innerText = currentFloor;
-      
-      floorPlanes.forEach((fl, idx) => {
-        fl.visible = idx <= currentFloor;
-      });
-      addSecurityLog(`تم الانتقال إلى الطابق (${currentFloor})`);
+      floorPlanes.forEach((fl, idx) => fl.visible = idx <= currentFloor);
     }
 
     function setCadTool(tool) {
@@ -504,7 +545,7 @@
     }
 
     function onDocumentPointerDown(event) {
-      if (activeTool === 'select' || event.clientY < 70) return;
+      if (activeTool === 'select' || event.clientY < 75) return;
 
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -515,18 +556,40 @@
 
       if (intersects.length > 0) {
         const point = intersects[0].point;
-        createCadObject(activeTool, point.x, point.z, currentFloor);
+        if (activeTool === 'ai-room') {
+          buildAIRoom(point.x, point.z, currentFloor);
+        } else {
+          createCadObject(activeTool, point.x, point.z, currentFloor);
+        }
       }
     }
 
-    function createCadObject(type, x, z, floorLevel) {
-      const wallColorHex = parseInt(document.getElementById('wallColorPicker').value.replace('#', '0x'));
+    // AI Auto-Generator for standard rooms
+    function buildAIRoom(centerX, centerZ, floorLevel) {
+      const w = 6; // Room Width
+      const d = 6; // Room Depth
+
+      // Generate 4 outer walls
+      createCadObject('wall', centerX, centerZ - d/2, floorLevel, 0);
+      createCadObject('wall', centerX, centerZ + d/2, floorLevel, 0);
+      createCadObject('wall', centerX - w/2, centerZ, floorLevel, Math.PI / 2);
+      createCadObject('wall', centerX + w/2, centerZ, floorLevel, Math.PI / 2);
+
+      // Auto Insert Door and Window
+      createCadObject('door', centerX, centerZ + d/2, floorLevel, 0);
+      createCadObject('window', centerX + w/2, centerZ, floorLevel, Math.PI / 2);
+
+      addSecurityLog(`🤖 قام الذكاء الاصطناعي بتشييد غرفة هندسية متكاملة في (${centerX.toFixed(1)}, ${centerZ.toFixed(1)})`);
+    }
+
+    function createCadObject(type, x, z, floorLevel, overrideRotation = null) {
+      const rot = overrideRotation !== null ? overrideRotation : currentRotation;
       const baseY = floorLevel * FLOOR_HEIGHT;
       let mesh;
 
       if (type === 'wall') {
         const geom = new THREE.BoxGeometry(4, 2.5, 0.3);
-        const mat = new THREE.MeshStandardMaterial({ color: wallColorHex });
+        const mat = new THREE.MeshStandardMaterial({ color: 0x334155 });
         mesh = new THREE.Mesh(geom, mat);
         mesh.position.set(x, baseY + 1.25, z);
       } else if (type === 'door') {
@@ -560,15 +623,9 @@
       }
 
       if (mesh) {
-        mesh.rotation.y = currentRotation; // Apply 0° or 90° rotation
+        mesh.rotation.y = rot;
         mapGroup.add(mesh);
-        addSecurityLog(`تم إضافة ${type} (طابق ${floorLevel}) بزاوية ${currentRotation === 0 ? '0°' : '90°'}`);
       }
-    }
-
-    function updateColors() {
-      const floorColor = document.getElementById('floorColorPicker').value;
-      floorPlanes.forEach(fl => fl.material.color.setHex(parseInt(floorColor.replace('#', '0x'))));
     }
 
     function addDangerZoneUI() {
@@ -585,13 +642,11 @@
       mesh.position.set(x, baseY + 0.05, z);
       mapGroup.add(mesh);
 
-      addSecurityLog(`🚨 تم إنشاء منطقة خطر طابق ${currentFloor}: ${name}`);
+      addSecurityLog(`🚨 منطقة خطر طابق ${currentFloor}: ${name}`);
     }
 
     function clearCADObjects() {
-      while(mapGroup.children.length > 0) {
-        mapGroup.remove(mapGroup.children[0]);
-      }
+      while(mapGroup.children.length > 0) mapGroup.remove(mapGroup.children[0]);
       addSecurityLog("تم مسح جميع العناصر.");
     }
 
@@ -600,7 +655,7 @@
     // ==========================================
     function initMQTT() {
       const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
-      client.on('connect', () => addSecurityLog("تم الاتصال ببروكير الرادار MQTT المباشر."));
+      client.on('connect', () => addSecurityLog("تم الاتصال ببروكير MQTT المباشر."));
       client.subscribe('aegis/radar/targets');
 
       client.on('message', (topic, message) => {
