@@ -3,131 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AegisRadar 360 AI - Professional CAD & Security Suite</title>
+    <title>AegisRadar 360 AI - Full Suite & CAD Architect</title>
     <!-- Three.js & Controls -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <!-- FontAwesome & Tailwind CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js for Advanced Analytics -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         body { margin: 0; overflow: hidden; background-color: #080c14; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #f1f5f9; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        .glass-panel { background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .glass-panel { background: rgba(15, 23, 42, 0.90); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .cad-btn { transition: all 0.2s ease; border: 1px solid rgba(255, 255, 255, 0.15); }
         .cad-btn.active { background-color: #2563eb !important; border-color: #60a5fa !important; box-shadow: 0 0 15px rgba(37, 99, 235, 0.6); }
         .hud-title { background: linear-gradient(90deg, #60a5fa, #a7f3d0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        /* Custom Scrollbars */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-    <!-- 3D Render Viewport -->
+    <!-- LOGIN / AUTHENTICATION OVERLAY LAYER -->
+    <div id="login-modal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full p-6 text-center border border-blue-500/30 shadow-2xl">
+            <div class="w-16 h-16 bg-gradient-to-tr from-blue-600 to-emerald-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-blue-500/40 mb-4">
+                <i class="fa-solid fa-shield-halved text-3xl text-white"></i>
+            </div>
+            <h2 class="text-2xl font-black hud-title mb-1">AegisRadar 360 AI</h2>
+            <p class="text-xs text-slate-400 mb-6">نظام المراقبة والرادار الهندسي المتقدم</p>
+
+            <!-- User Selector -->
+            <div class="mb-4 text-right">
+                <label class="text-xs text-slate-300 font-bold block mb-1.5">اختر مستخدم النظام:</label>
+                <select id="user-role-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
+                    <option value="admin">المهندس غانم (مدير النظام - Admin)</option>
+                    <option value="operator">المشرف الأمني (Security Operator)</option>
+                    <option value="viewer">حساب مراقب (View Only)</option>
+                </select>
+            </div>
+
+            <!-- PIN Input Code -->
+            <div class="mb-6 text-right">
+                <label class="text-xs text-slate-300 font-bold block mb-1.5">رمز الدخول الأمني (PIN):</label>
+                <input type="password" id="pin-input" maxlength="4" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-center text-xl text-blue-400 tracking-widest font-mono focus:outline-none focus:border-blue-500" />
+                <p class="text-[10px] text-slate-500 mt-1">الرمز الافتراضي للتجربة: <span class="text-emerald-400 font-bold">1234</span></p>
+            </div>
+
+            <button onclick="authenticateUser()" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3 rounded-lg shadow-lg shadow-blue-500/30 transition text-sm">
+                دخول للنظام <i class="fa-solid fa-right-to-bracket mr-2"></i>
+            </button>
+            <p id="auth-error" class="text-xs text-red-400 mt-3 hidden">رمز الدخول غير صحيح، حاول مرة أخرى.</p>
+        </div>
+    </div>
+
+    <!-- 3D MAIN VIEWPORT -->
     <div id="canvas-container"></div>
 
-    <!-- Top Navigation Control Bar -->
+    <!-- TOP HEADER CONTROL BAR -->
     <div class="glass-panel absolute top-3 right-3 left-3 z-20 p-3 flex flex-wrap justify-between items-center gap-3">
         <div class="flex items-center space-x-3 space-x-reverse">
             <div class="bg-gradient-to-tr from-blue-600 to-emerald-500 p-2.5 rounded-xl shadow-lg shadow-blue-500/30">
-                <i class="fa-solid fa-shield-halved text-2xl text-white"></i>
+                <i class="fa-solid fa-layer-group text-xl text-white"></i>
             </div>
             <div>
-                <h1 class="font-black text-xl leading-none hud-title">AegisRadar 360 AI Pro</h1>
-                <p class="text-[11px] text-slate-400 mt-1">نظام المراقبة والرادار ثلاثي الأبعاد والتصميم الهندسي</p>
+                <h1 class="font-black text-lg leading-none hud-title">AegisRadar CAD Suite</h1>
+                <p class="text-[11px] text-slate-400 mt-1">المستخدم الحقيقي: <span id="active-user-display" class="text-emerald-400 font-bold">غير معروف</span></p>
             </div>
         </div>
 
-        <!-- CAD Tools Selector -->
-        <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-xl border border-slate-700/80 shadow-inner">
-            <button id="tool-select" onclick="setCadTool('select')" class="cad-btn active px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-800"><i class="fa-solid fa-arrow-pointer text-blue-400"></i> تحديد</button>
-            <button id="tool-wall" onclick="setCadTool('wall')" class="cad-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-800"><i class="fa-solid fa-ruler-combined text-emerald-400"></i> رسم جدار (ماوس)</button>
-            <button id="tool-zone" onclick="setCadTool('zone')" class="cad-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-800"><i class="fa-solid fa-draw-polygon text-red-400"></i> منطقة خطر (ماوس)</button>
-            <button onclick="clearCADObjects()" class="cad-btn bg-red-950/40 hover:bg-red-900/60 text-red-300 px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-trash-can"></i> مسح المخطط</button>
+        <!-- FULL CAD TOOLBAR WITH PAINT & OBJECTS -->
+        <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-xl border border-slate-700/80 shadow-inner flex-wrap">
+            <button id="tool-select" onclick="setCadTool('select')" class="cad-btn active px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-slate-800"><i class="fa-solid fa-arrow-pointer text-blue-400"></i> تحديد</button>
+            <button id="tool-wall" onclick="setCadTool('wall')" class="cad-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-slate-800"><i class="fa-solid fa-ruler-combined text-emerald-400"></i> جدار</button>
+            
+            <!-- Wall Color Picker Tool -->
+            <div class="flex items-center gap-1 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+                <input type="color" id="wall-color-picker" value="#64748b" class="w-5 h-5 bg-transparent border-0 cursor-pointer rounded" />
+                <button id="tool-paint" onclick="setCadTool('paint')" class="cad-btn px-2 py-1 rounded text-xs font-semibold hover:bg-slate-800"><i class="fa-solid fa-paint-roller text-amber-400"></i> تلوين</button>
+            </div>
+
+            <!-- Architectural Elements -->
+            <button id="tool-door" onclick="setCadTool('door')" class="cad-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-slate-800"><i class="fa-solid fa-door-open text-amber-300"></i> إضافة باب</button>
+            <button id="tool-window" onclick="setCadTool('window')" class="cad-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-slate-800"><i class="fa-solid fa-window-maximize text-cyan-300"></i> شباك</button>
+            <button id="tool-zone" onclick="setCadTool('zone')" class="cad-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-slate-800"><i class="fa-solid fa-draw-polygon text-red-400"></i> منطقة خطر</button>
+
+            <!-- Floor Customization Selector -->
+            <select onchange="changeFloorTexture(this.value)" class="bg-slate-950 border border-slate-700 text-[11px] p-1.5 rounded-lg text-slate-200">
+                <option value="cad">أرضية: CAD Grid</option>
+                <option value="marble">أرضية: رخام حديث</option>
+                <option value="dark">أرضية: داكنة أمنية</option>
+            </select>
+
+            <button onclick="clearCADObjects()" class="cad-btn bg-red-950/40 hover:bg-red-900/60 text-red-300 px-2.5 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-trash-can"></i> مسح</button>
         </div>
 
-        <!-- System Controls & Connection Status -->
-        <div class="flex items-center gap-3">
-            <div class="flex items-center gap-2 bg-slate-900/60 px-3 py-1.5 rounded-lg border border-slate-800">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" id="sensor-dot"></span>
-                <span class="text-xs text-slate-300 font-medium" id="sensor-status">حساس LD2450: نشط</span>
-            </div>
-            <button onclick="toggleRadarTargetLock()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg border border-slate-600 transition flex items-center gap-1.5">
-                <i class="fa-solid fa-crosshairs text-amber-400"></i> <span id="lock-btn-text">تثبيت موقع الهدف</span>
+        <!-- Sensor Status & Hardware Connection -->
+        <div class="flex items-center gap-2">
+            <button onclick="connectWebSerial()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2.5 py-1.5 rounded-lg border border-emerald-500 flex items-center gap-1">
+                <i class="fa-solid fa-plug text-amber-300"></i> ربط الحساس
+            </button>
+            <button onclick="logout()" class="bg-slate-800 hover:bg-slate-700 text-red-400 text-xs p-1.5 rounded-lg border border-slate-700" title="تسجيل الخروج">
+                <i class="fa-solid fa-power-off"></i>
             </button>
         </div>
     </div>
 
-    <!-- Left Floating Panels: Video Stream & Analytics -->
+    <!-- LEFT PANEL: STREAM & ANALYTICS -->
     <div class="absolute top-20 left-3 z-20 flex flex-col gap-3 w-80">
         
-        <!-- Live iPhone IP Stream Box -->
+        <!-- Camera Stream Box -->
         <div class="glass-panel p-3">
             <div class="flex justify-between items-center mb-2">
-                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-video text-red-500 animate-pulse"></i> بث الكاميرا الحية (آيفون)</span>
-                <span id="stream-indicator" class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full">متصل</span>
+                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-video text-red-500"></i> بث الآيفون المباشر</span>
+                <span id="stream-indicator" class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full">نشط</span>
             </div>
             
-            <div class="relative w-full h-44 bg-black rounded-lg overflow-hidden border border-slate-800 flex items-center justify-center">
+            <div class="relative w-full h-40 bg-black rounded-lg overflow-hidden border border-slate-800 flex items-center justify-center">
                 <img id="camera-feed" src="http://192.168.1.3:8081/video" class="w-full h-full object-cover" alt="iPhone Stream" onerror="handleStreamError(this)" />
                 <div id="stream-fallback" class="hidden absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-3 text-center">
-                    <i class="fa-solid fa-triangle-exclamation text-amber-400 text-3xl mb-2"></i>
+                    <i class="fa-solid fa-triangle-exclamation text-amber-400 text-2xl mb-1"></i>
                     <p class="text-xs text-slate-300">لم يتم الاتصال ببث الآيفون</p>
-                    <p class="text-[10px] text-slate-500 mt-0.5">تأكد من فتح تطبيق IP Camera على الهاتف</p>
-                    <button onclick="reconnectStream()" class="mt-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded-md transition shadow">إعادة الاتصال</button>
+                    <button onclick="reconnectStream()" class="mt-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-2.5 py-1 rounded">إعادة الاتصال</button>
                 </div>
             </div>
 
-            <div class="mt-2.5 flex gap-1.5">
-                <input type="text" id="stream-url-input" value="http://192.168.1.3:8081" class="bg-slate-950 border border-slate-700 text-xs p-1.5 rounded-lg w-full text-center text-blue-300 font-mono focus:outline-none focus:border-blue-500" />
-                <button onclick="updateStreamUrl()" class="bg-blue-600 hover:bg-blue-500 text-xs text-white px-3 rounded-lg transition font-medium">حفظ</button>
+            <div class="mt-2 flex gap-1.5">
+                <input type="text" id="stream-url-input" value="http://192.168.1.3:8081" class="bg-slate-950 border border-slate-700 text-xs p-1 rounded-lg w-full text-center text-blue-300 font-mono" />
+                <button onclick="updateStreamUrl()" class="bg-blue-600 hover:bg-blue-500 text-xs text-white px-2.5 rounded-lg">حفظ</button>
             </div>
         </div>
 
-        <!-- Real-time Analytics & Chart Panel -->
+        <!-- Live Analytics Chart -->
         <div class="glass-panel p-3">
-            <h3 class="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-chart-line text-blue-400"></i> تحليلات الحركة المباشرة</h3>
-            <div class="h-28 w-full">
+            <h3 class="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-chart-line text-blue-400"></i> تحليلات مسافة الهدف (متر)</h3>
+            <div class="h-24 w-full">
                 <canvas id="analyticsChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Right Floating Panel: System Status & Security Logs -->
+    <!-- RIGHT PANEL: SECURITY LOGS & RADAR STATUS -->
     <div class="absolute top-20 right-3 z-20 w-72 glass-panel p-3 flex flex-col gap-3">
         <h3 class="text-xs font-bold text-slate-300 flex items-center justify-between border-b border-slate-800 pb-2">
-            <span><i class="fa-solid fa-shield-cat text-amber-400 ml-1"></i> سجل الأحدات والتنبيهات</span>
+            <span><i class="fa-solid fa-shield-cat text-amber-400 ml-1"></i> سجل الأحدات الأمنية</span>
             <span class="text-[10px] bg-blue-900/50 text-blue-300 px-1.5 py-0.5 rounded">مباشر</span>
         </h3>
         
         <div id="security-logs" class="space-y-2 h-44 overflow-y-auto text-[11px] pr-1">
             <div class="p-2 rounded bg-slate-900/80 border-r-2 border-blue-500 text-slate-300">
-                <span class="text-slate-500 block text-[9px]">13:00:12</span>
-                تم تشغيل نظام AegisRadar 360 AI بنجاح.
-            </div>
-            <div class="p-2 rounded bg-slate-900/80 border-r-2 border-emerald-500 text-slate-300">
-                <span class="text-slate-500 block text-[9px]">13:01:05</span>
-                تم تحديد موضع الرادار المركزي عند الإحداثيات (0, 0).
+                <span class="text-slate-500 block text-[9px]">13:00:00</span>
+                تم تسجيل دخول المستخدم وتفعيل نظام AegisRadar.
             </div>
         </div>
 
         <div class="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2 text-center text-xs">
             <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                <span class="text-slate-400 block text-[10px]">الأهداف المكتشفة</span>
-                <span class="text-lg font-bold text-emerald-400" id="target-count">1</span>
+                <span class="text-slate-400 block text-[10px]">إحداثي X الحساس</span>
+                <span class="text-sm font-bold text-emerald-400 font-mono" id="raw-x">1.50 m</span>
             </div>
             <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                <span class="text-slate-400 block text-[10px]">حالة الأمان</span>
-                <span class="text-xs font-bold text-emerald-400 block mt-1" id="security-status">مستقر</span>
+                <span class="text-slate-400 block text-[10px]">إحداثي Y الحساس</span>
+                <span class="text-sm font-bold text-blue-400 font-mono" id="raw-y">2.50 m</span>
             </div>
         </div>
     </div>
 
-    <!-- Bottom Dynamic CAD Coordinates HUD Bar -->
+    <!-- BOTTOM HUD COORDINATES BAR -->
     <div class="glass-panel absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-6 py-2.5 flex items-center gap-6 text-xs text-slate-300 border border-blue-500/30 shadow-2xl">
         <div class="flex items-center gap-1.5"><i class="fa-solid fa-location-crosshairs text-blue-400"></i> X: <span id="pos-x" class="text-white font-mono font-bold">0.00</span> م</div>
         <div class="flex items-center gap-1.5"><i class="fa-solid fa-up-down text-emerald-400"></i> Z (Y): <span id="pos-z" class="text-white font-mono font-bold">0.00</span> م</div>
@@ -137,7 +181,29 @@
 
     <script>
         // ==========================================
-        // 1. THREE.JS SCENE, LIGHTS & CAD GRID
+        // 1. AUTHENTICATION & LOGIN SYSTEM
+        // ==========================================
+        function authenticateUser() {
+            const pin = document.getElementById('pin-input').value;
+            const roleSelect = document.getElementById('user-role-select');
+            const selectedUserText = roleSelect.options[roleSelect.selectedIndex].text;
+
+            if (pin === '1234' || pin === '0000') {
+                document.getElementById('login-modal').classList.add('hidden');
+                document.getElementById('active-user-display').innerText = selectedUserText;
+                addSecurityLog(`تم تسجيل دخول: ${selectedUserText}`);
+            } else {
+                document.getElementById('auth-error').classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('pin-input').value = '';
+        }
+
+        // ==========================================
+        // 2. THREE.JS SCENE, FLOOR & RADAR SETUP
         // ==========================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -150,28 +216,43 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
 
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
-
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
         dirLight.position.set(12, 24, 12);
-        dirLight.castShadow = true;
         scene.add(dirLight);
 
-        // CAD Grid Floor
-        const gridHelper = new THREE.GridHelper(50, 50, 0x3b82f6, 0x1e293b);
-        gridHelper.position.y = 0;
-        scene.add(gridHelper);
+        // Ground Mesh & CAD Grid
+        let currentGrid = new THREE.GridHelper(50, 50, 0x3b82f6, 0x1e293b);
+        scene.add(currentGrid);
 
-        // Raycasting Plane
+        const floorGeo = new THREE.PlaneGeometry(50, 50);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+        const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+        floorMesh.rotation.x = -Math.PI / 2;
+        floorMesh.position.y = -0.01;
+        scene.add(floorMesh);
+
+        function changeFloorTexture(type) {
+            if (type === 'marble') {
+                floorMesh.material.color.setHex(0x334155);
+                floorMesh.material.roughness = 0.2;
+            } else if (type === 'dark') {
+                floorMesh.material.color.setHex(0x020617);
+                floorMesh.material.roughness = 0.9;
+            } else {
+                floorMesh.material.color.setHex(0x0f172a);
+                floorMesh.material.roughness = 0.8;
+            }
+            addSecurityLog(`تم تغيير شكل الأرضية إلى: ${type}`);
+        }
+
         const raycastPlane = new THREE.Mesh(
             new THREE.PlaneGeometry(100, 100),
             new THREE.MeshBasicMaterial({ visible: false })
@@ -179,32 +260,22 @@
         raycastPlane.rotation.x = -Math.PI / 2;
         scene.add(raycastPlane);
 
-        // Radar Device Center Origin
+        // Radar Device Base & Target Sphere
         const radarGroup = new THREE.Group();
         const radarGeo = new THREE.CylinderGeometry(0.35, 0.45, 0.25, 32);
-        const radarMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0x7f1d1d, roughness: 0.2 });
-        const radarBase = new THREE.Mesh(radarGeo, radarMat);
-        radarGroup.add(radarBase);
-
-        // Radar Wave Ring Accent
-        const ringGeo = new THREE.RingGeometry(0.5, 0.55, 32);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
-        const radarRing = new THREE.Mesh(ringGeo, ringMat);
-        radarRing.rotation.x = Math.PI / 2;
-        radarGroup.add(radarRing);
-
+        const radarMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0x7f1d1d });
+        radarGroup.add(new THREE.Mesh(radarGeo, radarMat));
         radarGroup.position.set(0, 0.12, 0);
         scene.add(radarGroup);
 
-        // Fixed Green Radar Target Sphere
         const targetGeo = new THREE.SphereGeometry(0.35, 32, 32);
-        const targetMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x15803d, roughness: 0.3 });
+        const targetMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x15803d });
         const radarTarget = new THREE.Mesh(targetGeo, targetMat);
-        radarTarget.position.set(2, 0.35, -3); // Fixed Position In Front Of Radar
+        radarTarget.position.set(1.5, 0.35, -2.5);
         scene.add(radarTarget);
 
         // ==========================================
-        // 2. AUTOCAD MOUSE BUILDING SYSTEM
+        // 3. ADVANCED AUTOCAD TOOLBAR & ARCHITECTURE
         // ==========================================
         let activeTool = 'select';
         const raycaster = new THREE.Raycaster();
@@ -215,16 +286,17 @@
         let previewMesh = null;
 
         const builtWalls = [];
+        const builtObjects = [];
         const zonePoints = [];
         let activeZoneLine = null;
 
         function setCadTool(tool) {
             activeTool = tool;
             document.querySelectorAll('.cad-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`tool-${tool}`).classList.add('active');
-            document.getElementById('active-tool-label').innerText = 
-                tool === 'wall' ? 'رسم جدار' : tool === 'zone' ? 'رسم منطقة خطر' : 'التحديد';
-
+            if(document.getElementById(`tool-${tool}`)) {
+                document.getElementById(`tool-${tool}`).classList.add('active');
+            }
+            document.getElementById('active-tool-label').innerText = tool;
             controls.enabled = (tool === 'select');
             resetBuildingState();
         }
@@ -253,24 +325,21 @@
             const pt = getIntersectionPoint(e);
             if (!pt) return;
 
-            // Live Coordinates HUD
             document.getElementById('pos-x').innerText = pt.x.toFixed(2);
             document.getElementById('pos-z').innerText = pt.z.toFixed(2);
             document.getElementById('pos-dist').innerText = Math.sqrt(pt.x*pt.x + pt.z*pt.z).toFixed(2);
 
-            // Wall Dynamic CAD Preview
             if (activeTool === 'wall' && isDrawing && drawStartPoint) {
                 if (previewMesh) scene.remove(previewMesh);
-
                 const dx = pt.x - drawStartPoint.x;
                 const dz = pt.z - drawStartPoint.z;
                 const distance = Math.sqrt(dx * dx + dz * dz);
 
                 if (distance > 0.1) {
                     const wallGeo = new THREE.BoxGeometry(0.2, 1.6, distance);
-                    const wallMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.6 });
+                    const currentColor = document.getElementById('wall-color-picker').value;
+                    const wallMat = new THREE.MeshStandardMaterial({ color: currentColor, transparent: true, opacity: 0.6 });
                     previewMesh = new THREE.Mesh(wallGeo, wallMat);
-
                     previewMesh.position.set((drawStartPoint.x + pt.x)/2, 0.8, (drawStartPoint.z + pt.z)/2);
                     previewMesh.rotation.y = Math.atan2(dx, dz);
                     scene.add(previewMesh);
@@ -279,7 +348,7 @@
         }
 
         function onPointerClick(e) {
-            if (e.target.closest('.glass-panel')) return;
+            if (e.target.closest('.glass-panel') || e.target.closest('#login-modal')) return;
             const pt = getIntersectionPoint(e);
             if (!pt) return;
 
@@ -294,17 +363,46 @@
 
                     if (distance > 0.2) {
                         const wallGeo = new THREE.BoxGeometry(0.2, 1.6, distance);
-                        const wallMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.3 });
+                        const currentColor = document.getElementById('wall-color-picker').value;
+                        const wallMat = new THREE.MeshStandardMaterial({ color: currentColor, roughness: 0.3 });
                         const finalWall = new THREE.Mesh(wallGeo, wallMat);
-
                         finalWall.position.set((drawStartPoint.x + pt.x)/2, 0.8, (drawStartPoint.z + pt.z)/2);
                         finalWall.rotation.y = Math.atan2(dx, dz);
+                        finalWall.isWallObj = true;
                         scene.add(finalWall);
                         builtWalls.push(finalWall);
-                        addSecurityLog(`تم بناء جدار جديد بطول ${distance.toFixed(1)} أمتار.`);
+                        addSecurityLog(`تم إنشاء جدار بطول ${distance.toFixed(1)} أمتار.`);
                     }
                     resetBuildingState();
                 }
+            } else if (activeTool === 'paint') {
+                // Paint Wall Tool
+                raycaster.setFromCamera(mouse, camera);
+                const wallIntersects = raycaster.intersectObjects(builtWalls);
+                if (wallIntersects.length > 0) {
+                    const targetWall = wallIntersects[0].object;
+                    const currentColor = document.getElementById('wall-color-picker').value;
+                    targetWall.material.color.set(currentColor);
+                    addSecurityLog("تم تغيير لون الجدار بالماوس.");
+                }
+            } else if (activeTool === 'door') {
+                // Insert Architectural Door Object
+                const doorGeo = new THREE.BoxGeometry(0.1, 1.4, 0.8);
+                const doorMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.4 });
+                const door = new THREE.Mesh(doorGeo, doorMat);
+                door.position.set(pt.x, 0.7, pt.z);
+                scene.add(door);
+                builtObjects.push(door);
+                addSecurityLog("تم إدراج باب أمني.");
+            } else if (activeTool === 'window') {
+                // Insert Architectural Window Object
+                const winGeo = new THREE.BoxGeometry(0.1, 0.8, 1.0);
+                const winMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.7 });
+                const windowObj = new THREE.Mesh(winGeo, winMat);
+                windowObj.position.set(pt.x, 1.0, pt.z);
+                scene.add(windowObj);
+                builtObjects.push(windowObj);
+                addSecurityLog("تم إدراج شباك زجاجي.");
             } else if (activeTool === 'zone') {
                 zonePoints.push(pt.clone());
                 updateZoneLinePreview();
@@ -314,7 +412,6 @@
         function updateZoneLinePreview() {
             if (activeZoneLine) scene.remove(activeZoneLine);
             if (zonePoints.length < 2) return;
-
             const pts = zonePoints.map(p => new THREE.Vector3(p.x, 0.05, p.z));
             const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
             const lineMat = new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 3 });
@@ -326,9 +423,7 @@
             if (activeTool === 'zone' && zonePoints.length >= 3) {
                 const shape = new THREE.Shape();
                 shape.moveTo(zonePoints[0].x, zonePoints[0].z);
-                for(let i=1; i<zonePoints.length; i++) {
-                    shape.lineTo(zonePoints[i].x, zonePoints[i].z);
-                }
+                for(let i=1; i<zonePoints.length; i++) shape.lineTo(zonePoints[i].x, zonePoints[i].z);
                 shape.lineTo(zonePoints[0].x, zonePoints[0].z);
 
                 const shapeGeo = new THREE.ShapeGeometry(shape);
@@ -337,34 +432,32 @@
                 zoneMesh.rotation.x = Math.PI / 2;
                 zoneMesh.position.y = 0.02;
                 scene.add(zoneMesh);
-
-                addSecurityLog(`تم إنشاء منطقة خطر مخصصة ذات ${zonePoints.length} أضلاع.`);
+                builtObjects.push(zoneMesh);
+                addSecurityLog("تم تعيين منطقة حظر.");
                 resetBuildingState();
             }
         }
 
         function clearCADObjects() {
             builtWalls.forEach(w => scene.remove(w));
+            builtObjects.forEach(o => scene.remove(o));
             builtWalls.length = 0;
+            builtObjects.length = 0;
             resetBuildingState();
-            addSecurityLog(`تم مسح المخطط وإزالة كافة الجدران.`);
+            addSecurityLog("تم مسح كافة العناصر المضافة.");
         }
 
         // ==========================================
-        // 3. STREAM & TARGET LOCK CONTROLS
+        // 4. WEBSERIAL & STREAM CONTROLS
         // ==========================================
-        let isTargetLocked = true;
-
-        function toggleRadarTargetLock() {
-            isTargetLocked = !isTargetLocked;
-            const btnText = document.getElementById('lock-btn-text');
-            if (isTargetLocked) {
-                btnText.innerText = "تثبيت موقع الهدف";
-                radarTarget.position.set(2, 0.35, -3);
-                addSecurityLog("تم تثبيت موقع هدف الرادار.");
-            } else {
-                btnText.innerText = "تحريك الهدف تلقائياً";
-                addSecurityLog("تم تفعيل الحركة التلقائية لهدف الرادار.");
+        async function connectWebSerial() {
+            if (!("serial" in navigator)) { alert("المتصفح لا يدعم WebSerial."); return; }
+            try {
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 256000 });
+                addSecurityLog("تم الربط بالحساس عبر USB Serial.");
+            } catch (err) {
+                addSecurityLog("خطأ بالربط: " + err.message);
             }
         }
 
@@ -373,21 +466,10 @@
             const img = document.getElementById('camera-feed');
             img.src = url.endsWith('/video') || url.endsWith('/live') ? url : `${url}/video`;
             document.getElementById('stream-fallback').classList.add('hidden');
-            document.getElementById('stream-indicator').innerText = "جاري الاتصال...";
-            document.getElementById('stream-indicator').className = "text-[10px] bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded-full";
         }
 
-        function handleStreamError(img) {
-            const currentSrc = img.src;
-            if (currentSrc.endsWith('/video')) {
-                img.src = currentSrc.replace('/video', '/live');
-            } else if (currentSrc.endsWith('/live')) {
-                img.src = currentSrc.replace('/live', '/shot.jpg');
-            } else {
-                document.getElementById('stream-fallback').classList.remove('hidden');
-                document.getElementById('stream-indicator').innerText = "متوقف";
-                document.getElementById('stream-indicator').className = "text-[10px] bg-red-950 text-red-300 border border-red-800 px-2 py-0.5 rounded-full";
-            }
+        function handleStreamError() {
+            document.getElementById('stream-fallback').classList.remove('hidden');
         }
 
         function reconnectStream() {
@@ -404,55 +486,23 @@
             logsContainer.prepend(logItem);
         }
 
-        // ==========================================
-        // 4. ANALYTICS CHART INITIALIZATION
-        // ==========================================
+        // Analytics Chart Setup
         const ctx = document.getElementById('analyticsChart').getContext('2d');
         const analyticsChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['13:00', '13:01', '13:02', '13:03', '13:04', '13:05'],
-                datasets: [{
-                    label: 'المسافة (متر)',
-                    data: [3.6, 3.6, 3.5, 3.6, 3.6, 3.6],
-                    borderColor: '#60a5fa',
-                    backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
+                labels: ['1', '2', '3', '4', '5'],
+                datasets: [{ label: 'المسافة', data: [2.9, 2.9, 2.9, 2.9, 2.9], borderColor: '#60a5fa', borderWidth: 2, fill: false }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { display: false } },
-                    y: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: '#1e293b' } }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
         // ==========================================
-        // 5. ANIMATION & RENDER LOOP
+        // 5. ANIMATION LOOP
         // ==========================================
-        let simAngle = 0;
-
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
-
-            // Radar Ring Wave Animation
-            radarRing.scale.x = 1 + Math.sin(Date.now() * 0.003) * 0.15;
-            radarRing.scale.y = 1 + Math.sin(Date.now() * 0.003) * 0.15;
-
-            // Target Movement Logic (Only if unlocked)
-            if (!isTargetLocked) {
-                simAngle += 0.015;
-                radarTarget.position.x = Math.sin(simAngle) * 3;
-                radarTarget.position.z = -Math.abs(Math.cos(simAngle) * 3) - 0.5;
-            }
-
             renderer.render(scene, camera);
         }
 
@@ -462,7 +512,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Start System Loop
         animate();
     </script>
 </body>
