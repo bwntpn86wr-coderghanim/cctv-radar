@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AegisRadar 360 AI - جامعة نينوى Suite</title>
 
+  <!-- Libraries: Three.js, Controls, MQTT, Chart.js & MediaPipe -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -18,10 +19,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; }
-
     #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-
-    /* Glassmorphic Cyberpunk HUD */
     .glass-panel {
       background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(25px);
@@ -29,44 +27,37 @@
       border-radius: 14px;
       box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
     }
-    
     .hud-title {
       background: linear-gradient(90deg, #38bdf8, #34d399, #f43f5e);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-
-    .cad-btn { transition: all 0.2s ease; border: 1px solid rgba(255, 255, 255, 0.1); }
+    .cad-btn { transition: all 0.2s ease; border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; }
     .cad-btn.active {
       background: linear-gradient(135deg, #0284c7, #0369a1) !important;
       border-color: #38bdf8 !important;
       box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
     }
-
     .nav-btn {
       background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 6px 14px;
       border-radius: 8px; cursor: pointer; font-size: 12px; transition: 0.2s;
     }
     .nav-btn.active, .nav-btn:hover { background: #0284c7; color: #fff; border-color: #38bdf8; }
-
     .step-screen {
       position: fixed; inset: 0; z-index: 100; background: #020617;
       display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
     }
-    
     .scanline {
       background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.3));
       background-size: 100% 4px; pointer-events: none;
     }
-
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-    @keyframes alertFlash { 0% { border-color: rgba(239, 68, 68, 1); } 50% { border-color: transparent; } 100% { border-color: rgba(239, 68, 68, 1); } }
-    .alert-active { animation: alertFlash 0.5s infinite; }
   </style>
 </head>
 <body>
 
+  <!-- 1. الشاشات التعريفية والترحيبية -->
   <div id="step-1" class="step-screen">
     <div class="glass-panel max-w-lg w-full p-8 text-center border border-cyan-500/40 shadow-2xl">
       <div class="w-16 h-16 bg-gradient-to-tr from-cyan-600 to-emerald-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-4 animate-pulse">
@@ -117,11 +108,12 @@
     </div>
   </div>
 
+  <!-- 2. البيئة الرئيسية للتطبيق -->
   <div id="main-app" class="hidden relative w-full h-full">
-    
     <div id="canvas-container"></div>
     <video id="webcam-video" class="hidden" autoplay playsinline></video>
 
+    <!-- Header Panel -->
     <div class="glass-panel absolute top-3 right-3 left-3 z-20 p-2.5 flex flex-wrap justify-between items-center gap-2">
       <div class="flex items-center space-x-3 space-x-reverse">
         <div class="bg-gradient-to-tr from-cyan-600 to-emerald-500 p-2 rounded-xl shadow-lg shadow-cyan-500/30">
@@ -133,6 +125,7 @@
         </div>
       </div>
 
+      <!-- Navigation Tabs -->
       <div class="flex gap-1.5">
         <button class="nav-btn active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-line ml-1"></i> المراقبة والتحليل</button>
         <button class="nav-btn" onclick="switchTab('architect', this)"><i class="fa-solid fa-compass-drafting ml-1"></i> الأدوات والتصميم</button>
@@ -149,6 +142,7 @@
       </div>
     </div>
 
+    <!-- TAB 1: DASHBOARD OVERLAY -->
     <div id="tab-dashboard" class="tab-content relative z-10 pointer-events-none w-full h-full">
       <div class="absolute top-20 left-3 pointer-events-auto flex flex-col gap-3 w-80">
         <div class="glass-panel p-3">
@@ -204,9 +198,11 @@
       </div>
     </div>
 
+    <!-- TAB 2: ARCHITECT & CAD TOOLS OVERLAY -->
     <div id="tab-architect" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
       <div class="absolute top-20 right-3 pointer-events-auto w-80 glass-panel p-4 flex flex-col gap-3">
-        <h3 class="text-xs font-bold text-cyan-400 border-b border-slate-800 pb-2"><i class="fa-solid fa-pen-ruler ml-1"></i> أدوات CAD وتصميم المخطط</h3>
+        <h3 class="text-xs font-bold text-cyan-400 border-b border-slate-800 pb-2"><i class="fa-solid fa-pen-ruler ml-1"></i> أدوات CAD والتصميم المباشر</h3>
+        <p class="text-[10px] text-slate-400">اختر الأداة ثم اضغط بثلاثية الأبعاد على المكان المخصص في الأرضية لبناء العنصر مباشرة.</p>
         
         <div id="cad-tools-panel" class="grid grid-cols-2 gap-2">
           <button id="tool-select" onclick="setCadTool('select')" class="cad-btn active p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-arrow-pointer text-cyan-400"></i> تحديد</button>
@@ -216,11 +212,11 @@
         </div>
 
         <div class="space-y-2 pt-2 border-t border-slate-800 text-xs">
-          <label class="block text-slate-400">تخصيص ألوان البيئة:</label>
+          <label class="block text-slate-400">تخصيص الألوان:</label>
           <div class="grid grid-cols-2 gap-2">
             <div>
               <span class="text-[10px] text-slate-500">الجدران</span>
-              <input type="color" id="wallColorPicker" value="#1e293b" onchange="updateColors()" class="w-full h-8 bg-transparent cursor-pointer rounded">
+              <input type="color" id="wallColorPicker" value="#334155" onchange="updateColors()" class="w-full h-8 bg-transparent cursor-pointer rounded">
             </div>
             <div>
               <span class="text-[10px] text-slate-500">الأرضية</span>
@@ -230,11 +226,12 @@
         </div>
 
         <button onclick="clearCADObjects()" class="w-full bg-red-950/40 hover:bg-red-900/60 text-red-300 p-2 rounded-lg text-xs font-semibold border border-red-800/50 mt-2">
-          <i class="fa-solid fa-trash-can ml-1"></i> مسح عناصر المخطط
+          <i class="fa-solid fa-trash-can ml-1"></i> مسح جميع العناصر
         </button>
       </div>
     </div>
 
+    <!-- TAB 3: DANGER ZONES OVERLAY -->
     <div id="tab-security" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
       <div class="absolute top-20 right-3 pointer-events-auto w-80 glass-panel p-4 flex flex-col gap-3">
         <h3 class="text-xs font-bold text-red-400 border-b border-slate-800 pb-2"><i class="fa-solid fa-triangle-exclamation ml-1"></i> إعداد مناطق الخطر (Geofencing)</h3>
@@ -258,10 +255,11 @@
       </div>
     </div>
 
+    <!-- Bottom HUD Coordinates -->
     <div class="glass-panel absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-6 py-2 flex items-center gap-6 text-xs text-slate-300 border border-cyan-500/30">
       <div>X: <span id="pos-x" class="text-cyan-400 font-mono font-bold">0.00</span> m</div>
       <div>Z: <span id="pos-z" class="text-emerald-400 font-mono font-bold">0.00</span> m</div>
-      <div>الأداة: <span id="active-tool-label" class="text-amber-400 font-bold">تحديد</span></div>
+      <div>الأداة النشطة: <span id="active-tool-label" class="text-amber-400 font-bold">تحديد</span></div>
     </div>
 
   </div>
@@ -390,10 +388,13 @@
     }
 
     // ==========================================
-    // 3. THREE.JS ENGINE & CAD DESIGN
+    // 3. THREE.JS ENGINE & INTERACTIVE CAD DESIGN
     // ==========================================
-    let scene, camera3D, renderer, controls, mapGroup;
-    let savedMap = { rooms: [], zones: [] };
+    let scene, camera3D, renderer, controls, mapGroup, floorMesh;
+    let activeTool = 'select';
+    let savedMap = { items: [], zones: [] };
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
 
     function init3D() {
       const container = document.getElementById('canvas-container');
@@ -410,7 +411,7 @@
       controls = new THREE.OrbitControls(camera3D, renderer.domElement);
       controls.enableDamping = true;
 
-      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
       const light = new THREE.DirectionalLight(0x38bdf8, 1);
       light.position.set(10, 20, 10);
       scene.add(light);
@@ -419,11 +420,20 @@
       mapGroup = new THREE.Group();
       scene.add(mapGroup);
 
+      // Floor Setup
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+      floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), floorMat);
+      floorMesh.rotation.x = -Math.PI / 2;
+      scene.add(floorMesh);
+
       window.addEventListener('resize', () => {
         camera3D.aspect = window.innerWidth / window.innerHeight;
         camera3D.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
+
+      // Pointer Click Listener for CAD Building
+      window.addEventListener('pointerdown', onDocumentPointerDown);
 
       function animate() {
         requestAnimationFrame(animate);
@@ -434,35 +444,80 @@
     }
 
     function setCadTool(tool) {
+      activeTool = tool;
       document.querySelectorAll('.cad-btn').forEach(b => b.classList.remove('active'));
       const btn = document.getElementById(`tool-${tool}`);
       if(btn) btn.classList.add('active');
       document.getElementById('active-tool-label').innerText = tool.toUpperCase();
     }
 
+    function onDocumentPointerDown(event) {
+      if (activeTool === 'select' || event.clientY < 70) return;
+
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera3D);
+      const intersects = raycaster.intersectObject(floorMesh);
+
+      if (intersects.length > 0) {
+        const point = intersects[0].point;
+        createCadObject(activeTool, point.x, point.z);
+      }
+    }
+
+    function createCadObject(type, x, z) {
+      const wallColorHex = parseInt(document.getElementById('wallColorPicker').value.replace('#', '0x'));
+      let mesh;
+
+      if (type === 'wall') {
+        const geom = new THREE.BoxGeometry(4, 2.5, 0.3);
+        const mat = new THREE.MeshStandardMaterial({ color: wallColorHex });
+        mesh = new THREE.Mesh(geom, mat);
+        mesh.position.set(x, 1.25, z);
+      } else if (type === 'door') {
+        mesh = new THREE.Group();
+        // Frame
+        const frameGeom = new THREE.BoxGeometry(1.4, 2.2, 0.15);
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
+        const frame = new THREE.Mesh(frameGeom, frameMat);
+        frame.position.y = 1.1;
+        mesh.add(frame);
+        // Panel
+        const panelGeom = new THREE.BoxGeometry(1.2, 2.0, 0.08);
+        const panelMat = new THREE.MeshStandardMaterial({ color: 0xd97706 });
+        const panel = new THREE.Mesh(panelGeom, panelMat);
+        panel.position.set(0.1, 1.0, 0);
+        mesh.add(panel);
+        mesh.position.set(x, 0, z);
+      } else if (type === 'window') {
+        mesh = new THREE.Group();
+        // Frame
+        const frameGeom = new THREE.BoxGeometry(1.6, 1.2, 0.15);
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+        const frame = new THREE.Mesh(frameGeom, frameMat);
+        frame.position.y = 1.5;
+        mesh.add(frame);
+        // Glass
+        const glassGeom = new THREE.BoxGeometry(1.4, 1.0, 0.05);
+        const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5, roughness: 0.1 });
+        const glass = new THREE.Mesh(glassGeom, glassMat);
+        glass.position.y = 1.5;
+        mesh.add(glass);
+        mesh.position.set(x, 0, z);
+      }
+
+      if (mesh) {
+        mapGroup.add(mesh);
+        savedMap.items.push({ type, x, z });
+        addSecurityLog(`تمت إضافة عنصر CAD: ${type} في X:${x.toFixed(1)}, Z:${z.toFixed(1)}`);
+      }
+    }
+
     function updateColors() {
       const wallColor = document.getElementById('wallColorPicker').value;
       const floorColor = document.getElementById('floorColorPicker').value;
-      renderMap(wallColor, floorColor);
-    }
-
-    function renderMap(wallHex = "#1e293b", floorHex = "#0f172a") {
-      while(mapGroup.children.length > 0) mapGroup.remove(mapGroup.children[0]);
-
-      // Draw Floor
-      const floorMat = new THREE.MeshStandardMaterial({ color: parseInt(floorHex.replace('#', '0x')) });
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), floorMat);
-      floor.rotation.x = -Math.PI / 2;
-      mapGroup.add(floor);
-
-      // Render Saved Danger Zones
-      savedMap.zones.forEach(z => {
-        const zoneMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.4 });
-        const geom = z.shape === 'rectangle' ? new THREE.BoxGeometry(z.size, 0.1, z.size) : new THREE.CylinderGeometry(z.size, z.size, 0.1, 32);
-        const mesh = new THREE.Mesh(geom, zoneMat);
-        mesh.position.set(z.x, 0.05, z.z);
-        mapGroup.add(mesh);
-      });
+      floorMesh.material.color.setHex(parseInt(floorColor.replace('#', '0x')));
     }
 
     function addDangerZoneUI() {
@@ -472,15 +527,21 @@
       const z = parseFloat(document.getElementById('zoneZ').value);
       const size = parseFloat(document.getElementById('zoneSize').value);
 
-      savedMap.zones.push({ name, shape, x, z, size });
-      renderMap();
+      const zoneMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.4 });
+      const geom = shape === 'rectangle' ? new THREE.BoxGeometry(size, 0.1, size) : new THREE.CylinderGeometry(size, size, 0.1, 32);
+      const mesh = new THREE.Mesh(geom, zoneMat);
+      mesh.position.set(x, 0.05, z);
+      mapGroup.add(mesh);
+
       addSecurityLog(`🚨 تم إنشاء منطقة خطر: ${name}`);
     }
 
     function clearCADObjects() {
-      savedMap = { rooms: [], zones: [] };
-      renderMap();
-      addSecurityLog("تم مسح العناصر المضافة.");
+      while(mapGroup.children.length > 0) {
+        mapGroup.remove(mapGroup.children[0]);
+      }
+      savedMap.items = [];
+      addSecurityLog("تم مسح جميع العناصر المعمارية ومناطق الخطر.");
     }
 
     // ==========================================
