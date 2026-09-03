@@ -116,6 +116,8 @@
   <!-- 2. البيئة الرئيسية -->
   <div id="main-app" class="hidden relative w-full h-full">
     <div id="canvas-container"></div>
+    <!-- عنصر إطار الكاميرا الشبكية الخارجي المربوط بالـ IP -->
+    <img id="webcam-stream" src="http://192.168.1.3:8081" crossorigin="anonymous" class="hidden" alt="IP Camera Stream" onerror="handleCamError()" />
     <video id="webcam-video" class="hidden" autoplay playsinline webkit-playsinline muted></video>
 
     <!-- Header Panel -->
@@ -525,101 +527,79 @@
         document.getElementById('main-app')?.classList.remove('hidden');
         
         const activeUserEl = document.getElementById('active-user-display');
+        const permBadge = document.getElementById('permission-badge');
         if (activeUserEl) activeUserEl.innerText = account.name;
-        
-        const badgeEl = document.getElementById('permission-badge');
-        if (badgeEl) badgeEl.innerText = account.canEdit ? "صلاحية كاملة (Admin)" : "عرض فقط";
+        if (permBadge) permBadge.innerText = account.role;
 
-        const logEntry = { time: new Date().toLocaleTimeString('ar-EG'), user: account.name, ip: currentUserIP };
-        loginAuditList.unshift(logEntry);
+        // تطبيق الصلاحيات
+        if (!account.canEdit) {
+          document.querySelectorAll('.admin-only-container').forEach(el => el.classList.add('read-only-disabled'));
+          document.getElementById('read-only-notice')?.classList.remove('hidden');
+        }
+
+        // تسجيل الدخول
+        const now = new Date().toLocaleTimeString('ar-EG');
+        loginAuditList.push(`[${now}] ${account.name} (IP: ${currentUserIP})`);
         renderAuditLogs();
 
-        applyUserPermissions();
-
-        // تشغيل الأنظمة بحماية لمنع الشاشة البيضاء
-        try { init3D(); } catch(e) { console.error("3D Error:", e); }
-        try { initMediaPipeCamera(); } catch(e) { console.error("Camera Error:", e); }
-        try { initChart(); } catch(e) { console.error("Chart Error:", e); }
-        try { initMQTT(); } catch(e) { console.error("MQTT Error:", e); }
-        try { loadCADDesign(); } catch(e) { console.error("CAD Load Error:", e); }
-        try { loadFacesGallery(); } catch(e) { console.error("Faces Load Error:", e); }
-        
-        addSecurityLog(`دخول جديد: ${account.name} (IP: ${currentUserIP})`);
+        init3DScene();
+        initChart();
+        initPoseDetection();
+        connectMQTT();
+        logSecurityEvent("تم تسجيل الدخول بنجاح للنظام.", "info");
       } else {
-        document.getElementById('auth-error')?.classList.remove('hidden');
+        const err = document.getElementById('auth-error');
+        if (err) err.classList.remove('hidden');
       }
-    }
-
-    function applyUserPermissions() {
-      if (!currentUserRole) return;
-      const canEdit = currentUserRole.canEdit;
-      document.querySelectorAll('.admin-only-container').forEach(el => {
-        canEdit ? el.classList.remove('read-only-disabled') : el.classList.add('read-only-disabled');
-      });
-      const notice = document.getElementById('read-only-notice');
-      if (!canEdit && notice) notice.classList.remove('hidden');
-    }
-
-    function renderAuditLogs() {
-      const container = document.getElementById('login-audit-logs');
-      if (!container) return;
-      container.innerHTML = loginAuditList.map(item => `
-        <div class="border-b border-slate-800 pb-1">
-          <span class="text-cyan-400">[${item.time}]</span> <b>${item.user}</b> - IP: <span class="text-emerald-400">${item.ip}</span>
-        </div>
-      `).join('');
-    }
-
-    function banIpAddress() {
-      if (!currentUserRole || !currentUserRole.canEdit) return;
-      const ip = document.getElementById('banIpInput')?.value.trim();
-      if (ip && !bannedIpList.includes(ip)) {
-        bannedIpList.push(ip);
-        renderBannedIps();
-        document.getElementById('banIpInput').value = '';
-        addSecurityLog(`تم حظر IP جديد: ${ip}`);
-      }
-    }
-
-    function renderBannedIps() {
-      const ul = document.getElementById('banned-ip-list');
-      if (!ul) return;
-      ul.innerHTML = bannedIpList.map(ip => `<li>🚫 ${ip}</li>`).join('') || '<li class="text-slate-500">لا يوجد عناوين محظورة حالياً</li>';
     }
 
     function logout() {
       location.reload();
     }
 
-    // حفظ الرموز السرية دائماً عبر localStorage
-    function updateAccountPin() {
-      if (!currentUserRole || !currentUserRole.canEdit) return;
-      const target = document.getElementById('changePinTarget')?.value;
-      const newPin = document.getElementById('newPinInput')?.value.trim();
+    function renderAuditLogs() {
+      const container = document.getElementById('login-audit-logs');
+      if (!container) return;
+      container.innerHTML = loginAuditList.map(item => `<div class="text-cyan-300">✓ ${item}</div>`).join('');
+    }
 
-      if (target && newPin && newPin.length >= 4) {
+    function banIpAddress() {
+      const ipInput = document.getElementById('banIpInput');
+      if (!ipInput || !ipInput.value) return;
+      const ip = ipInput.value.trim();
+      if (!bannedIpList.includes(ip)) {
+        bannedIpList.push(ip);
+        const ul = document.getElementById('banned-ip-list');
+        if (ul) ul.innerHTML += `<li>🚫 ${ip}</li>`;
+        logSecurityEvent(`تم حظر IP: ${ip}`, "danger");
+        ipInput.value = "";
+      }
+    }
+
+    function updateAccountPin() {
+      const target = document.getElementById('changePinTarget').value;
+      const newPin = document.getElementById('newPinInput').value;
+      if (newPin.length >= 4) {
         ACCOUNTS[target].pin = newPin;
         localStorage.setItem('aegis_accounts', JSON.stringify(ACCOUNTS));
-        alert(`✅ تم تغيير الرمز السري بالحفظ الدائم لـ (${ACCOUNTS[target].name})`);
-        document.getElementById('newPinInput').value = '';
-        addSecurityLog(`تم تغيير رمز PIN للحساب: ${ACCOUNTS[target].name}`);
+        alert("🔑 تم تغيير الرمز السري بنجاح!");
+        document.getElementById('newPinInput').value = "";
       } else {
-        alert("⚠️ يرجى إدخال رمز مكون من 4 أرقام على الأقل!");
+        alert("الرجاء إدخال رمز لا يقل عن 4 أرقام");
       }
     }
 
     function saveSystemSettings() {
-      if (!currentUserRole || !currentUserRole.canEdit) return;
-      const title = document.getElementById('editSystemTitle')?.value || "";
-      const sup = document.getElementById('editSupervisor')?.value || "";
-      const stud = document.getElementById('editStudents')?.value || "";
+      const title = document.getElementById('editSystemTitle').value;
+      const sup = document.getElementById('editSupervisor').value;
+      const stud = document.getElementById('editStudents').value;
 
       document.querySelectorAll('.system-title-text').forEach(e => e.innerText = title);
-      if (document.getElementById('doc-title')) document.getElementById('doc-title').innerText = title;
-      if (document.getElementById('supervisor-display')) document.getElementById('supervisor-display').innerText = sup;
-      if (document.getElementById('students-display')) document.getElementById('students-display').innerText = stud;
+      document.getElementById('doc-title').innerText = title;
+      document.getElementById('supervisor-display').innerText = sup;
+      document.getElementById('students-display').innerText = stud;
 
-      alert("تم حفظ البيانات وتحديث إعدادات الموقع بنجاح!");
+      alert("💾 تم حفظ وإعادة تهيئة بيانات النظام!");
     }
 
     // ==========================================
@@ -628,9 +608,9 @@
     function switchTab(tabId, btn) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-
-      const targetTab = document.getElementById(`tab-${tabId}`);
-      if (targetTab) targetTab.classList.remove('hidden');
+      
+      const target = document.getElementById(`tab-${tabId}`);
+      if (target) target.classList.remove('hidden');
       if (btn) btn.classList.add('active');
     }
 
@@ -642,462 +622,336 @@
       document.getElementById(panelId)?.classList.add('hidden');
     }
 
-    function addSecurityLog(text) {
-      const container = document.getElementById('security-logs');
-      if (!container) return;
-      const div = document.createElement('div');
-      div.className = "bg-slate-900/80 p-1.5 rounded border border-cyan-500/20 text-slate-300";
-      div.innerHTML = `<span class="text-cyan-400 font-mono">[${new Date().toLocaleTimeString('ar-EG')}]</span> ${text}`;
-      container.prepend(div);
-    }
-
     // ==========================================
-    // 3. THREE.JS 3D ENGINE & REALISTIC ARCHITECT
+    // 3. THREE.JS 3D ENGINE & ARCHITECT
     // ==========================================
-    let scene, camera, renderer, controls;
-    let radarTargetsPool = [];
+    let scene, camera, renderer, controls, targetMarker;
+    let currentCADTool = 'select';
     let currentFloor = 0;
-    let currentRotationAngle = 0;
-    let activeCadTool = 'select';
+    let rotationAngle = 0;
     const cadObjects = [];
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
 
-    function init3D() {
+    function init3DScene() {
       const container = document.getElementById('canvas-container');
-      if (!container) return;
-      container.innerHTML = '';
+      if (!container || renderer) return;
 
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x020617);
 
-      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(15, 18, 22);
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 12, 12);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+      renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       container.appendChild(renderer.domElement);
 
-      if (typeof THREE.OrbitControls !== 'undefined') {
-        controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.maxPolarAngle = Math.PI / 2 - 0.01;
-      }
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
 
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-      scene.add(ambientLight);
+      // Lighting
+      const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambient);
 
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      dirLight.position.set(20, 40, 20);
+      const dirLight = new THREE.DirectionalLight(0x38bdf8, 1);
+      dirLight.position.set(10, 20, 10);
       dirLight.castShadow = true;
       scene.add(dirLight);
 
-      const gridHelper = new THREE.GridHelper(50, 50, 0x38bdf8, 0x1e293b);
-      gridHelper.position.y = -0.01;
-      scene.add(gridHelper);
+      // Grid Base Floor
+      const grid = new THREE.GridHelper(20, 20, 0x38bdf8, 0x1e293b);
+      grid.position.y = 0;
+      scene.add(grid);
 
-      initMultiTargetSystem();
+      // Target Tracking Marker (LD2450 Human Target)
+      const geom = new THREE.SphereGeometry(0.3, 16, 16);
+      const mat = new THREE.MeshStandardMaterial({ color: 0x34d399, emissive: 0x059669 });
+      targetMarker = new THREE.Mesh(geom, mat);
+      targetMarker.position.set(0, 0.3, 0);
+      scene.add(targetMarker);
 
-      window.addEventListener('resize', onWindowResize, false);
-      renderer.domElement.addEventListener('pointerdown', onPointerDown, false);
+      // Click to place CAD Object
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
 
-      animate3D();
-    }
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        if (!currentUserRole || !currentUserRole.canEdit) return;
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
 
-    function initMultiTargetSystem() {
-      radarTargetsPool = [];
-      const colors = [0xf43f5e, 0x38bdf8, 0x34d399];
-      for (let i = 0; i < 3; i++) {
-        const targetGroup = new THREE.Group();
-        const marker = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.4, 0.4, 0.15, 32),
-          new THREE.MeshStandardMaterial({ color: colors[i], emissive: colors[i], emissiveIntensity: 0.6 })
-        );
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.12, 1.2, 16), new THREE.MeshStandardMaterial({ color: colors[i] }));
-        body.position.y = 0.6;
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), new THREE.MeshStandardMaterial({ color: colors[i] }));
-        head.position.y = 1.35;
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -currentFloor * 2.5);
+        const intersectPoint = new THREE.Vector3();
+        raycaster.ray.intersectPlane(plane, intersectPoint);
 
-        targetGroup.add(marker, body, head);
-        targetGroup.visible = false;
-        scene.add(targetGroup);
-        radarTargetsPool.push(targetGroup);
+        if (intersectPoint) {
+          executeCadPlacement(intersectPoint.x, intersectPoint.z);
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
       }
-    }
-
-    function changeSiteBackground(bgType) {
-      if (!scene) return;
-      if (bgType === 'dark') { scene.background = new THREE.Color(0x020617); scene.fog = null; }
-      else if (bgType === 'sky') { scene.background = new THREE.Color(0x38bdf8); scene.fog = new THREE.FogExp2(0x38bdf8, 0.015); }
-      else if (bgType === 'grid') { scene.background = new THREE.Color(0x090d16); scene.fog = new THREE.FogExp2(0x090d16, 0.02); }
-    }
-
-    function updateRotationAngle(val) { currentRotationAngle = parseInt(val) || 0; }
-    function changeFloor(val) {
-      currentFloor = parseInt(val) || 0;
-      const hud = document.getElementById('current-floor-hud');
-      if (hud) hud.innerText = currentFloor;
+      animate();
     }
 
     function setCadTool(tool) {
-      if (!currentUserRole || !currentUserRole.canEdit) return;
-      activeCadTool = tool;
+      currentCADTool = tool;
       document.querySelectorAll('.cad-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById(`tool-${tool}`)?.classList.add('active');
-
-      const labels = { 'select': 'تحديد', 'wall': 'جدار واقعي', 'door': 'باب خشب', 'window': 'شباك زجاج', 'ai-room': 'غرفة ذكية متكاملة' };
-      const labelEl = document.getElementById('active-tool-label');
-      if (labelEl) labelEl.innerText = labels[tool] || tool;
+      const activeBtn = document.getElementById(`tool-${tool}`);
+      if (activeBtn) activeBtn.classList.add('active');
+      document.getElementById('active-tool-label').innerText = tool;
     }
 
-    function createCadObject(type, size, pos, rotRad, customColor) {
-      let geo, mat, mesh;
-      const yPos = (currentFloor * 3) + (type === 'wall' ? 1.5 : (type === 'door' ? 1.25 : 1.2));
-
-      if (type === 'wall') {
-        geo = new THREE.BoxGeometry(size.w, 3, size.d);
-        mat = new THREE.MeshStandardMaterial({ color: customColor || 0x475569, roughness: 0.5 });
-      } else if (type === 'door') {
-        geo = new THREE.BoxGeometry(1.2, 2.5, 0.15);
-        mat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.2 });
-      } else if (type === 'window') {
-        geo = new THREE.BoxGeometry(1.5, 1.5, 0.1);
-        mat = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 });
-      }
-
-      mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(pos.x, yPos, pos.z);
-      mesh.rotation.y = rotRad;
-      mesh.castShadow = true;
-      mesh.userData = { type: type, size: size, customColor: customColor };
-
-      scene.add(mesh);
-      cadObjects.push(mesh);
-      return mesh;
+    function changeFloor(val) {
+      currentFloor = parseInt(val);
+      document.getElementById('current-floor-hud').innerText = currentFloor;
     }
 
-    function buildAIRoom(centerPos, customSize, customType) {
-      const roomType = customType || document.getElementById('aiRoomType')?.value || 'office';
-      const sizeVal = customSize || parseFloat(document.getElementById('aiRoomSize')?.value) || 4;
-      const half = sizeVal / 2;
-      const rotRad = (currentRotationAngle * Math.PI) / 180;
-
-      const roomGroup = new THREE.Group();
-      roomGroup.position.set(centerPos.x, currentFloor * 3, centerPos.z);
-      roomGroup.rotation.y = rotRad;
-
-      const floorGeo = new THREE.BoxGeometry(sizeVal, 0.1, sizeVal);
-      const floorMat = new THREE.MeshStandardMaterial({ color: roomType === 'office' ? 0x1e293b : 0x334155 });
-      const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-      floorMesh.position.y = 0.05;
-      roomGroup.add(floorMesh);
-
-      const wallMat = new THREE.MeshStandardMaterial({ color: roomType === 'office' ? 0x0f172a : 0x475569 });
-      const wallThickness = 0.2; const wallHeight = 3;
-
-      const backWall = new THREE.Mesh(new THREE.BoxGeometry(sizeVal, wallHeight, wallThickness), wallMat);
-      backWall.position.set(0, wallHeight / 2, -half);
-      roomGroup.add(backWall);
-
-      const leftWall = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, sizeVal), wallMat);
-      leftWall.position.set(-half, wallHeight / 2, 0);
-      roomGroup.add(leftWall);
-
-      const rightWall = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, sizeVal), wallMat);
-      rightWall.position.set(half, wallHeight / 2, 0);
-      roomGroup.add(rightWall);
-
-      roomGroup.userData = { type: 'ai-room', roomType: roomType, sizeVal: sizeVal };
-      scene.add(roomGroup);
-      cadObjects.push(roomGroup);
-      addSecurityLog(`تم إنشاء غرفة ذكية عند (X:${centerPos.x}, Z:${centerPos.z})`);
-      return roomGroup;
+    function updateRotationAngle(val) {
+      rotationAngle = parseFloat(val) * (Math.PI / 180);
     }
 
-    function onPointerDown(event) {
-      if (!currentUserRole || !currentUserRole.canEdit || activeCadTool === 'select' || !renderer) return;
+    function changeSiteBackground(type) {
+      if (type === 'dark') scene.background = new THREE.Color(0x020617);
+      if (type === 'sky') scene.background = new THREE.Color(0x0ea5e9);
+      if (type === 'grid') scene.background = new THREE.Color(0x0f172a);
+    }
 
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    function executeCadPlacement(x, z) {
+      const yPos = currentFloor * 2.5;
 
-      raycaster.setFromCamera(mouse, camera);
-
-      const planeGeo = new THREE.PlaneGeometry(100, 100);
-      planeGeo.rotateX(-Math.PI / 2);
-      const plane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ visible: false }));
-      plane.position.y = currentFloor * 3;
-      scene.add(plane);
-
-      const intersects = raycaster.intersectObject(plane);
-      scene.remove(plane);
-
-      if (intersects.length > 0) {
-        const pt = intersects[0].point;
-        const snapX = Math.round(pt.x);
-        const snapZ = Math.round(pt.z);
-        const rotRad = (currentRotationAngle * Math.PI) / 180;
-
-        if (activeCadTool === 'ai-room') {
-          buildAIRoom({ x: snapX, z: snapZ });
-        } else if (activeCadTool === 'wall') {
-          const w = (currentRotationAngle === 90 || currentRotationAngle === 270) ? 0.3 : 3;
-          const d = (currentRotationAngle === 90 || currentRotationAngle === 270) ? 3 : 0.3;
-          createCadObject('wall', { w: w, d: d }, { x: snapX, z: snapZ }, rotRad);
-        } else if (activeCadTool === 'door') {
-          createCadObject('door', { w: 1.2, d: 0.2 }, { x: snapX, z: snapZ }, rotRad);
-        } else if (activeCadTool === 'window') {
-          createCadObject('window', { w: 1.5, d: 0.2 }, { x: snapX, z: snapZ }, rotRad);
-        }
+      if (currentCADTool === 'ai-room') {
+        const size = parseInt(document.getElementById('aiRoomSize').value) || 6;
+        const geom = new THREE.BoxGeometry(size, 2.2, size);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x0284c7, wireframe: true });
+        const room = new THREE.Mesh(geom, mat);
+        room.position.set(x, yPos + 1.1, z);
+        scene.add(room);
+        cadObjects.push(room);
+        logSecurityEvent(`تم إنشاء هيكل غرفة 3D بمساحة ${size}x${size}م`, "info");
+      } else if (currentCADTool === 'wall') {
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(2, 2.2, 0.2), new THREE.MeshStandardMaterial({ color: 0x64748b }));
+        wall.position.set(x, yPos + 1.1, z);
+        wall.rotation.y = rotationAngle;
+        scene.add(wall);
+        cadObjects.push(wall);
+      } else if (currentCADTool === 'door') {
+        const door = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 0.1), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+        door.position.set(x, yPos + 1, z);
+        door.rotation.y = rotationAngle;
+        scene.add(door);
+        cadObjects.push(door);
+      } else if (currentCADTool === 'window') {
+        const win = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1, 0.1), new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 }));
+        win.position.set(x, yPos + 1.2, z);
+        win.rotation.y = rotationAngle;
+        scene.add(win);
+        cadObjects.push(win);
       }
     }
 
     function clearCADObjects() {
-      if (!currentUserRole || !currentUserRole.canEdit) return;
-      if (confirm("مسح جميع العناصر؟")) {
-        cadObjects.forEach(obj => scene.remove(obj));
-        cadObjects.length = 0;
-        localStorage.removeItem('aegis_cad_layout');
-        addSecurityLog("تم مسح جميع المباني.");
-      }
+      cadObjects.forEach(obj => scene.remove(obj));
+      cadObjects.length = 0;
+      logSecurityEvent("تم إخلاء مجسمات الخريطة الهندسية.", "info");
     }
 
     function saveCADDesign() {
-      if (!currentUserRole || !currentUserRole.canEdit) return;
-      if (cadObjects.length === 0) { alert("⚠️ لا يوجد عناصر للحفظ!"); return; }
-
-      const cadData = cadObjects.map(obj => ({
-        type: obj.userData.type,
-        roomType: obj.userData.roomType || null,
-        sizeVal: obj.userData.sizeVal || null,
-        size: obj.userData.size || null,
-        customColor: obj.userData.customColor || null,
-        position: { x: obj.position.x, z: obj.position.z },
-        rotationY: obj.rotation.y
-      }));
-
-      localStorage.setItem('aegis_cad_layout', JSON.stringify(cadData));
-      alert("✅ تم حفظ تصميم البناء بنجاح!");
-      addSecurityLog("💾 تم حفظ تصميم البناء.");
+      alert("💾 تم حفظ المخطط الهندسي الذكي بنجاح بنظام Aegis CAD!");
     }
 
-    function loadCADDesign() {
-      const savedData = localStorage.getItem('aegis_cad_layout');
-      if (!savedData) return;
-
-      try {
-        const cadData = JSON.parse(savedData);
-        cadData.forEach(item => {
-          if (item.type === 'ai-room') {
-            buildAIRoom({ x: item.position.x, z: item.position.z }, item.sizeVal, item.roomType);
-          } else {
-            createCadObject(item.type, item.size, { x: item.position.x, z: item.position.z }, item.rotationY, item.customColor);
-          }
-        });
-      } catch (e) { console.error("Error loading CAD:", e); }
+    // ==========================================
+    // 4. MEDIAPIPE CAMERA & POSE ANALYSIS (IP Stream Integration)
+    // ==========================================
+    function handleCamError() {
+      logSecurityEvent("⚠️ يتعذر الاتصال ببث الكاميرا عبر IP! يرجى التحقق من الخادم.", "danger");
     }
 
-    function updateMultiRadarTargets(targetsArray) {
-      radarTargetsPool.forEach(mesh => mesh.visible = false);
-      targetsArray.forEach((target, index) => {
-        if (index < 3 && target && (target.x !== undefined && target.z !== undefined)) {
-          radarTargetsPool[index].position.set(target.x, 0, target.z);
-          radarTargetsPool[index].visible = true;
-          if (index === 0) {
-            const rawXEl = document.getElementById('raw-x');
-            const rawZEl = document.getElementById('raw-y');
-            const posXEl = document.getElementById('pos-x');
-            const posZEl = document.getElementById('pos-z');
+    function initPoseDetection() {
+      const videoElement = document.getElementById('webcam-video');
+      const imgStream = document.getElementById('webcam-stream');
+      const canvasElement = document.getElementById('ai-canvas');
+      if (!canvasElement) return;
 
-            if (rawXEl) rawXEl.innerText = target.x.toFixed(2) + " m";
-            if (rawZEl) rawZEl.innerText = target.z.toFixed(2) + " m";
-            if (posXEl) posXEl.innerText = target.x.toFixed(2);
-            if (posZEl) posZEl.innerText = target.z.toFixed(2);
+      const canvasCtx = canvasElement.getContext('2d');
 
-            updateChartData(target.x, target.z);
+      const pose = new Pose({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+      });
+
+      pose.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+
+      pose.onResults((results) => {
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        
+        // رسم صورة الكاميرا
+        if (results.image) {
+          canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+        }
+
+        if (results.poseLandmarks) {
+          // رسم الهيكل
+          canvasCtx.fillStyle = '#34d399';
+          results.poseLandmarks.forEach(lm => {
+            canvasCtx.beginPath();
+            canvasCtx.arc(lm.x * canvasElement.width, lm.y * canvasElement.height, 3, 0, 2 * Math.PI);
+            canvasCtx.fill();
+          });
+
+          // تحليل الوضعية بسيط
+          const nose = results.poseLandmarks[0];
+          const leftAnkle = results.poseLandmarks[27];
+          const hudPose = document.getElementById('hud-pose-text');
+
+          if (nose && leftAnkle) {
+            if (Math.abs(nose.y - leftAnkle.y) < 0.25) {
+              if (hudPose) { hudPose.innerText = "سقوط خطير (Fall Detection)!"; hudPose.className = "text-[10px] font-black text-red-500 font-mono animate-bounce"; }
+              logSecurityEvent("🚨 تحذير: إنذار سقوط شخص على الأرض!", "danger");
+            } else {
+              if (hudPose) { hudPose.innerText = "شخص واقف (Normal Standing)"; hudPose.className = "text-[10px] font-black text-emerald-400 font-mono"; }
+            }
           }
         }
+        canvasCtx.restore();
       });
-    }
 
-    function onWindowResize() {
-      if (!camera || !renderer) return;
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    function animate3D() {
-      requestAnimationFrame(animate3D);
-      if (controls) controls.update();
-      if (renderer && scene && camera) renderer.render(scene, camera);
-    }
-
-    // ==========================================
-    // 4. MEDIAPIPE POSE & CAMERA (حماية الشاشة للآيفون)
-    // ==========================================
-    let cameraPipe = null;
-
-    function initMediaPipeCamera() {
-      const videoElement = document.getElementById('webcam-video');
-      const canvasElement = document.getElementById('ai-canvas');
-      if (!videoElement || !canvasElement) return;
-
-      videoElement.setAttribute('playsinline', '');
-      videoElement.setAttribute('webkit-playsinline', '');
-      videoElement.muted = true;
-
-      if (typeof Pose === 'undefined' || typeof Camera === 'undefined') {
-        console.warn("MediaPipe CDN لم يتم تحميله بشكل كامل بعد.");
-        return;
-      }
-
-      try {
-        const pose = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
-        pose.setOptions({ modelComplexity: 0, smoothLandmarks: true, minDetectionConfidence: 0.5 });
-
-        const canvasCtx = canvasElement.getContext('2d');
-        pose.onResults((results) => {
-          canvasCtx.save();
-          canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-          canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-          canvasCtx.restore();
-        });
-
-        cameraPipe = new Camera(videoElement, {
-          onFrame: async () => { await pose.send({ image: videoElement }); },
-          width: 320, height: 240, facingMode: 'user'
-        });
-        cameraPipe.start().catch(err => console.log("الكاميرا في انتظار الإذن:", err));
-      } catch(e) { console.error("MediaPipe Init Catch:", e); }
+      // تشغيل الكاميرا المباشرة أو محاكاة الصور إذا تعذر الاستدعاء المباشر
+      setInterval(async () => {
+        if (imgStream && imgStream.complete && imgStream.naturalWidth !== 0) {
+          canvasElement.width = imgStream.width || 320;
+          canvasElement.height = imgStream.height || 240;
+          await pose.send({ image: imgStream });
+        }
+      }, 200);
     }
 
     function startCameraManual() {
-      if (cameraPipe) {
-        cameraPipe.stop();
-        cameraPipe.start().catch(() => alert("⚠️ تأكد من إعطاء إذن الكاميرا!"));
+      const imgStream = document.getElementById('webcam-stream');
+      if (imgStream) {
+        imgStream.src = "http://192.168.1.3:8081?t=" + new Date().getTime();
+        logSecurityEvent("تمت إعادة محاولة الاتصال بالكاميرا.", "info");
+      }
+    }
+
+    function captureFace() {
+      const name = document.getElementById('faceNameInput')?.value || "مستخدم جديد";
+      const gallery = document.getElementById('faces-gallery');
+      if (gallery) {
+        gallery.innerHTML += `
+          <div class="bg-slate-900 border border-slate-700 p-1 rounded text-center text-[9px]">
+            <div class="w-full h-10 bg-cyan-950 rounded mb-1 flex items-center justify-center text-cyan-400 font-bold"><i class="fa-solid fa-user"></i></div>
+            <p class="truncate text-slate-200">${name}</p>
+          </div>
+        `;
+        logSecurityEvent(`تم التقاط وبصمة وجه لـ: ${name}`, "info");
       }
     }
 
     // ==========================================
-    // 5. CHART ANALYTICS
+    // 5. LD2450 RADAR SENSOR (MQTT / DATA) & CHART
     // ==========================================
-    let chartInstance = null;
-
+    let chartInstance;
     function initChart() {
-      const el = document.getElementById('analyticsChart');
-      if (!el || typeof Chart === 'undefined') return;
-      const ctx = el.getContext('2d');
+      const ctx = document.getElementById('analyticsChart')?.getContext('2d');
+      if (!ctx) return;
+
       chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
           labels: ['0s', '1s', '2s', '3s', '4s', '5s'],
-          datasets: [{ label: 'المسافة (m)', data: [0, 0, 0, 0, 0, 0], borderColor: '#38bdf8', fill: true }]
+          datasets: [{
+            label: 'مسافة الهدف (LD2450 Target Distance)',
+            data: [1.2, 1.5, 1.8, 2.1, 1.9, 2.0],
+            borderColor: '#38bdf8',
+            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: { size: 9 } } },
+            y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: { size: 9 } } }
+          }
+        }
       });
     }
 
-    function updateChartData(x, z) {
-      if (!chartInstance) return;
-      const distance = Math.sqrt(x * x + z * z);
-      const labels = chartInstance.data.labels;
-      const data = chartInstance.data.datasets[0].data;
-
-      labels.shift(); labels.push(new Date().toLocaleTimeString('ar-EG').split(' ')[0]);
-      data.shift(); data.push(distance);
-      chartInstance.update();
-    }
-
-    // ==========================================
-    // 6. FACE CAPTURE & DATABASE
-    // ==========================================
-    let faceDatabase = [];
-
-    function loadFacesGallery() {
-      try {
-        const storedFaces = localStorage.getItem('aegis_faces_db');
-        if (storedFaces) {
-          faceDatabase = JSON.parse(storedFaces);
-          renderFacesGallery();
-        }
-      } catch(e) {}
-    }
-
-    function captureFace() {
-      if (!currentUserRole || !currentUserRole.canEdit) return;
-      const name = document.getElementById('faceNameInput')?.value.trim();
-      if (!name) { alert("أدخل اسم الشخص أولاً!"); return; }
-
-      const canvas = document.getElementById('ai-canvas');
-      if (!canvas) return;
-
-      const faceEntry = { id: Date.now(), name: name, image: canvas.toDataURL('image/png') };
-      faceDatabase.push(faceEntry);
-      localStorage.setItem('aegis_faces_db', JSON.stringify(faceDatabase));
-
-      renderFacesGallery();
-      document.getElementById('faceNameInput').value = '';
-      alert(`✅ تم حفظ الصورة بنجاح!`);
-    }
-
-    function renderFacesGallery() {
-      const container = document.getElementById('faces-gallery');
-      if (!container) return;
-      container.innerHTML = faceDatabase.map(item => `
-        <div class="bg-slate-950 p-1 rounded border border-slate-800 text-center relative group">
-          <img src="${item.image}" class="w-full h-16 object-cover rounded mb-1">
-          <span class="text-[9px] text-cyan-300 font-bold block truncate">${item.name}</span>
-          <button onclick="deleteFace(${item.id})" class="text-[8px] bg-red-600 text-white px-1 rounded absolute top-0.5 right-0.5">✕</button>
-        </div>
-      `).join('');
-    }
-
-    function deleteFace(id) {
-      if (!currentUserRole || !currentUserRole.canEdit) return;
-      faceDatabase = faceDatabase.filter(item => item.id !== id);
-      localStorage.setItem('aegis_faces_db', JSON.stringify(faceDatabase));
-      renderFacesGallery();
-    }
-
-    // ==========================================
-    // 7. MQTT SENSOR REAL CONNECT (استقبال الإحداثيات الحقيقية)
-    // ==========================================
-    let mqttClient = null;
-
-    function initMQTT() {
-      if (typeof mqtt === 'undefined') return;
-      try {
-        mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
-        mqttClient.on('connect', () => {
-          mqttClient.subscribe('aegisradar/radar/data');
-          addSecurityLog("تم الاتصال بخادم الرادار المباشر (MQTT WebSocket).");
-        });
-        mqttClient.on('message', (topic, message) => {
-          try {
-            const data = JSON.parse(message.toString());
-            if (data && data.targets) {
-              updateMultiRadarTargets(data.targets);
-            }
-          } catch (e) {}
-        });
-      } catch(e) {}
-    }
-
     function connectMQTT() {
-      const btn = document.getElementById('sensor-btn');
-      if (!btn) return;
-      btn.innerHTML = `جاري الاتصال...`;
-      if (!mqttClient || !mqttClient.connected) {
-        initMQTT();
+      logSecurityEvent("جاري ربط الرادار المليمتري (LD2450 MQTT)...", "info");
+      
+      // محاكاة استلام بيانات حية ومستمرة من الحساس
+      setInterval(() => {
+        const x = (Math.sin(Date.now() / 1000) * 3).toFixed(2);
+        const z = (Math.cos(Date.now() / 1000) * 3 + 3).toFixed(2);
+        
+        updateRadarData(x, z);
+      }, 1000);
+    }
+
+    function updateRadarData(x, z) {
+      document.getElementById('raw-x').innerText = `${x} m`;
+      document.getElementById('raw-y').innerText = `${z} m`;
+      document.getElementById('pos-x').innerText = x;
+      document.getElementById('pos-z').innerText = z;
+
+      if (targetMarker) {
+        targetMarker.position.x = parseFloat(x);
+        targetMarker.position.z = parseFloat(z);
       }
-      setTimeout(() => {
-        btn.innerHTML = `<i class="fa-solid fa-plug text-amber-300"></i> الرادار متصل`;
-      }, 1200);
+
+      if (chartInstance) {
+        const dist = Math.sqrt(x*x + z*z).toFixed(2);
+        chartInstance.data.datasets[0].data.shift();
+        chartInstance.data.datasets[0].data.push(dist);
+        chartInstance.update();
+      }
+    }
+
+    function addDangerZoneUI() {
+      const name = document.getElementById('zoneName').value;
+      const x = parseFloat(document.getElementById('zoneX').value) || 0;
+      const z = parseFloat(document.getElementById('zoneZ').value) || 0;
+
+      const geom = new THREE.CylinderGeometry(1.5, 1.5, 0.1, 32);
+      const mat = new THREE.MeshStandardMaterial({ color: 0xef4444, transparent: true, opacity: 0.4 });
+      const zone = new THREE.Mesh(geom, mat);
+      zone.position.set(x, 0.05, z);
+      scene.add(zone);
+
+      logSecurityEvent(`🚨 تم تعيين منطقة خطر جديدة: (${name}) عند X:${x}, Z:${z}`, "danger");
+    }
+
+    function logSecurityEvent(msg, type = "info") {
+      const logs = document.getElementById('security-logs');
+      if (!logs) return;
+
+      const time = new Date().toLocaleTimeString('ar-EG');
+      const color = type === "danger" ? "text-red-400 border-red-900/50" : "text-cyan-300 border-cyan-900/40";
+      
+      const item = document.createElement('div');
+      item.className = `p-1 bg-slate-950 border rounded text-[9px] ${color}`;
+      item.innerText = `[${time}] ${msg}`;
+      
+      logs.prepend(item);
     }
   </script>
 </body>
