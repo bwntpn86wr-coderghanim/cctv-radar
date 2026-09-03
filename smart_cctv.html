@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title id="doc-title">AegisRadar 360 AI - جامعة نينوى Suite</title>
+  <title>AegisRadar 360 AI - جامعة نينوى Suite</title>
 
   <!-- Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -18,7 +18,19 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-    body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; position: fixed; }
+    body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; position: fixed; transition: background 0.5s ease; }
+    
+    /* خيارات الخلفيات للموقع */
+    body.bg-dark { background: #020617; }
+    body.bg-blueprint { 
+      background: linear-gradient(rgba(2, 6, 23, 0.85), rgba(2, 6, 23, 0.85)), 
+                  url('https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat; 
+    }
+    body.bg-modern { 
+      background: linear-gradient(rgba(2, 6, 23, 0.80), rgba(2, 6, 23, 0.80)), 
+                  url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat; 
+    }
+
     #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
     
     .glass-panel {
@@ -57,10 +69,9 @@
     .collapsed .panel-content { display: none !important; }
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    .read-only-disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
   </style>
 </head>
-<body>
+<body class="bg-dark">
 
   <!-- 1. الشاشات التعريفية -->
   <div id="step-1" class="step-screen">
@@ -68,7 +79,7 @@
       <div class="w-14 h-14 bg-gradient-to-tr from-cyan-600 to-emerald-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-3 animate-pulse">
         <i class="fa-solid fa-shield-halved text-2xl text-white"></i>
       </div>
-      <h1 class="text-2xl font-black hud-title mb-1 system-title-text">AegisRadar 360 AI</h1>
+      <h1 class="text-2xl font-black hud-title mb-1">AegisRadar 360 AI</h1>
       <h2 class="text-[11px] text-slate-400 mb-3">نظام المراقبة الهندسية وإدارة المنازل الذكية ثلاثي الأبعاد</h2>
       
       <div class="bg-slate-900/80 border-r-4 border-cyan-500 p-2.5 text-right text-xs leading-relaxed text-slate-300 mb-3 rounded">
@@ -76,8 +87,8 @@
       </div>
 
       <div class="bg-slate-950 p-2.5 rounded-lg text-right text-xs border border-slate-800 mb-4 space-y-1">
-        <p>👨‍🏫 <b>إشراف الأستاذ القدير:</b> <span id="supervisor-display" class="text-cyan-400 font-bold">إبراهيم</span></p>
-        <p>👨‍💻 <b>إعداد الطلاب:</b> <span id="students-display" class="text-emerald-400">غانم فراس | سما غسان | إبراهيم غسان</span></p>
+        <p>👨‍🏫 <b>إشراف الأستاذ القدير:</b> <span class="text-cyan-400 font-bold">إبراهيم</span></p>
+        <p>👨‍💻 <b>إعداد الطلاب:</b> <span class="text-emerald-400">غانم فراس | سما غسان | إبراهيم غسان</span></p>
         <p class="text-[9px] text-slate-500 pt-0.5">جامعة نينوى - كلية الهندسة</p>
       </div>
 
@@ -102,14 +113,14 @@
 
       <div class="mb-4 text-right">
         <label class="text-xs text-slate-300 font-bold block mb-1">رمز الدخول الأمني (PIN):</label>
-        <input type="password" id="pin-input" maxlength="8" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 p-2.5 text-center text-lg text-cyan-400 font-mono" />
-        <p class="text-[10px] text-slate-400 mt-1">عنوان IP الحالي: <span id="user-ip-display" class="text-cyan-400 font-mono">جاري الجلب...</span></p>
+        <input type="password" id="pin-input" maxlength="8" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-center text-lg text-cyan-400 font-mono" />
+        <p class="text-[10px] text-slate-400 mt-1">الرمز الافتراضي: <span id="pin-hint-text" class="text-emerald-400 font-bold font-mono">1234</span></p>
       </div>
 
       <button onclick="authenticateUser()" class="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 text-white font-bold py-2.5 rounded-lg text-xs">
         دخول النظام 🔓
       </button>
-      <p id="auth-error" class="text-xs text-red-400 mt-2 hidden">رمز الدخول غير صحيح أو أن حسابك محظور!</p>
+      <p id="auth-error" class="text-xs text-red-400 mt-2 hidden">رمز الدخول غير صحيح، حاول مرة أخرى.</p>
     </div>
   </div>
 
@@ -126,8 +137,8 @@
             <i class="fa-solid fa-layer-group text-sm text-white"></i>
           </div>
           <div>
-            <h1 class="font-black text-xs hud-title system-title-text">AegisRadar 360 AI</h1>
-            <p class="text-[9px] text-slate-400">المستخدم: <span id="active-user-display" class="text-emerald-400 font-bold">---</span> <span id="permission-badge" class="ml-1 px-1 bg-cyan-900 text-cyan-300 rounded text-[8px]"></span></p>
+            <h1 class="font-black text-xs hud-title">AegisRadar 360 AI</h1>
+            <p class="text-[9px] text-slate-400">المستخدم: <span id="active-user-display" class="text-emerald-400 font-bold">---</span></p>
           </div>
         </div>
         <button onclick="logout()" class="sm:hidden bg-slate-800 text-red-400 text-xs px-2 py-1 rounded border border-slate-700">
@@ -140,11 +151,16 @@
         <button class="nav-btn active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-line ml-1"></i> المراقبة</button>
         <button class="nav-btn" onclick="switchTab('architect', this)"><i class="fa-solid fa-wand-magic-sparkles ml-1"></i> البناء الذكي</button>
         <button class="nav-btn" onclick="switchTab('faces', this)"><i class="fa-solid fa-user-gear ml-1"></i> الوجوه</button>
-        <button class="nav-btn" onclick="switchTab('security', this)"><i class="fa-solid fa-shield-cat ml-1"></i> الخطر والـ IP</button>
-        <button class="nav-btn" onclick="switchTab('settings', this)"><i class="fa-solid fa-sliders ml-1"></i> الإعدادات والأمان</button>
+        <button class="nav-btn" onclick="switchTab('security', this)"><i class="fa-solid fa-shield-cat ml-1"></i> الخطر</button>
       </div>
 
       <div class="hidden sm:flex items-center gap-2">
+        <!-- خيار تخصيص خلفية الموقع -->
+        <select onchange="changeAppBackground(this.value)" class="bg-slate-900 text-cyan-300 text-xs p-1 rounded border border-slate-700">
+          <option value="bg-dark">🌌 خلفية داكنة</option>
+          <option value="bg-blueprint">📐 مخطط CAD</option>
+          <option value="bg-modern">🏠 منزل حديث</option>
+        </select>
         <button id="sensor-btn" onclick="connectMQTT()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2 py-1 rounded-lg border border-emerald-500 flex items-center gap-1">
           <i class="fa-solid fa-plug text-amber-300"></i> الرادار
         </button>
@@ -163,8 +179,8 @@
           <div class="flex justify-between items-center mb-1.5 border-b border-slate-800 pb-1">
             <span class="text-xs font-bold text-slate-200 flex items-center gap-1"><i class="fa-solid fa-camera text-cyan-400"></i> الكاميرا وتحليل الوضعية</span>
             <div class="flex items-center gap-1">
-              <button onclick="toggleCollapse('panel-pose')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
-              <button onclick="hidePanel('panel-pose')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
+              <button onclick="toggleCollapse('panel-pose')" class="text-slate-400 hover:text-white text-xs px-1" title="تصغير/توسيع"><i class="fa-solid fa-minus"></i></button>
+              <button onclick="hidePanel('panel-pose')" class="text-slate-400 hover:text-red-400 text-xs px-1" title="إغلاق"><i class="fa-solid fa-xmark"></i></button>
             </div>
           </div>
           
@@ -178,7 +194,7 @@
               </div>
             </div>
             <button onclick="startCameraManual()" class="w-full bg-cyan-900/60 hover:bg-cyan-800 border border-cyan-700 text-cyan-300 text-[10px] p-1 rounded flex items-center justify-center gap-1">
-              <i class="fa-solid fa-arrows-rotate"></i> إعادة تشغيل الكاميرا
+              <i class="fa-solid fa-arrows-rotate"></i> إعطاء الإذن وتشغيل الكاميرا
             </button>
           </div>
         </div>
@@ -200,7 +216,7 @@
         <!-- Security Logs -->
         <div id="panel-logs" class="glass-panel p-3 relative">
           <div class="flex justify-between items-center mb-1.5 border-b border-slate-800 pb-1">
-            <h3 class="text-xs font-bold text-slate-300 flex items-center gap-1"><i class="fa-solid fa-shield-cat text-amber-400"></i> السجل الأمني الأحداث</h3>
+            <h3 class="text-xs font-bold text-slate-300 flex items-center gap-1"><i class="fa-solid fa-shield-cat text-amber-400"></i> السجل الأمني</h3>
             <div class="flex items-center gap-1">
               <button onclick="toggleCollapse('panel-logs')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
               <button onclick="hidePanel('panel-logs')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
@@ -208,7 +224,12 @@
           </div>
           
           <div class="panel-content space-y-2">
-            <div id="security-logs" class="space-y-1.5 h-28 overflow-y-auto text-[10px] pr-1"></div>
+            <div id="security-logs" class="space-y-1.5 h-28 overflow-y-auto text-[10px] pr-1">
+              <div class="p-1.5 rounded bg-slate-900/80 border-r-2 border-cyan-500 text-slate-300">
+                <span class="text-slate-500 block text-[8px]">13:00:00</span>
+                تم إقلاع AegisRadar 360 بنجاح.
+              </div>
+            </div>
 
             <div class="grid grid-cols-2 gap-1.5 text-center text-xs pt-1 border-t border-slate-800">
               <div class="bg-slate-900/60 p-1 rounded border border-slate-800">
@@ -226,19 +247,19 @@
       </div>
     </div>
 
-    <!-- TAB 2: ADVANCED REALISTIC ARCHITECT -->
+    <!-- TAB 2: ADVANCED AI ARCHITECT -->
     <div id="tab-architect" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
       <div id="panel-architect" class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[82vh] overflow-y-auto">
         <div class="flex justify-between items-center border-b border-slate-800 pb-1">
-          <h3 class="text-xs font-bold text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> البناء الهندسي الواقعي (3D)</h3>
+          <h3 class="text-xs font-bold text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> البناء والتشييد المتقدم</h3>
           <div class="flex items-center gap-1">
             <button onclick="toggleCollapse('panel-architect')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
             <button onclick="hidePanel('panel-architect')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
           </div>
         </div>
         
-        <div class="panel-content space-y-2 admin-only-container">
-          <!-- Floor & Rotation -->
+        <div class="panel-content space-y-2">
+          <!-- Floor & Rotation Selection -->
           <div class="grid grid-cols-2 gap-1.5 text-xs">
             <div>
               <label class="block text-slate-400 text-[9px] mb-0.5">الطابق الحالي:</label>
@@ -250,27 +271,30 @@
             </div>
             <div>
               <label class="block text-slate-400 text-[9px] mb-0.5">اتجاه العناصر:</label>
-              <button onclick="toggleRotation()" id="rotBtn" class="w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 p-1 rounded text-emerald-400 font-bold text-xs">
-                🔄 0° أفقياً
-              </button>
+              <select id="rotationSelect" onchange="updateRotationAngle(this.value)" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-emerald-400 font-bold text-xs">
+                <option value="0">🔄 0° أفقياً</option>
+                <option value="90">🔄 90° عمودياً</option>
+                <option value="180">🔄 180° أفقياً معكوس</option>
+                <option value="270">🔄 270° عمودياً معكوس</option>
+              </select>
             </div>
           </div>
 
           <!-- AI Advanced Architect Suite -->
           <div class="bg-gradient-to-b from-slate-900 to-slate-950 p-2.5 rounded-lg border border-cyan-500/40 text-xs space-y-2">
-            <span class="text-cyan-300 font-bold block text-[11px]"><i class="fa-solid fa-house-chimney text-amber-400 ml-1"></i> مولّد الغرف والأبنية:</span>
+            <span class="text-cyan-300 font-bold block text-[11px]"><i class="fa-solid fa-brain text-amber-400 ml-1"></i> مولّد الغرف الذكي:</span>
             
             <div>
-              <label class="text-[9px] text-slate-400 block mb-0.5">نوع التصميم:</label>
+              <label class="text-[9px] text-slate-400 block mb-0.5">نموذج التشييد:</label>
               <select id="aiRoomType" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-[11px] text-slate-200">
-                <option value="living">غرفة معيشة متكاملة (جدران + أبواب + نوافذ)</option>
-                <option value="office">مكتب أمني مغلق (جدران سميكة + باب)</option>
-                <option value="hall">صالة زجاجية مفتوحة (واجهة زجاجية)</option>
+                <option value="living">غرفة معيشة (جدران + أبواب + شبابيك)</option>
+                <option value="office">مكتب أمني مغلق (باب واحد)</option>
+                <option value="hall">واجهة زجاجية بالكامل</option>
               </select>
             </div>
 
             <div>
-              <label class="text-[9px] text-slate-400 block mb-0.5">المساحة:</label>
+              <label class="text-[9px] text-slate-400 block mb-0.5">مساحة البناء:</label>
               <select id="aiRoomSize" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-[11px] text-slate-200">
                 <option value="4">صغيرة (4x4 م)</option>
                 <option value="6" selected>متوسطة (6x6 م)</option>
@@ -279,7 +303,7 @@
             </div>
 
             <button id="tool-ai-room" onclick="setCadTool('ai-room')" class="cad-btn w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 p-2 rounded text-white font-bold text-xs flex items-center justify-center gap-1 shadow-lg shadow-cyan-500/20">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> انقر على الخريطة للتشييد
+              <i class="fa-solid fa-wand-magic-sparkles"></i> انقر على الخريطة للتشييد الذكي
             </button>
           </div>
 
@@ -287,14 +311,20 @@
           <span class="text-[10px] text-slate-400 block pt-1">أدوات البناء اليدوي:</span>
           <div id="cad-tools-panel" class="grid grid-cols-2 gap-1.5">
             <button id="tool-select" onclick="setCadTool('select')" class="cad-btn active p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-arrow-pointer text-cyan-400"></i> تحديد</button>
-            <button id="tool-wall" onclick="setCadTool('wall')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-cube text-emerald-400"></i> جدار واقعي</button>
-            <button id="tool-door" onclick="setCadTool('door')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-door-closed text-amber-300"></i> باب خشب</button>
-            <button id="tool-window" onclick="setCadTool('window')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-window-restore text-cyan-300"></i> شباك زجاج</button>
+            <button id="tool-wall" onclick="setCadTool('wall')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-cubes text-slate-300"></i> جدار إشارتي</button>
+            <button id="tool-door" onclick="setCadTool('door')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-door-open text-amber-500"></i> باب خشب</button>
+            <button id="tool-window" onclick="setCadTool('window')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-border-all text-cyan-300"></i> شباك زجاجي</button>
           </div>
 
-          <button onclick="clearCADObjects()" class="w-full bg-red-950/40 hover:bg-red-900/60 text-red-300 p-1.5 rounded text-xs font-semibold border border-red-800/50 mt-1">
-            <i class="fa-solid fa-trash-can ml-1"></i> مسح جميع المجسمات
-          </button>
+          <!-- Save & Clear Section -->
+          <div class="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-800">
+            <button onclick="saveCADLayout()" class="bg-emerald-700 hover:bg-emerald-600 text-white p-1.5 rounded text-xs font-bold transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-floppy-disk"></i> حفظ البناء
+            </button>
+            <button onclick="clearCADObjects()" class="bg-red-950/60 hover:bg-red-900 text-red-300 p-1.5 rounded text-xs font-bold border border-red-800/50 transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-trash-can"></i> مسح الكل
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -311,12 +341,10 @@
         </div>
         
         <div class="panel-content space-y-2">
-          <div class="admin-only-container space-y-2">
-            <input type="text" id="faceNameInput" placeholder="اسم الشخص" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200 text-xs">
-            <button onclick="captureFace()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-1.5 rounded font-bold text-xs transition flex items-center justify-center gap-1">
-              <i class="fa-solid fa-expand"></i> التقاط وصنع بصمة وجه 📸
-            </button>
-          </div>
+          <input type="text" id="faceNameInput" placeholder="اسم الشخص" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200 text-xs">
+          <button onclick="captureFace()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-1.5 rounded font-bold text-xs transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-expand"></i> التقاط وصنع بصمة وجه 📸
+          </button>
 
           <div class="pt-2 border-t border-slate-800">
             <span class="text-[10px] text-slate-400 block mb-1">الوجوه المحفوظة بالنظام:</span>
@@ -326,105 +354,32 @@
       </div>
     </div>
 
-    <!-- TAB 4: DANGER ZONES & IP AUDIT -->
+    <!-- TAB 4: DANGER ZONES -->
     <div id="tab-security" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
-      <div id="panel-security" class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[82vh] overflow-y-auto">
+      <div id="panel-security" class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2">
         <div class="flex justify-between items-center border-b border-slate-800 pb-1">
-          <h3 class="text-xs font-bold text-red-400 flex items-center gap-1"><i class="fa-solid fa-user-shield"></i> الأمان وحظر العناوين (IP Blacklist)</h3>
+          <h3 class="text-xs font-bold text-red-400 flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> مناطق الخطر (Geofencing)</h3>
           <div class="flex items-center gap-1">
             <button onclick="toggleCollapse('panel-security')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
             <button onclick="hidePanel('panel-security')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
           </div>
         </div>
         
-        <div class="panel-content space-y-3 text-xs">
-          <!-- Audit Access Logs -->
-          <div>
-            <span class="text-[10px] text-cyan-400 font-bold block mb-1">🔍 سجل المتواجدين ومن دخل للموقع:</span>
-            <div id="login-audit-logs" class="bg-slate-950 p-2 rounded border border-slate-800 h-28 overflow-y-auto font-mono text-[9px] space-y-1"></div>
+        <div class="panel-content space-y-1.5 text-xs">
+          <input type="text" id="zoneName" placeholder="اسم المنطقة" value="منطقة محظورة" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
+          <select id="zoneShape" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
+            <option value="circle">دائرية (Circle)</option>
+            <option value="rectangle">مستطيلة (Rectangle)</option>
+          </select>
+          <div class="grid grid-cols-2 gap-1.5">
+            <input type="number" id="zoneX" placeholder="X" value="0" class="bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
+            <input type="number" id="zoneZ" placeholder="Z" value="0" class="bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
           </div>
-
-          <!-- IP Ban Manager (Admin Only) -->
-          <div class="admin-only-container border-t border-slate-800 pt-2 space-y-1.5">
-            <span class="text-[10px] text-red-400 font-bold block">🚫 حظر عنوان IP:</span>
-            <input type="text" id="banIpInput" placeholder="أدخل IP لحظره (مثال: 192.168.1.5)" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
-            <button onclick="banIpAddress()" class="w-full bg-red-600 hover:bg-red-500 text-white p-1.5 rounded font-bold transition">
-              حظر العنوان الآن 🛑
-            </button>
-            
-            <div class="mt-2">
-              <span class="text-[9px] text-slate-400 block mb-1">قائمة العناوين المحظورة:</span>
-              <ul id="banned-ip-list" class="text-[10px] text-red-400 space-y-0.5 bg-slate-950 p-1.5 rounded border border-slate-800"></ul>
-            </div>
-          </div>
-
-          <!-- Geofencing -->
-          <div class="admin-only-container border-t border-slate-800 pt-2 space-y-1.5">
-            <span class="text-[10px] text-amber-400 font-bold block">🚨 إضافة منطقة خطر (Geofencing):</span>
-            <input type="text" id="zoneName" placeholder="اسم المنطقة" value="منطقة محظورة" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
-            <div class="grid grid-cols-2 gap-1.5">
-              <input type="number" id="zoneX" placeholder="X" value="0" class="bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
-              <input type="number" id="zoneZ" placeholder="Z" value="0" class="bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
-            </div>
-            <button onclick="addDangerZoneUI()" class="w-full bg-amber-600 hover:bg-amber-500 text-white p-1.5 rounded font-bold transition">
-              إنشاء منطقة الخطر
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 5: SYSTEM SETTINGS & PIN MANAGEMENT -->
-    <div id="tab-settings" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
-      <div id="panel-settings" class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[82vh] overflow-y-auto">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-1">
-          <h3 class="text-xs font-bold text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-pen-to-square"></i> الإعدادات وتغيير كلمات السر</h3>
-          <div class="flex items-center gap-1">
-            <button onclick="toggleCollapse('panel-settings')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
-            <button onclick="hidePanel('panel-settings')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-        </div>
-        
-        <div class="panel-content space-y-3 text-xs">
-          <!-- Password Change Tool (Admin Only) -->
-          <div class="admin-only-container bg-slate-950 p-2 rounded border border-cyan-500/30 space-y-1.5">
-            <span class="text-[10px] text-cyan-300 font-bold block"><i class="fa-solid fa-key ml-1"></i> تغيير الأرقام السرية (PIN):</span>
-            <select id="changePinTarget" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
-              <option value="admin">حساب المهندس غانم (Admin)</option>
-              <option value="operator">المشرف الأمني (Operator)</option>
-              <option value="viewer">حساب المراقب (Viewer)</option>
-            </select>
-            <input type="password" id="newPinInput" maxlength="8" placeholder="الرمز السري الجديد" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-slate-200 text-center font-mono">
-            <button onclick="updateAccountPin()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white p-1 rounded font-bold">
-              تحديث الرمز السري 🔑
-            </button>
-          </div>
-
-          <!-- Site Info Editor (Admin Only) -->
-          <div class="admin-only-container space-y-2">
-            <div>
-              <label class="text-[10px] text-slate-400 block mb-0.5">اسم النظام / الصفحة:</label>
-              <input type="text" id="editSystemTitle" value="AegisRadar 360 AI" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-cyan-300 font-bold">
-            </div>
-
-            <div>
-              <label class="text-[10px] text-slate-400 block mb-0.5">الأستاذ المشرف:</label>
-              <input type="text" id="editSupervisor" value="إبراهيم" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
-            </div>
-
-            <div>
-              <label class="text-[10px] text-slate-400 block mb-0.5">فريق العمل (الطلاب):</label>
-              <input type="text" id="editStudents" value="غانم فراس | سما غسان | إبراهيم غسان" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
-            </div>
-
-            <button onclick="saveSystemSettings()" class="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white p-2 rounded font-bold shadow-lg transition">
-              حفظ وتحديث البيانات 💾
-            </button>
-          </div>
-
-          <div id="read-only-notice" class="hidden bg-amber-950/60 border border-amber-500/40 p-2 rounded text-amber-200 text-[10px]">
-            ⚠️ أنت تسجل الدخول كـ (مشاهد/مشرف أمني). جميع الصلاحيات في وضع القراءة فقط. التعديل متاح للمهندس غانم حصراً.
-          </div>
+          <input type="number" id="zoneSize" placeholder="الحجم (m)" value="3" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
+          
+          <button onclick="addDangerZoneUI()" class="w-full bg-red-600 hover:bg-red-500 text-white p-1.5 rounded font-bold transition">
+            إضافة منطقة الخطر 🚨
+          </button>
         </div>
       </div>
     </div>
@@ -441,30 +396,17 @@
 
   <script>
     // ==========================================
-    // 1. AUTHENTICATION, ROLES & IP MANAGEMENT
+    // 1. AUTHENTICATION & APP LOGIC
     // ==========================================
-    let currentUserRole = null;
-    let currentUserIP = "127.0.0.1";
-
     const ACCOUNTS = {
-      admin: { name: "المهندس غانم (Admin)", pin: "1234", role: "Admin", canEdit: true },
-      operator: { name: "المشرف الأمني", pin: "5678", role: "Operator", canEdit: false },
-      viewer: { name: "حساب مراقب", pin: "0000", role: "View Only", canEdit: false }
+      admin: { name: "المهندس غانم (مدير النظام)", pin: "1234", role: "Admin" },
+      operator: { name: "المشرف الأمني", pin: "5678", role: "Operator" },
+      viewer: { name: "حساب مراقب", pin: "0000", role: "View Only" }
     };
 
-    const loginAuditList = [];
-    const bannedIpList = [];
-
-    // Fetch Client IP
-    fetch('https://api.ipify.org?format=json')
-      .then(res => res.json())
-      .then(data => {
-        currentUserIP = data.ip;
-        document.getElementById('user-ip-display').innerText = currentUserIP;
-      })
-      .catch(() => {
-        document.getElementById('user-ip-display').innerText = "192.168.1.100 (محلي)";
-      });
+    function changeAppBackground(theme) {
+      document.body.className = theme;
+    }
 
     function goToStep(stepNumber) {
       document.getElementById('step-1').classList.add('hidden');
@@ -474,90 +416,27 @@
 
     function updatePinHint() {
       const selected = document.getElementById('user-role-select').value;
+      document.getElementById('pin-hint-text').innerText = ACCOUNTS[selected].pin;
     }
 
     function authenticateUser() {
-      if (bannedIpList.includes(currentUserIP)) {
-        alert("🛑 هذا العنوان (IP) محظور من دخول النظام!");
-        return;
-      }
-
       const roleKey = document.getElementById('user-role-select').value;
       const pinEntered = document.getElementById('pin-input').value;
       const account = ACCOUNTS[roleKey];
 
       if (pinEntered === account.pin || pinEntered === "20262026") {
-        currentUserRole = account;
         document.getElementById('step-2').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
         document.getElementById('active-user-display').innerText = account.name;
-        document.getElementById('permission-badge').innerText = account.canEdit ? "صلاحية كاملة (Admin)" : "عرض فقط";
-
-        // Audit Logging
-        const logEntry = { time: new Date().toLocaleTimeString('ar-EG'), user: account.name, ip: currentUserIP };
-        loginAuditList.prepend ? loginAuditList.unshift(logEntry) : loginAuditList.push(logEntry);
-        renderAuditLogs();
-
-        applyUserPermissions();
 
         init3D();
         initMediaPipeCamera();
         initChart();
         initMQTT();
-        addSecurityLog(`دخول جديد: ${account.name} (IP: ${currentUserIP})`);
+        loadCADLayout(); // تحميل البناء المحفوظ سابقاً تلقائياً
+        addSecurityLog(`تسجيل دخول: ${account.name}`);
       } else {
         document.getElementById('auth-error').classList.remove('hidden');
-      }
-    }
-
-    function applyUserPermissions() {
-      const canEdit = currentUserRole.canEdit;
-      const adminContainers = document.querySelectorAll('.admin-only-container');
-      
-      adminContainers.forEach(el => {
-        if (!canEdit) {
-          el.classList.add('read-only-disabled');
-        } else {
-          el.classList.remove('read-only-disabled');
-        }
-      });
-
-      if (!canEdit) {
-        document.getElementById('read-only-notice').classList.remove('hidden');
-      }
-    }
-
-    function renderAuditLogs() {
-      const container = document.getElementById('login-audit-logs');
-      container.innerHTML = loginAuditList.map(item => `
-        <div class="border-b border-slate-800 pb-1">
-          <span class="text-cyan-400">[${item.time}]</span> <b>${item.user}</b> - IP: <span class="text-emerald-400">${item.ip}</span>
-        </div>
-      `).join('');
-    }
-
-    function banIpAddress() {
-      if (!currentUserRole.canEdit) return;
-      const ip = document.getElementById('banIpInput').value.trim();
-      if (ip && !bannedIpList.includes(ip)) {
-        bannedIpList.push(ip);
-        document.getElementById('banned-ip-list').innerHTML = bannedIpList.map(i => `<li>🛑 ${i}</li>`).join('');
-        addSecurityLog(`تم حظر IP: ${ip}`, true);
-        document.getElementById('banIpInput').value = '';
-      }
-    }
-
-    function updateAccountPin() {
-      if (!currentUserRole.canEdit) return;
-      const target = document.getElementById('changePinTarget').value;
-      const newPin = document.getElementById('newPinInput').value.trim();
-      if (newPin.length >= 4) {
-        ACCOUNTS[target].pin = newPin;
-        alert(`تم تغيير الرمز السري لـ (${ACCOUNTS[target].name}) بنجاح.`);
-        addSecurityLog(`🔑 تم تغيير الرمز السري للحساب: ${target}`);
-        document.getElementById('newPinInput').value = '';
-      } else {
-        alert("الرمز السري يجب أن يكون 4 أرقام على الأقل!");
       }
     }
 
@@ -590,45 +469,29 @@
       container.prepend(item);
     }
 
-    function saveSystemSettings() {
-      if (!currentUserRole.canEdit) return;
-      const newTitle = document.getElementById('editSystemTitle').value.trim();
-      const newSupervisor = document.getElementById('editSupervisor').value.trim();
-      const newStudents = document.getElementById('editStudents').value.trim();
-
-      if(newTitle) {
-        document.querySelectorAll('.system-title-text').forEach(el => el.innerText = newTitle);
-        document.getElementById('doc-title').innerText = `${newTitle} - جامعة نينوى Suite`;
-      }
-      if(newSupervisor) document.getElementById('supervisor-display').innerText = newSupervisor;
-      if(newStudents) document.getElementById('students-display').innerText = newStudents;
-
-      addSecurityLog("✏️ تم تحديث بيانات ومعلومات الموقع بنجاح.");
-    }
-
     // ==========================================
-    // 2. FIXED CAMERA & MEDIAPIPE AI POSE
+    // 2. CAMERA & MEDIAPIPE AI POSE (FIXED)
     // ==========================================
     const videoElement = document.getElementById('webcam-video');
     const aiCanvas = document.getElementById('ai-canvas');
     const aiCtx = aiCanvas.getContext('2d');
-    let cameraInstance = null;
+    let poseEngine = null;
 
     function classifyPoseAndDraw(landmarks) {
       const w = aiCanvas.width;
       const h = aiCanvas.height;
       aiCtx.clearRect(0, 0, w, h);
 
-      if(videoElement.videoWidth) {
+      if(videoElement.videoWidth > 0) {
         aiCtx.drawImage(videoElement, 0, 0, w, h);
       }
 
       const nose = landmarks[0], leftAnkle = landmarks[27];
-      let poseStatus = "STANDING";
+      let poseStatus = "STANDING (وقوف)";
       let statusColor = "#10b981";
 
       if (Math.abs(nose.x - leftAnkle.x) > Math.abs(nose.y - leftAnkle.y)) {
-        poseStatus = "LYING DOWN (استلقاء)";
+        poseStatus = "LYING DOWN (استلقاء/سقوط)";
         statusColor = "#ef4444";
       }
 
@@ -643,30 +506,39 @@
       });
     }
 
-    function initMediaPipeCamera() {
-      const pose = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
-      pose.setOptions({ modelComplexity: 1, smoothLandmarks: true });
-      pose.onResults((results) => { if (results.poseLandmarks) classifyPoseAndDraw(results.poseLandmarks); });
+    async function initMediaPipeCamera() {
+      poseEngine = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
+      poseEngine.setOptions({ modelComplexity: 1, smoothLandmarks: true });
+      poseEngine.onResults((results) => { if (results.poseLandmarks) classifyPoseAndDraw(results.poseLandmarks); });
 
-      cameraInstance = new Camera(videoElement, {
-        onFrame: async () => {
-          aiCanvas.width = videoElement.videoWidth || 320;
-          aiCanvas.height = videoElement.videoHeight || 240;
-          await pose.send({ image: videoElement });
-        },
-        width: 320, height: 240
-      });
-      
-      cameraInstance.start().catch(() => {});
+      startCameraManual();
     }
 
     function startCameraManual() {
-      if (cameraInstance) cameraInstance.start();
-      else initMediaPipeCamera();
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } })
+          .then((stream) => {
+            videoElement.srcObject = stream;
+            videoElement.play();
+            addSecurityLog("📷 تم تشغيل الكاميرا بنجاح.");
+            
+            async function processFrame() {
+              if (videoElement.readyState >= 2) {
+                aiCanvas.width = videoElement.videoWidth || 320;
+                aiCanvas.height = videoElement.videoHeight || 240;
+                await poseEngine.send({ image: videoElement });
+              }
+              requestAnimationFrame(processFrame);
+            }
+            processFrame();
+          })
+          .catch((err) => {
+            addSecurityLog("⚠️ يرجى السماح للمتصفح بالوصول للكاميرا من الإعدادات.", true);
+          });
+      }
     }
 
     function captureFace() {
-      if (!currentUserRole.canEdit) return;
       const name = document.getElementById('faceNameInput').value.trim() || 'مستخدم مجهول';
       const capCanvas = document.createElement('canvas');
       capCanvas.width = aiCanvas.width || 320;
@@ -688,26 +560,27 @@
     }
 
     // ==========================================
-    // 3. THREE.JS HIGH-QUALITY REALISTIC BUILDER
+    // 3. THREE.JS & ADVANCED ARCHITECT (FIXED & ENHANCED)
     // ==========================================
     let scene, camera3D, renderer, controls, mapGroup;
     let activeTool = 'select';
     let currentFloor = 0;
-    let currentRotation = 0;
+    let currentRotation = 0; // الزاوية بالراديان
     let floorPlanes = [];
-    const FLOOR_HEIGHT = 3.2;
+    const FLOOR_HEIGHT = 3.0;
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    // High Quality Realistic Materials
-    const materials = {
-      wall: new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.5, metalness: 0.1 }),
-      wallTrim: new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3 }),
-      doorWood: new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.6 }),
-      glass: new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.4, roughness: 0.1, transmission: 0.9 }),
-      frameMetal: new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.8 }),
-      floorGrid: new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 })
-    };
+    // مصفوفة لتتبع العناصر ومنع التداخل
+    let builtObjectsData = [];
+
+    // خامات البناء (Materials) - تمييز الزجاج والجدران والأبواب
+    const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 }); // حجارة/جدار إسمنتي
+    const glassMaterial = new THREE.MeshPhysicalMaterial({ 
+      color: 0x38bdf8, transparent: true, opacity: 0.45, transmission: 0.9, roughness: 0.1, reflectivity: 0.9 
+    }); // زجاج حديث شفاف
+    const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.4 }); // باب خشب
+    const doorHandleMaterial = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8 }); // مقبض معدني
 
     function init3D() {
       const container = document.getElementById('canvas-container');
@@ -715,39 +588,32 @@
       scene.background = new THREE.Color(0x020617);
 
       camera3D = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera3D.position.set(0, 18, 25);
+      camera3D.position.set(0, 15, 20);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+      renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       container.appendChild(renderer.domElement);
 
       controls = new THREE.OrbitControls(camera3D, renderer.domElement);
       controls.enableDamping = true;
 
-      // Lighting Setup
-      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-      const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-      dirLight.position.set(20, 40, 20);
-      dirLight.castShadow = true;
-      scene.add(dirLight);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+      const light = new THREE.DirectionalLight(0x38bdf8, 1.2);
+      light.position.set(10, 20, 10);
+      scene.add(light);
 
-      const pointLight = new THREE.PointLight(0x38bdf8, 1, 30);
-      pointLight.position.set(0, 10, 0);
-      scene.add(pointLight);
-
-      scene.add(new THREE.GridHelper(40, 40, 0x38bdf8, 0x1e293b));
+      scene.add(new THREE.GridHelper(30, 30, 0x38bdf8, 0x1e293b));
       mapGroup = new THREE.Group();
       scene.add(mapGroup);
 
-      // Floor Plates
       for (let i = 0; i < 3; i++) {
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), materials.floorGrid);
+        const floorMat = new THREE.MeshStandardMaterial({ 
+          color: 0x0f172a, roughness: 0.8, transparent: true, opacity: i === 0 ? 1.0 : 0.6 
+        });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.position.y = i * FLOOR_HEIGHT;
-        floor.receiveShadow = true;
         floor.visible = (i === 0);
         scene.add(floor);
         floorPlanes.push(floor);
@@ -769,9 +635,8 @@
       animate();
     }
 
-    function toggleRotation() {
-      currentRotation = currentRotation === 0 ? Math.PI / 2 : 0;
-      document.getElementById('rotBtn').innerText = currentRotation === 0 ? '🔄 0° أفقياً' : '🔄 90° عمودياً';
+    function updateRotationAngle(deg) {
+      currentRotation = (parseInt(deg) * Math.PI) / 180;
     }
 
     function changeFloor(floorIdx) {
@@ -781,10 +646,6 @@
     }
 
     function setCadTool(tool) {
-      if (!currentUserRole.canEdit && tool !== 'select') {
-        alert("🔒 لا تملك صلاحية التعديل للبناء!");
-        return;
-      }
       activeTool = tool;
       document.querySelectorAll('.cad-btn').forEach(b => b.classList.remove('active'));
       const btn = document.getElementById(`tool-${tool}`);
@@ -793,7 +654,7 @@
     }
 
     function onDocumentPointerDown(event) {
-      if (!currentUserRole.canEdit || activeTool === 'select' || event.clientY < 75) return;
+      if (activeTool === 'select' || event.clientY < 75) return;
 
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -804,124 +665,161 @@
 
       if (intersects.length > 0) {
         const point = intersects[0].point;
+        // تقريب الأحداثيات لأقرب مربع منعاً للتداخل الشبكي (Grid Snap)
+        const snapX = Math.round(point.x);
+        const snapZ = Math.round(point.z);
+
         if (activeTool === 'ai-room') {
-          buildAdvancedAIRoom(point.x, point.z, currentFloor);
+          buildAdvancedAIRoom(snapX, snapZ, currentFloor);
         } else {
-          createCadObject(activeTool, point.x, point.z, currentFloor);
+          createCadObject(activeTool, snapX, snapZ, currentFloor);
         }
       }
     }
 
-    function createRealisticWall(length, height, depth) {
-      const wallGroup = new THREE.Group();
-      const mainWall = new THREE.Mesh(new THREE.BoxGeometry(length, height, depth), materials.wall);
-      mainWall.position.y = height / 2;
-      mainWall.castShadow = true;
-      mainWall.receiveShadow = true;
-      wallGroup.add(mainWall);
-
-      const baseTrim = new THREE.Mesh(new THREE.BoxGeometry(length + 0.05, 0.15, depth + 0.05), materials.wallTrim);
-      baseTrim.position.y = 0.075;
-      wallGroup.add(baseTrim);
-
-      return wallGroup;
-    }
-
-    function createRealisticDoor() {
-      const doorGroup = new THREE.Group();
-      const frame = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.6, 0.25), materials.frameMetal);
-      frame.position.y = 1.3;
-      doorGroup.add(frame);
-
-      const panel = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, 0.1), materials.doorWood);
-      panel.position.y = 1.2;
-      doorGroup.add(panel);
-
-      return doorGroup;
-    }
-
-    function createRealisticWindow() {
-      const winGroup = new THREE.Group();
-      const frame = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.4, 0.2), materials.frameMetal);
-      frame.position.y = 1.5;
-      winGroup.add(frame);
-
-      const glass = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 0.05), materials.glass);
-      glass.position.y = 1.5;
-      winGroup.add(glass);
-
-      return winGroup;
-    }
-
+    // بناء الغرف الذكية
     function buildAdvancedAIRoom(centerX, centerZ, floorLevel) {
       const type = document.getElementById('aiRoomType').value;
       const size = parseInt(document.getElementById('aiRoomSize').value);
-      const halfSize = size / 2;
-
-      createCadObject('wall', centerX, centerZ - halfSize, floorLevel, 0, size);
-      createCadObject('wall', centerX, centerZ + halfSize, floorLevel, 0, size);
-      createCadObject('wall', centerX - halfSize, centerZ, floorLevel, Math.PI / 2, size);
-      createCadObject('wall', centerX + halfSize, centerZ, floorLevel, Math.PI / 2, size);
+      const halfSize = Math.floor(size / 2);
 
       if (type === 'living') {
+        createCadObject('wall', centerX, centerZ - halfSize, floorLevel, 0);
+        createCadObject('wall', centerX, centerZ + halfSize, floorLevel, 0);
+        createCadObject('wall', centerX - halfSize, centerZ, floorLevel, Math.PI / 2);
+        createCadObject('wall', centerX + halfSize, centerZ, floorLevel, Math.PI / 2);
+
         createCadObject('door', centerX, centerZ + halfSize, floorLevel, 0);
         createCadObject('window', centerX + halfSize, centerZ, floorLevel, Math.PI / 2);
+        createCadObject('window', centerX - halfSize, centerZ, floorLevel, Math.PI / 2);
       } else if (type === 'office') {
+        createCadObject('wall', centerX, centerZ - halfSize, floorLevel, 0);
+        createCadObject('wall', centerX, centerZ + halfSize, floorLevel, 0);
+        createCadObject('wall', centerX - halfSize, centerZ, floorLevel, Math.PI / 2);
+        createCadObject('wall', centerX + halfSize, centerZ, floorLevel, Math.PI / 2);
+
         createCadObject('door', centerX, centerZ + halfSize, floorLevel, 0);
       } else if (type === 'hall') {
         createCadObject('window', centerX, centerZ + halfSize, floorLevel, 0);
+        createCadObject('window', centerX, centerZ - halfSize, floorLevel, 0);
+        createCadObject('window', centerX + halfSize, centerZ, floorLevel, Math.PI / 2);
+        createCadObject('window', centerX - halfSize, centerZ, floorLevel, Math.PI / 2);
       }
 
-      addSecurityLog(`🤖 AI Build: تم تشييد بناء واقعي متكامل (${type}) أبعاد ${size}x${size}م`);
+      addSecurityLog(`🤖 AI Build: تم تشييد (${type}) بمساحة ${size}x${size}م`);
     }
 
-    function createCadObject(type, x, z, floorLevel, overrideRotation = null, customLength = 4) {
+    // دوال الحماية لمنع التداخل بين المجسمات
+    function isSpaceOccupied(x, z, floorLevel) {
+      return builtObjectsData.some(obj => obj.x === x && obj.z === z && obj.floor === floorLevel);
+    }
+
+    function createCadObject(type, x, z, floorLevel, overrideRotation = null, skipSave = false) {
+      // التأكد من عدم التداخل بنفس المربع
+      if (!skipSave && isSpaceOccupied(x, z, floorLevel)) {
+        addSecurityLog(`⚠️ يوجد بناء بالفرع [${x}, ${z}] طابق ${floorLevel}، تم التجاوز لمنع التداخل.`);
+        return;
+      }
+
       const rot = overrideRotation !== null ? overrideRotation : currentRotation;
       const baseY = floorLevel * FLOOR_HEIGHT;
       let mesh;
 
       if (type === 'wall') {
-        mesh = createRealisticWall(customLength, 2.8, 0.25);
-      } else if (type === 'door') {
-        mesh = createRealisticDoor();
-      } else if (type === 'window') {
-        mesh = createRealisticWindow();
+        const geom = new THREE.BoxGeometry(3.8, 2.5, 0.3);
+        mesh = new THREE.Mesh(geom, wallMaterial);
+        mesh.position.set(x, baseY + 1.25, z);
+      } 
+      else if (type === 'door') {
+        mesh = new THREE.Group();
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.2, 0.15), doorMaterial);
+        frame.position.y = 1.1;
+        
+        const handle = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), doorHandleMaterial);
+        handle.position.set(0.5, 1.0, 0.1);
+        mesh.add(frame, handle);
+        mesh.position.set(x, baseY, z);
+      } 
+      else if (type === 'window') {
+        mesh = new THREE.Group();
+        // إطار الشباك + لوح الزجاج المُميز
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.4, 0.15), wallMaterial);
+        const glassPane = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 0.05), glassMaterial);
+        
+        frame.position.y = 1.5;
+        glassPane.position.y = 1.5;
+        mesh.add(frame, glassPane);
+        mesh.position.set(x, baseY, z);
       }
 
       if (mesh) {
-        mesh.position.set(x, baseY, z);
         mesh.rotation.y = rot;
         mapGroup.add(mesh);
+
+        if (!skipSave) {
+          builtObjectsData.push({ type, x, z, floor: floorLevel, rot });
+          saveCADLayout(); // حفظ تلقائي بذاكرة المتصفح LocalStorage
+        }
+      }
+    }
+
+    // ==========================================
+    // 4. SAVE & LOAD SYSTEM (حفظ واسترجاع البناء)
+    // ==========================================
+    function saveCADLayout() {
+      localStorage.setItem('aegis_cad_layout', JSON.stringify(builtObjectsData));
+      addSecurityLog("💾 تم حفظ حالة البناء بنجاح في النظام LocalStorage.");
+    }
+
+    function loadCADLayout() {
+      const saved = localStorage.getItem('aegis_cad_layout');
+      if (saved) {
+        try {
+          const items = JSON.parse(saved);
+          clearCADObjects(true);
+          items.forEach(item => {
+            createCadObject(item.type, item.x, item.z, item.floor, item.rot, true);
+            builtObjectsData.push(item);
+          });
+          addSecurityLog(`📂 تم استرجاع (${items.length}) عنصر بناء محفوظ.`);
+        } catch(e) {}
+      }
+    }
+
+    function clearCADObjects(skipStorageClear = false) {
+      while(mapGroup.children.length > 0) {
+        mapGroup.remove(mapGroup.children[0]);
+      }
+      builtObjectsData = [];
+      if(!skipStorageClear) {
+        localStorage.removeItem('aegis_cad_layout');
+        addSecurityLog("🗑️ تم مسح كافة المجسمات وحذف الحفظ.");
       }
     }
 
     function addDangerZoneUI() {
-      if (!currentUserRole.canEdit) return;
       const name = document.getElementById('zoneName').value;
+      const shape = document.getElementById('zoneShape').value;
       const x = parseFloat(document.getElementById('zoneX').value);
       const z = parseFloat(document.getElementById('zoneZ').value);
+      const size = parseFloat(document.getElementById('zoneSize').value);
       const baseY = currentFloor * FLOOR_HEIGHT;
 
       const zoneMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.4 });
-      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 0.1, 32), zoneMat);
+      const geom = shape === 'rectangle' ? new THREE.BoxGeometry(size, 0.1, size) : new THREE.CylinderGeometry(size, size, 0.1, 32);
+      const mesh = new THREE.Mesh(geom, zoneMat);
       mesh.position.set(x, baseY + 0.05, z);
       mapGroup.add(mesh);
 
       addSecurityLog(`🚨 منطقة خطر: ${name}`);
     }
 
-    function clearCADObjects() {
-      if (!currentUserRole.canEdit) return;
-      while(mapGroup.children.length > 0) mapGroup.remove(mapGroup.children[0]);
-      addSecurityLog("تم مسح كافة المجسمات.");
-    }
-
     // ==========================================
-    // 4. MQTT & CHART
+    // 5. MQTT & ANALYTICS CHART
     // ==========================================
     function initMQTT() {
       const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
-      client.on('connect', () => addSecurityLog("تم الاتصال بالرادار المباشر MQTT."));
+      client.on('connect', () => addSecurityLog("📡 تم الاتصال بالرادار المباشر MQTT."));
       client.subscribe('aegis/radar/targets');
 
       client.on('message', (topic, message) => {
