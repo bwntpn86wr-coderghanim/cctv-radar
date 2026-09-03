@@ -1,477 +1,528 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AegisRadar 360 AI - High-Graphics & CAD Architect</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>AegisRadar 360 AI - جامعة نينوى Suite</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; }
+
+    #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+
+    /* Glassmorphic Cyberpunk HUD */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(25px);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 14px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
+    }
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    .hud-title {
+      background: linear-gradient(90deg, #38bdf8, #34d399, #f43f5e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    .cad-btn { transition: all 0.2s ease; border: 1px solid rgba(255, 255, 255, 0.1); }
+    .cad-btn.active {
+      background: linear-gradient(135deg, #0284c7, #0369a1) !important;
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+    }
 
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #020617; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #f8fafc; }
-        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        
-        /* Sci-Fi Futuristic Glassmorphic Panel UI */
-        .glass-panel { 
-            background: rgba(15, 23, 42, 0.75); 
-            backdrop-filter: blur(25px); 
-            border: 1px solid rgba(56, 189, 248, 0.2); 
-            border-radius: 16px; 
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(56, 189, 248, 0.05); 
-        }
-        
-        .hud-border-glow {
-            position: relative;
-        }
-        .hud-border-glow::after {
-            content: ''; position: absolute; inset: -1px; border-radius: 16px;
-            background: linear-gradient(45deg, rgba(56,189,248,0.4), transparent, rgba(16,185,129,0.4));
-            z-index: -1; pointer-events: none;
-        }
+    .nav-btn {
+      background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 6px 14px;
+      border-radius: 8px; cursor: pointer; font-size: 12px; transition: 0.2s;
+    }
+    .nav-btn.active, .nav-btn:hover { background: #0284c7; color: #fff; border-color: #38bdf8; }
 
-        .cad-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .cad-btn.active { background: linear-gradient(135deg, #0284c7, #0369a1) !important; border-color: #38bdf8 !important; box-shadow: 0 0 15px rgba(56, 189, 248, 0.5); }
-        .hud-title { background: linear-gradient(90deg, #38bdf8, #34d399, #f43f5e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    .step-screen {
+      position: fixed; inset: 0; z-index: 100; background: #020617;
+      display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+    }
+    
+    .scanline {
+      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.3));
+      background-size: 100% 4px; pointer-events: none;
+    }
 
-        .scanline {
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.3));
-            background-size: 100% 4px; pointer-events: none;
-        }
-    </style>
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    @keyframes alertFlash { 0% { border-color: rgba(239, 68, 68, 1); } 50% { border-color: transparent; } 100% { border-color: rgba(239, 68, 68, 1); } }
+    .alert-active { animation: alertFlash 0.5s infinite; }
+  </style>
 </head>
 <body>
 
-    <div id="login-modal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center p-4">
-        <div class="glass-panel hud-border-glow max-w-md w-full p-6 text-center border border-cyan-500/30 shadow-2xl">
-            <div class="w-16 h-16 bg-gradient-to-tr from-cyan-600 to-emerald-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-4 animate-pulse">
-                <i class="fa-solid fa-shield-halved text-3xl text-white"></i>
-            </div>
-            <h2 class="text-2xl font-black hud-title mb-1">AegisRadar 360 AI</h2>
-            <p class="text-xs text-slate-400 mb-6">نظام المراقبة والرادار الهندسي ثلاثي الأبعاد</p>
+  <div id="step-1" class="step-screen">
+    <div class="glass-panel max-w-lg w-full p-8 text-center border border-cyan-500/40 shadow-2xl">
+      <div class="w-16 h-16 bg-gradient-to-tr from-cyan-600 to-emerald-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-4 animate-pulse">
+        <i class="fa-solid fa-shield-halved text-3xl text-white"></i>
+      </div>
+      <h1 class="text-3xl font-black hud-title mb-2">AegisRadar 360 AI</h1>
+      <h2 class="text-xs text-slate-400 mb-4">نظام المراقبة الهندسية وإدارة المنازل الذكية ثلاثي الأبعاد</h2>
+      
+      <div class="bg-slate-900/80 border-r-4 border-cyan-500 p-3 text-right text-xs leading-relaxed text-slate-300 mb-4 rounded">
+        نظام أمني هجين يدمج حساس الرادار المليمتري (LD2450) مع محرك تقييم الوضعية والرؤية الحاسوبية المتقدمة.
+      </div>
 
-            <div class="mb-4 text-right">
-                <label class="text-xs text-slate-300 font-bold block mb-1.5">اختر مستخدم النظام:</label>
-                <select id="user-role-select" onchange="updatePinHint()" class="w-full bg-slate-900/90 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
-                    <option value="admin">المهندس غانم (مدير النظام - Admin)</option>
-                    <option value="operator">المشرف الأمني (Security Operator)</option>
-                    <option value="viewer">حساب مراقب (View Only)</option>
-                </select>
-            </div>
+      <div class="bg-slate-950 p-3 rounded-lg text-right text-xs border border-slate-800 mb-6 space-y-1">
+        <p>👨‍🏫 <b>إشراف الأستاذ القدير:</b> <span class="text-cyan-400 font-bold">إبراهيم</span></p>
+        <p>👨‍💻 <b>إعداد الطلاب:</b> <span class="text-emerald-400">غانم فراس | سما غسان | إبراهيم غسان</span></p>
+        <p class="text-[10px] text-slate-500 pt-1">جامعة نينوى - كلية الهندسة</p>
+      </div>
 
-            <div class="mb-6 text-right">
-                <label class="text-xs text-slate-300 font-bold block mb-1.5">رمز الدخول الأمني (PIN):</label>
-                <input type="password" id="pin-input" maxlength="4" placeholder="••••" class="w-full bg-slate-900/90 border border-slate-700 rounded-lg p-3 text-center text-xl text-cyan-400 tracking-widest font-mono focus:outline-none focus:border-cyan-500" />
-                <p class="text-[10px] text-slate-400 mt-1.5">الرمز الافتراضي للتجربة: <span id="pin-hint-text" class="text-emerald-400 font-bold font-mono">1234</span></p>
-            </div>
-
-            <button onclick="authenticateUser()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-cyan-500/25 transition text-sm">
-                دخول للنظام <i class="fa-solid fa-right-to-bracket mr-2"></i>
-            </button>
-            <p id="auth-error" class="text-xs text-red-400 mt-3 hidden"><i class="fa-solid fa-circle-exclamation ml-1"></i> رمز الدخول غير صحيح، حاول مرة أخرى.</p>
-        </div>
+      <button onclick="goToStep(2)" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 rounded-lg transition text-sm">
+        المتابعة لإعدادات الدخول ➔
+      </button>
     </div>
+  </div>
 
+  <div id="step-2" class="step-screen hidden">
+    <div class="glass-panel max-w-md w-full p-6 text-center border border-cyan-500/30">
+      <h2 class="text-xl font-bold hud-title mb-4">🔒 مصادقة حماية النظام</h2>
+      
+      <div class="mb-4 text-right">
+        <label class="text-xs text-slate-300 font-bold block mb-1">حساب المستخدم:</label>
+        <select id="user-role-select" onchange="updatePinHint()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200">
+          <option value="admin">المهندس غانم (مدير النظام - Admin)</option>
+          <option value="operator">المشرف الأمني (Security Operator)</option>
+          <option value="viewer">حساب مراقب (View Only)</option>
+        </select>
+      </div>
+
+      <div class="mb-6 text-right">
+        <label class="text-xs text-slate-300 font-bold block mb-1">رمز الدخول الأمني (PIN):</label>
+        <input type="password" id="pin-input" maxlength="8" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-center text-xl text-cyan-400 font-mono" />
+        <p class="text-[10px] text-slate-400 mt-1">الرمز الافتراضي: <span id="pin-hint-text" class="text-emerald-400 font-bold font-mono">1234</span> (أو رمز الجامعة: <span class="text-cyan-400 font-mono">20262026</span>)</p>
+      </div>
+
+      <button onclick="authenticateUser()" class="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold py-3 rounded-lg text-sm">
+        دخول النظام 🔓
+      </button>
+      <p id="auth-error" class="text-xs text-red-400 mt-3 hidden">رمز الدخول غير صحيح، حاول مرة أخرى.</p>
+    </div>
+  </div>
+
+  <div id="main-app" class="hidden relative w-full h-full">
+    
     <div id="canvas-container"></div>
-
     <video id="webcam-video" class="hidden" autoplay playsinline></video>
 
-    <div class="glass-panel absolute top-3 right-3 left-3 z-20 p-2.5 flex flex-wrap justify-between items-center gap-3">
-        <div class="flex items-center space-x-3 space-x-reverse">
-            <div class="bg-gradient-to-tr from-cyan-600 to-emerald-500 p-2 rounded-xl shadow-lg shadow-cyan-500/30">
-                <i class="fa-solid fa-layer-group text-lg text-white"></i>
-            </div>
-            <div>
-                <h1 class="font-black text-base leading-none hud-title">AegisRadar CAD Suite</h1>
-                <p class="text-[10px] text-slate-400 mt-1">المستخدم: <span id="active-user-display" class="text-emerald-400 font-bold">غير معروف</span> | الصلاحية: <span id="active-role-badge" class="text-cyan-400 font-bold">---</span></p>
-            </div>
+    <div class="glass-panel absolute top-3 right-3 left-3 z-20 p-2.5 flex flex-wrap justify-between items-center gap-2">
+      <div class="flex items-center space-x-3 space-x-reverse">
+        <div class="bg-gradient-to-tr from-cyan-600 to-emerald-500 p-2 rounded-xl shadow-lg shadow-cyan-500/30">
+          <i class="fa-solid fa-layer-group text-lg text-white"></i>
         </div>
-
-        <div id="cad-tools-panel" class="flex items-center gap-1.5 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 shadow-inner flex-wrap">
-            <button id="tool-select" onclick="setCadTool('select')" class="cad-btn active px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-slate-800"><i class="fa-solid fa-arrow-pointer text-cyan-400"></i> تحديد</button>
-            <button id="tool-wall" onclick="setCadTool('wall')" class="cad-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-slate-800"><i class="fa-solid fa-ruler-combined text-emerald-400"></i> جدار</button>
-            
-            <div class="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">
-                <input type="color" id="wall-color-picker" value="#475569" class="w-4 h-4 bg-transparent border-0 cursor-pointer rounded" />
-                <button id="tool-paint" onclick="setCadTool('paint')" class="cad-btn px-2 py-1 rounded text-xs font-semibold hover:bg-slate-800"><i class="fa-solid fa-paint-roller text-amber-400"></i> تلوين</button>
-            </div>
-
-            <button id="tool-door" onclick="setCadTool('door')" class="cad-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-slate-800"><i class="fa-solid fa-door-open text-amber-300"></i> باب</button>
-            <button id="tool-window" onclick="setCadTool('window')" class="cad-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-slate-800"><i class="fa-solid fa-window-maximize text-cyan-300"></i> شباك</button>
-            <button id="tool-zone" onclick="setCadTool('zone')" class="cad-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-slate-800"><i class="fa-solid fa-draw-polygon text-red-400"></i> منطقة خطر</button>
-
-            <select onchange="changeFloorTexture(this.value)" class="bg-slate-900 border border-slate-700 text-[11px] p-1.5 rounded-lg text-slate-200 focus:outline-none">
-                <option value="marble">أرضية: رخام حديث</option>
-                <option value="cad">أرضية: CAD Grid</option>
-                <option value="dark">أرضية: داكنة أمنية</option>
-            </select>
-
-            <button onclick="clearCADObjects()" class="cad-btn bg-red-950/40 hover:bg-red-900/60 text-red-300 px-2.5 py-1.5 rounded-lg text-xs font-semibold"><i class="fa-solid fa-trash-can"></i> مسح</button>
+        <div>
+          <h1 class="font-black text-sm hud-title">AegisRadar 360 AI</h1>
+          <p class="text-[10px] text-slate-400">المستخدم: <span id="active-user-display" class="text-emerald-400 font-bold">---</span> | الصلاحية: <span id="active-role-badge" class="text-cyan-400 font-bold">---</span></p>
         </div>
+      </div>
 
-        <div class="flex items-center gap-2">
-            <button id="sensor-btn" onclick="connectWebSerial()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2.5 py-1.5 rounded-lg border border-emerald-500 flex items-center gap-1 shadow-lg shadow-emerald-700/30">
-                <i class="fa-solid fa-plug text-amber-300"></i> ربط الحساس
-            </button>
-            <button onclick="logout()" class="bg-slate-800 hover:bg-slate-700 text-red-400 text-xs p-1.5 rounded-lg border border-slate-700" title="تسجيل الخروج">
-                <i class="fa-solid fa-power-off"></i>
-            </button>
-        </div>
+      <div class="flex gap-1.5">
+        <button class="nav-btn active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-line ml-1"></i> المراقبة والتحليل</button>
+        <button class="nav-btn" onclick="switchTab('architect', this)"><i class="fa-solid fa-compass-drafting ml-1"></i> الأدوات والتصميم</button>
+        <button class="nav-btn" onclick="switchTab('security', this)"><i class="fa-solid fa-shield-cat ml-1"></i> مناطق الخطر</button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="sensor-btn" onclick="connectMQTT()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2.5 py-1.5 rounded-lg border border-emerald-500 flex items-center gap-1">
+          <i class="fa-solid fa-plug text-amber-300"></i> ربط الرادار
+        </button>
+        <button onclick="logout()" class="bg-slate-800 hover:bg-slate-700 text-red-400 text-xs p-1.5 rounded-lg border border-slate-700" title="تسجيل الخروج">
+          <i class="fa-solid fa-power-off"></i>
+        </button>
+      </div>
     </div>
 
-    <div class="absolute top-20 left-3 z-20 flex flex-col gap-3 w-80">
-        
-        <div class="glass-panel p-3 relative overflow-hidden">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-camera text-cyan-400"></i> تحليل الكاميرا والوضعية 3D</span>
-                <span id="pose-status-badge" class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold">نشط</span>
+    <div id="tab-dashboard" class="tab-content relative z-10 pointer-events-none w-full h-full">
+      <div class="absolute top-20 left-3 pointer-events-auto flex flex-col gap-3 w-80">
+        <div class="glass-panel p-3">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-camera text-cyan-400"></i> تحليل الوضعية والكاميرا 3D</span>
+            <span id="pose-status-badge" class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold">نشط</span>
+          </div>
+          
+          <div class="relative w-full h-40 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 shadow-inner">
+            <canvas id="ai-canvas" class="w-full h-full object-cover relative z-10"></canvas>
+            <div class="scanline absolute inset-0 z-20"></div>
+            <div class="absolute top-2 left-2 z-30 bg-slate-950/80 px-2 py-1 rounded border border-cyan-500/40">
+              <p class="text-[9px] text-slate-400">الوضعية الحالية:</p>
+              <p id="hud-pose-text" class="text-xs font-black text-emerald-400 font-mono">SCANNING...</p>
             </div>
-            
-            <div class="relative w-full h-44 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 shadow-inner">
-                <canvas id="ai-canvas" class="w-full h-full object-cover z-10 relative"></canvas>
-                <div class="scanline absolute inset-0 z-20"></div>
-
-                <div class="absolute top-2 left-2 z-30 bg-slate-950/80 backdrop-blur-md px-2 py-1 rounded border border-cyan-500/40">
-                    <p class="text-[9px] text-slate-400">الوضعية الحالية:</p>
-                    <p id="hud-pose-text" class="text-xs font-black text-emerald-400 font-mono">SCANNING...</p>
-                </div>
-
-                <div class="absolute bottom-2 right-2 z-30 bg-slate-950/80 backdrop-blur-md px-2 py-1 rounded border border-slate-700">
-                    <p id="hud-angle-text" class="text-[9px] text-cyan-300 font-mono">Knee Angle: --°</p>
-                </div>
+            <div class="absolute bottom-2 right-2 z-30 bg-slate-950/80 px-2 py-1 rounded border border-slate-700">
+              <p id="hud-angle-text" class="text-[9px] text-cyan-300 font-mono">Knee Angle: --°</p>
             </div>
+          </div>
         </div>
 
         <div class="glass-panel p-3">
-            <h3 class="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-chart-line text-cyan-400"></i> تحليلات مسافة الهدف (متر)</h3>
-            <div class="h-24 w-full">
-                <canvas id="analyticsChart"></canvas>
-            </div>
+          <h3 class="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-chart-line text-cyan-400"></i> تحليلات مسافة الهدف (متر)</h3>
+          <div class="h-24 w-full">
+            <canvas id="analyticsChart"></canvas>
+          </div>
         </div>
-    </div>
+      </div>
 
-    <div class="absolute top-20 right-3 z-20 w-72 glass-panel p-3 flex flex-col gap-3">
+      <div class="absolute top-20 right-3 pointer-events-auto w-72 glass-panel p-3 flex flex-col gap-3">
         <h3 class="text-xs font-bold text-slate-300 flex items-center justify-between border-b border-slate-800 pb-2">
-            <span><i class="fa-solid fa-shield-cat text-amber-400 ml-1"></i> سجل الأحداث الأمنية</span>
-            <span class="text-[10px] bg-cyan-900/50 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-700/50">مباشر</span>
+          <span><i class="fa-solid fa-shield-cat text-amber-400 ml-1"></i> سجل الأحداث الأمنية</span>
+          <span class="text-[10px] bg-cyan-900/50 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-700/50">مباشر</span>
         </h3>
         
-        <div id="security-logs" class="space-y-2 h-48 overflow-y-auto text-[11px] pr-1">
-            <div class="p-2 rounded bg-slate-900/80 border-r-2 border-cyan-500 text-slate-300">
-                <span class="text-slate-500 block text-[9px]">13:00:00</span>
-                تم إقلاع نظام AegisRadar High-Graphics AI بنجاح.
-            </div>
+        <div id="security-logs" class="space-y-2 h-44 overflow-y-auto text-[11px] pr-1">
+          <div class="p-2 rounded bg-slate-900/80 border-r-2 border-cyan-500 text-slate-300">
+            <span class="text-slate-500 block text-[9px]">13:00:00</span>
+            تم إقلاع نظام AegisRadar High-Graphics AI بنجاح.
+          </div>
         </div>
 
         <div class="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2 text-center text-xs">
-            <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                <span class="text-slate-400 block text-[10px]">إحداثي X الحساس</span>
-                <span class="text-sm font-bold text-emerald-400 font-mono" id="raw-x">0.00 m</span>
-            </div>
-            <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                <span class="text-slate-400 block text-[10px]">إحداثي Y الحساس</span>
-                <span class="text-sm font-bold text-cyan-400 font-mono" id="raw-y">0.00 m</span>
-            </div>
+          <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+            <span class="text-slate-400 block text-[10px]">إحداثي X الحساس</span>
+            <span class="text-sm font-bold text-emerald-400 font-mono" id="raw-x">0.00 m</span>
+          </div>
+          <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+            <span class="text-slate-400 block text-[10px]">إحداثي Z الحساس</span>
+            <span class="text-sm font-bold text-cyan-400 font-mono" id="raw-y">0.00 m</span>
+          </div>
         </div>
+      </div>
     </div>
 
-    <div class="glass-panel absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-6 py-2.5 flex items-center gap-6 text-xs text-slate-300 border border-cyan-500/30 shadow-2xl">
-        <div class="flex items-center gap-1.5"><i class="fa-solid fa-location-crosshairs text-cyan-400"></i> X: <span id="pos-x" class="text-white font-mono font-bold">0.00</span> م</div>
-        <div class="flex items-center gap-1.5"><i class="fa-solid fa-up-down text-emerald-400"></i> Z (Y): <span id="pos-z" class="text-white font-mono font-bold">0.00</span> م</div>
-        <div class="flex items-center gap-1.5"><i class="fa-solid fa-ruler text-purple-400"></i> البعد عن الرادار: <span id="pos-dist" class="text-white font-mono font-bold">0.00</span> م</div>
-        <div class="border-r border-slate-700 pr-4 flex items-center gap-1.5">الأداة النشطة: <span id="active-tool-label" class="text-amber-400 font-bold">التحديد</span></div>
+    <div id="tab-architect" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
+      <div class="absolute top-20 right-3 pointer-events-auto w-80 glass-panel p-4 flex flex-col gap-3">
+        <h3 class="text-xs font-bold text-cyan-400 border-b border-slate-800 pb-2"><i class="fa-solid fa-pen-ruler ml-1"></i> أدوات CAD وتصميم المخطط</h3>
+        
+        <div id="cad-tools-panel" class="grid grid-cols-2 gap-2">
+          <button id="tool-select" onclick="setCadTool('select')" class="cad-btn active p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-arrow-pointer text-cyan-400"></i> تحديد</button>
+          <button id="tool-wall" onclick="setCadTool('wall')" class="cad-btn p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-ruler-combined text-emerald-400"></i> جدار</button>
+          <button id="tool-door" onclick="setCadTool('door')" class="cad-btn p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-door-open text-amber-300"></i> باب</button>
+          <button id="tool-window" onclick="setCadTool('window')" class="cad-btn p-2 rounded-lg text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-window-maximize text-cyan-300"></i> شباك</button>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-slate-800 text-xs">
+          <label class="block text-slate-400">تخصيص ألوان البيئة:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="text-[10px] text-slate-500">الجدران</span>
+              <input type="color" id="wallColorPicker" value="#1e293b" onchange="updateColors()" class="w-full h-8 bg-transparent cursor-pointer rounded">
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-500">الأرضية</span>
+              <input type="color" id="floorColorPicker" value="#0f172a" onchange="updateColors()" class="w-full h-8 bg-transparent cursor-pointer rounded">
+            </div>
+          </div>
+        </div>
+
+        <button onclick="clearCADObjects()" class="w-full bg-red-950/40 hover:bg-red-900/60 text-red-300 p-2 rounded-lg text-xs font-semibold border border-red-800/50 mt-2">
+          <i class="fa-solid fa-trash-can ml-1"></i> مسح عناصر المخطط
+        </button>
+      </div>
     </div>
 
-    <script>
-        // ==========================================
-        // 1. ACCOUNTS & PERMISSIONS DATABASE
-        // ==========================================
-        const ACCOUNTS = {
-            admin: { name: "المهندس غانم (مدير النظام)", pin: "1234", role: "Admin", permissions: ["all"] },
-            operator: { name: "المشرف الأمني", pin: "5678", role: "Operator", permissions: ["view", "control"] },
-            viewer: { name: "حساب مراقب", pin: "0000", role: "View Only", permissions: ["view"] }
-        };
+    <div id="tab-security" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
+      <div class="absolute top-20 right-3 pointer-events-auto w-80 glass-panel p-4 flex flex-col gap-3">
+        <h3 class="text-xs font-bold text-red-400 border-b border-slate-800 pb-2"><i class="fa-solid fa-triangle-exclamation ml-1"></i> إعداد مناطق الخطر (Geofencing)</h3>
+        
+        <div class="space-y-2 text-xs">
+          <input type="text" id="zoneName" placeholder="اسم المنطقة" value="منطقة أمنية محظورة" class="w-full bg-slate-900 border border-slate-700 p-2 rounded text-slate-200">
+          <select id="zoneShape" class="w-full bg-slate-900 border border-slate-700 p-2 rounded text-slate-200">
+            <option value="circle">دائرية (Circle)</option>
+            <option value="rectangle">مستطيلة (Rectangle)</option>
+          </select>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="number" id="zoneX" placeholder="الموقع X" value="0" class="bg-slate-900 border border-slate-700 p-2 rounded text-slate-200">
+            <input type="number" id="zoneZ" placeholder="الموقع Z" value="0" class="bg-slate-900 border border-slate-700 p-2 rounded text-slate-200">
+          </div>
+          <input type="number" id="zoneSize" placeholder="الحجم/القطر (m)" value="3" class="w-full bg-slate-900 border border-slate-700 p-2 rounded text-slate-200">
+          
+          <button onclick="addDangerZoneUI()" class="w-full bg-red-600 hover:bg-red-500 text-white p-2 rounded text-xs font-bold transition">
+            إضافة منطقة الخطر 🚨
+          </button>
+        </div>
+      </div>
+    </div>
 
-        let currentActiveUser = null;
+    <div class="glass-panel absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-6 py-2 flex items-center gap-6 text-xs text-slate-300 border border-cyan-500/30">
+      <div>X: <span id="pos-x" class="text-cyan-400 font-mono font-bold">0.00</span> m</div>
+      <div>Z: <span id="pos-z" class="text-emerald-400 font-mono font-bold">0.00</span> m</div>
+      <div>الأداة: <span id="active-tool-label" class="text-amber-400 font-bold">تحديد</span></div>
+    </div>
 
-        function updatePinHint() {
-            const selected = document.getElementById('user-role-select').value;
-            document.getElementById('pin-hint-text').innerText = ACCOUNTS[selected].pin;
-        }
+  </div>
 
-        function authenticateUser() {
-            const roleKey = document.getElementById('user-role-select').value;
-            const pinEntered = document.getElementById('pin-input').value;
-            const account = ACCOUNTS[roleKey];
+  <script>
+    // ==========================================
+    // 1. AUTHENTICATION & NAVIGATION LOGIC
+    // ==========================================
+    const ACCOUNTS = {
+      admin: { name: "المهندس غانم (مدير النظام)", pin: "1234", role: "Admin" },
+      operator: { name: "المشرف الأمني", pin: "5678", role: "Operator" },
+      viewer: { name: "حساب مراقب", pin: "0000", role: "View Only" }
+    };
 
-            if (pinEntered === account.pin) {
-                currentActiveUser = account;
-                document.getElementById('login-modal').classList.add('hidden');
-                document.getElementById('active-user-display').innerText = account.name;
-                document.getElementById('active-role-badge').innerText = account.role;
+    let currentActiveUser = null;
 
-                addSecurityLog(`تم تسجيل دخول: ${account.name} صلاحية (${account.role})`);
-                applyUserRolePermissions(account);
-            } else {
-                document.getElementById('auth-error').classList.remove('hidden');
-            }
-        }
+    function goToStep(stepNumber) {
+      document.getElementById('step-1').classList.add('hidden');
+      document.getElementById('step-2').classList.add('hidden');
+      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+    }
 
-        function applyUserRolePermissions(account) {
-            const cadPanel = document.getElementById('cad-tools-panel');
-            const sensorBtn = document.getElementById('sensor-btn');
+    function updatePinHint() {
+      const selected = document.getElementById('user-role-select').value;
+      document.getElementById('pin-hint-text').innerText = ACCOUNTS[selected].pin;
+    }
 
-            if (account.role === 'View Only') {
-                cadPanel.style.opacity = "0.4";
-                cadPanel.style.pointerEvents = "none";
-                sensorBtn.style.display = "none";
-            } else {
-                cadPanel.style.opacity = "1";
-                cadPanel.style.pointerEvents = "auto";
-                sensorBtn.style.display = "flex";
-            }
-        }
+    function authenticateUser() {
+      const roleKey = document.getElementById('user-role-select').value;
+      const pinEntered = document.getElementById('pin-input').value;
+      const account = ACCOUNTS[roleKey];
 
-        function logout() {
-            location.reload();
-        }
+      if (pinEntered === account.pin || pinEntered === "20262026") {
+        currentActiveUser = account;
+        document.getElementById('step-2').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('active-user-display').innerText = account.name;
+        document.getElementById('active-role-badge').innerText = account.role;
 
-        function addSecurityLog(text) {
-            const container = document.getElementById('security-logs');
-            const time = new Date().toLocaleTimeString('ar-EG');
-            const item = document.createElement('div');
-            item.className = "p-2 rounded bg-slate-900/80 border-r-2 border-cyan-500 text-slate-300";
-            item.innerHTML = `<span class="text-slate-500 block text-[9px]">${time}</span>${text}`;
-            container.prepend(item);
-        }
+        init3D();
+        initMediaPipe();
+        initChart();
+        initMQTT();
+        addSecurityLog(`تم تسجيل دخول: ${account.name} صلاحية (${account.role})`);
+      } else {
+        document.getElementById('auth-error').classList.remove('hidden');
+      }
+    }
 
-        // ==========================================
-        // 2. MEDIAPIPE POSE 3D CLASSIFICATION
-        // ==========================================
-        const videoElement = document.getElementById('webcam-video');
-        const aiCanvas = document.getElementById('ai-canvas');
-        const aiCtx = aiCanvas.getContext('2d');
+    function logout() { location.reload(); }
 
-        function calculateAngle(a, b, c) {
-            const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
-            let angle = Math.abs((radians * 180.0) / Math.PI);
-            if (angle > 180.0) angle = 360.0 - angle;
-            return angle;
-        }
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      btn.classList.add('active');
+    }
 
-        function classifyPoseAndDraw(landmarks) {
-            const w = aiCanvas.width;
-            const h = aiCanvas.height;
+    function addSecurityLog(text, isAlert = false) {
+      const container = document.getElementById('security-logs');
+      const time = new Date().toLocaleTimeString('ar-EG');
+      const item = document.createElement('div');
+      item.className = `p-2 rounded bg-slate-900/80 border-r-2 ${isAlert ? 'border-red-500 text-red-300 font-bold' : 'border-cyan-500 text-slate-300'}`;
+      item.innerHTML = `<span class="text-slate-500 block text-[9px]">${time}</span>${text}`;
+      container.prepend(item);
+    }
 
-            aiCtx.clearRect(0, 0, w, h);
+    // ==========================================
+    // 2. MEDIAPIPE POSE CLASSIFICATION
+    // ==========================================
+    const videoElement = document.getElementById('webcam-video');
+    const aiCanvas = document.getElementById('ai-canvas');
+    const aiCtx = aiCanvas.getContext('2d');
 
-            // Fetch key landmarks
-            const nose = landmarks[0];
-            const leftHip = landmarks[23];
-            const leftKnee = landmarks[25];
-            const leftAnkle = landmarks[27];
+    function calculateAngle(a, b, c) {
+      const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+      let angle = Math.abs((radians * 180.0) / Math.PI);
+      return angle > 180.0 ? 360.0 - angle : angle;
+    }
 
-            const verticalDist = Math.abs(nose.y - leftAnkle.y);
-            const horizontalDist = Math.abs(nose.x - leftAnkle.x);
-            const kneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
+    function classifyPoseAndDraw(landmarks) {
+      const w = aiCanvas.width;
+      const h = aiCanvas.height;
+      aiCtx.clearRect(0, 0, w, h);
 
-            let poseStatus = "STANDING";
-            let statusColor = "#10b981"; // Emerald Green
+      const nose = landmarks[0], leftHip = landmarks[23], leftKnee = landmarks[25], leftAnkle = landmarks[27];
+      const kneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
 
-            if (horizontalDist > verticalDist) {
-                poseStatus = "LYING DOWN (استلقاء/نوم)";
-                statusColor = "#ef4444"; // Red
-            } else if (kneeAngle >= 60 && kneeAngle <= 125) {
-                poseStatus = "SITTING (جلوس)";
-                statusColor = "#38bdf8"; // Cyan
-            } else {
-                poseStatus = "STANDING (وقوف)";
-                statusColor = "#10b981";
-            }
+      let poseStatus = "STANDING";
+      let statusColor = "#10b981";
 
-            // Update HUD Info
-            document.getElementById('hud-pose-text').innerText = poseStatus;
-            document.getElementById('hud-pose-text').style.color = statusColor;
-            document.getElementById('hud-angle-text').innerText = `Knee Angle: ${Math.round(kneeAngle)}°`;
+      if (Math.abs(nose.x - leftAnkle.x) > Math.abs(nose.y - leftAnkle.y)) {
+        poseStatus = "LYING DOWN (استلقاء)";
+        statusColor = "#ef4444";
+      } else if (kneeAngle >= 60 && kneeAngle <= 125) {
+        poseStatus = "SITTING (جلوس)";
+        statusColor = "#38bdf8";
+      }
 
-            // High Precision Sci-Fi Drawing Overlay
-            const connections = [
-                [11,12], [11,13], [13,15], [12,14], [14,16], // Upper body
-                [11,23], [12,24], [23,24],                  // Torso
-                [23,25], [25,27], [24,26], [26,28]           // Lower body
-            ];
+      document.getElementById('hud-pose-text').innerText = poseStatus;
+      document.getElementById('hud-pose-text').style.color = statusColor;
+      document.getElementById('hud-angle-text').innerText = `Knee Angle: ${Math.round(kneeAngle)}°`;
 
-            // Draw Skeleton Lines
-            aiCtx.lineWidth = 2;
-            aiCtx.strokeStyle = "rgba(226, 232, 240, 0.7)";
-            connections.forEach(([i, j]) => {
-                if (landmarks[i] && landmarks[j]) {
-                    aiCtx.beginPath();
-                    aiCtx.moveTo(landmarks[i].x * w, landmarks[i].y * h);
-                    aiCtx.lineTo(landmarks[j].x * w, landmarks[j].y * h);
-                    aiCtx.stroke();
-                }
-            });
+      landmarks.forEach((lm) => {
+        aiCtx.beginPath();
+        aiCtx.arc(lm.x * w, lm.y * h, 3, 0, 2 * Math.PI);
+        aiCtx.fillStyle = statusColor;
+        aiCtx.fill();
+      });
+    }
 
-            // Draw Sci-Fi Glowing Joint Dots
-            landmarks.forEach((lm) => {
-                const cx = lm.x * w;
-                const cy = lm.y * h;
+    function initMediaPipe() {
+      const pose = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
+      pose.setOptions({ modelComplexity: 1, smoothLandmarks: true });
+      pose.onResults((results) => { if (results.poseLandmarks) classifyPoseAndDraw(results.poseLandmarks); });
 
-                aiCtx.beginPath();
-                aiCtx.arc(cx, cy, 4, 0, 2 * Math.PI);
-                aiCtx.fillStyle = statusColor;
-                aiCtx.fill();
+      const cameraUtils = new Camera(videoElement, {
+        onFrame: async () => {
+          aiCanvas.width = videoElement.videoWidth || 320;
+          aiCanvas.height = videoElement.videoHeight || 240;
+          await pose.send({ image: videoElement });
+        },
+        width: 320, height: 240
+      });
+      cameraUtils.start();
+    }
 
-                aiCtx.beginPath();
-                aiCtx.arc(cx, cy, 6, 0, 2 * Math.PI);
-                aiCtx.strokeStyle = "#ffffff";
-                aiCtx.lineWidth = 1;
-                aiCtx.stroke();
-            });
-        }
+    // ==========================================
+    // 3. THREE.JS ENGINE & CAD DESIGN
+    // ==========================================
+    let scene, camera3D, renderer, controls, mapGroup;
+    let savedMap = { rooms: [], zones: [] };
 
-        const pose = new Pose({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
-        });
+    function init3D() {
+      const container = document.getElementById('canvas-container');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x020617);
 
-        pose.setOptions({
-            modelComplexity: 1,
-            smoothLandmarks: true,
-            minDetectionConfidence: 0.6,
-            minTrackingConfidence: 0.6
-        });
+      camera3D = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera3D.position.set(0, 12, 16);
 
-        pose.onResults((results) => {
-            if (results.poseLandmarks) {
-                classifyPoseAndDraw(results.poseLandmarks);
-            }
-        });
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      container.appendChild(renderer.domElement);
 
-        // Initialize Webcam Feed
-        const cameraUtils = new Camera(videoElement, {
-            onFrame: async () => {
-                aiCanvas.width = videoElement.videoWidth || 320;
-                aiCanvas.height = videoElement.videoHeight || 240;
-                await pose.send({ image: videoElement });
-            },
-            width: 320,
-            height: 240
-        });
-        cameraUtils.start();
+      controls = new THREE.OrbitControls(camera3D, renderer.domElement);
+      controls.enableDamping = true;
 
-        // ==========================================
-        // 3. THREE.JS 3D SCENE & CAD ENGINE
-        // ==========================================
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x020617);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+      const light = new THREE.DirectionalLight(0x38bdf8, 1);
+      light.position.set(10, 20, 10);
+      scene.add(light);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 10, 15);
+      scene.add(new THREE.GridHelper(30, 30, 0x38bdf8, 0x1e293b));
+      mapGroup = new THREE.Group();
+      scene.add(mapGroup);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+      window.addEventListener('resize', () => {
+        camera3D.aspect = window.innerWidth / window.innerHeight;
+        camera3D.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        container.appendChild(renderer.domElement);
+      });
 
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera3D);
+      }
+      animate();
+    }
 
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
+    function setCadTool(tool) {
+      document.querySelectorAll('.cad-btn').forEach(b => b.classList.remove('active'));
+      const btn = document.getElementById(`tool-${tool}`);
+      if(btn) btn.classList.add('active');
+      document.getElementById('active-tool-label').innerText = tool.toUpperCase();
+    }
 
-        const dirLight = new THREE.DirectionalLight(0x38bdf8, 1);
-        dirLight.position.set(10, 20, 10);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
+    function updateColors() {
+      const wallColor = document.getElementById('wallColorPicker').value;
+      const floorColor = document.getElementById('floorColorPicker').value;
+      renderMap(wallColor, floorColor);
+    }
 
-        // Ground Grid
-        const gridHelper = new THREE.GridHelper(30, 30, 0x38bdf8, 0x1e293b);
-        scene.add(gridHelper);
+    function renderMap(wallHex = "#1e293b", floorHex = "#0f172a") {
+      while(mapGroup.children.length > 0) mapGroup.remove(mapGroup.children[0]);
 
-        // Floor Plane
-        const floorGeo = new THREE.PlaneGeometry(30, 30);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        floor.receiveShadow = true;
-        scene.add(floor);
+      // Draw Floor
+      const floorMat = new THREE.MeshStandardMaterial({ color: parseInt(floorHex.replace('#', '0x')) });
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      mapGroup.add(floor);
 
-        function setCadTool(tool) {
-            document.querySelectorAll('.cad-btn').forEach(b => b.classList.remove('active'));
-            const btn = document.getElementById(`tool-${tool}`);
-            if (btn) btn.classList.add('active');
-            document.getElementById('active-tool-label').innerText = tool.toUpperCase();
-        }
+      // Render Saved Danger Zones
+      savedMap.zones.forEach(z => {
+        const zoneMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.4 });
+        const geom = z.shape === 'rectangle' ? new THREE.BoxGeometry(z.size, 0.1, z.size) : new THREE.CylinderGeometry(z.size, z.size, 0.1, 32);
+        const mesh = new THREE.Mesh(geom, zoneMat);
+        mesh.position.set(z.x, 0.05, z.z);
+        mapGroup.add(mesh);
+      });
+    }
 
-        function changeFloorTexture(type) {
-            if (type === 'marble') floorMat.color.setHex(0x1e293b);
-            else if (type === 'cad') floorMat.color.setHex(0x0f172a);
-            else floorMat.color.setHex(0x020617);
-        }
+    function addDangerZoneUI() {
+      const name = document.getElementById('zoneName').value;
+      const shape = document.getElementById('zoneShape').value;
+      const x = parseFloat(document.getElementById('zoneX').value);
+      const z = parseFloat(document.getElementById('zoneZ').value);
+      const size = parseFloat(document.getElementById('zoneSize').value);
 
-        function clearCADObjects() {
-            addSecurityLog("تم مسح العناصر المضافة في التصميم.");
-        }
+      savedMap.zones.push({ name, shape, x, z, size });
+      renderMap();
+      addSecurityLog(`🚨 تم إنشاء منطقة خطر: ${name}`);
+    }
 
-        function connectWebSerial() {
-            addSecurityLog("جاري البحث عن الحساسات عبر المنفذ التسلسلي (WebSerial)...");
-        }
+    function clearCADObjects() {
+      savedMap = { rooms: [], zones: [] };
+      renderMap();
+      addSecurityLog("تم مسح العناصر المضافة.");
+    }
 
-        // Window Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+    // ==========================================
+    // 4. MQTT REAL-TIME RADAR COMMUNICATION
+    // ==========================================
+    function initMQTT() {
+      const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+      client.on('connect', () => addSecurityLog("تم الاتصال ببروكير الرادار MQTT المباشر."));
+      client.subscribe('aegis/radar/targets');
 
-        // Loop Animation
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        }
-        animate();
+      client.on('message', (topic, message) => {
+        try {
+          const data = JSON.parse(message.toString());
+          const x = (data.x || 0) / 1000.0;
+          const z = (data.y || 0) / 1000.0;
+          document.getElementById('raw-x').innerText = `${x.toFixed(2)} m`;
+          document.getElementById('raw-y').innerText = `${z.toFixed(2)} m`;
+          document.getElementById('pos-x').innerText = x.toFixed(2);
+          document.getElementById('pos-z').innerText = z.toFixed(2);
+        } catch(e) {}
+      });
+    }
 
-        // ==========================================
-        // 4. ANALYTICS CHART (Chart.js)
-        // ==========================================
-        const ctxChart = document.getElementById('analyticsChart').getContext('2d');
-        const analyticsChart = new Chart(ctxChart, {
-            type: 'line',
-            data: {
-                labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
-                datasets: [{
-                    label: 'مسافة الهدف (m)',
-                    data: [1.2, 1.5, 1.8, 1.7, 2.1, 2.3, 2.0, 1.9, 2.2, 2.5],
-                    borderColor: '#38bdf8',
-                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { display: false },
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
-                }
-            }
-        });
-    </script>
+    // ==========================================
+    // 5. CHART ANALYTICS
+    // ==========================================
+    function initChart() {
+      const ctx = document.getElementById('analyticsChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['1', '2', '3', '4', '5', '6', '7'],
+          datasets: [{
+            label: 'المسافة (m)',
+            data: [1.2, 1.5, 1.8, 2.1, 2.0, 2.2, 2.5],
+            borderColor: '#38bdf8',
+            tension: 0.4
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+    }
+  </script>
 </body>
 </html>
