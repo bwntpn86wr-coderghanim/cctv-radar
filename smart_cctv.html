@@ -59,9 +59,151 @@
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     .read-only-disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
-  </style>
+/* ===== AegisRadar V2: realistic architecture / alerts / iPhone camera ===== */
+    .realistic-badge { background: linear-gradient(135deg,#0f766e,#0369a1); border:1px solid rgba(45,212,191,.45); }
+    .coord-input { width:100%; background:#020617; border:1px solid #334155; border-radius:7px; padding:6px 7px; color:#e2e8f0; font-size:11px; }
+    .coord-input:focus { outline:none; border-color:#22d3ee; box-shadow:0 0 0 2px rgba(34,211,238,.12); }
+    .camera-status { display:flex; align-items:center; gap:6px; font-size:10px; }
+    .status-dot { width:7px; height:7px; border-radius:50%; background:#64748b; box-shadow:0 0 8px currentColor; }
+    .status-dot.online { background:#22c55e; color:#22c55e; }
+    .status-dot.warn { background:#f59e0b; color:#f59e0b; }
+    .status-dot.offline { background:#ef4444; color:#ef4444; }
+    .alert-pulse { animation: alertPulse 1s ease-in-out 3; }
+    @keyframes alertPulse { 50% { box-shadow:0 0 0 8px rgba(239,68,68,.08),0 0 35px rgba(239,68,68,.55); } }
+    .camera-video { width:100%; height:100%; object-fit:cover; background:#020617; }
+    .mini-label { font-size:9px; color:#94a3b8; margin-bottom:3px; display:block; }
+  
+/* Mobile standalone edition */
+html,body { width:100%; min-height:100%; }
+body { -webkit-text-size-adjust:100%; }
+@media (max-width: 768px) {
+  #main-app { min-width:0 !important; width:100% !important; overflow-x:hidden !important; }
+  .glass-panel { max-width:100% !important; }
+  canvas { max-width:100%; }
+  input, select, textarea, button { font-size:16px !important; } /* prevents iOS zoom */
+}
+
+</style>
+
+<style id="aegis-mobile-fix">
+* { box-sizing: border-box; }
+html, body {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+body {
+  margin: 0 !important;
+  -webkit-text-size-adjust: 100%;
+}
+@media (max-width: 900px) {
+  #main-app, #step-1, #step-2 {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Login / authentication card */
+  .glass-panel {
+    max-width: calc(100vw - 28px) !important;
+  }
+  #step-1 .glass-panel,
+  #step-2 .glass-panel {
+    width: calc(100vw - 28px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Prevent fixed desktop widths from forcing horizontal scrolling */
+  .grid {
+    max-width: 100% !important;
+  }
+  canvas {
+    max-width: 100% !important;
+  }
+  input, select, textarea, button {
+    max-width: 100% !important;
+    font-size: 16px !important;
+  }
+
+  /* Make large headings fit Arabic text */
+  h1, h2, h3, .text-4xl, .text-5xl, .text-6xl {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  /* Mobile dashboard becomes a single column */
+  #main-app .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Keep the 3D viewport usable */
+  #scene-container, #canvas-container, .canvas-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Hide desktop-only banner on very small screens */
+  #mobile-standalone-banner {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    font-size: 10px !important;
+    line-height: 1.7 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .glass-panel {
+    border-radius: 12px !important;
+  }
+  #step-1 .glass-panel,
+  #step-2 .glass-panel {
+    padding: 14px !important;
+  }
+  button {
+    min-height: 44px;
+  }
+}
+</style>
+
 </head>
 <body>
+
+<div id="mobile-standalone-banner" style="
+position:fixed;left:10px;right:10px;bottom:10px;z-index:9999;
+background:rgba(2,6,23,.94);border:1px solid rgba(34,211,238,.35);
+border-radius:12px;padding:10px;color:#cbd5e1;font-size:11px;
+backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(0,0,0,.35)">
+  <b style="color:#22d3ee">AegisRadar Mobile</b> —
+  هذه نسخة HTML تعمل مباشرة على الهاتف. ميزات Telegram/WhatsApp والكاميرا البعيدة تحتاج تشغيل المشروع على HTTPS مع الخادم.
+  <button onclick="this.parentElement.remove()" style="float:left;background:#1e293b;color:#e2e8f0;border:0;border-radius:6px;padding:4px 8px">إغلاق</button>
+</div>
+
+
+<!-- iPhone camera control -->
+  <div id="camera-control-modal" class="hidden fixed inset-0 z-[300] bg-black/70 backdrop-blur-sm p-4 flex items-center justify-center">
+    <div class="glass-panel max-w-md w-full p-4">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-sm font-bold text-emerald-400">📱 ربط كاميرا iPhone عبر WebRTC</h3>
+        <button onclick="closeCameraControl()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div class="space-y-2">
+        <input id="cameraRoom" class="coord-input" value="aegis-cam-01" placeholder="اسم غرفة الكاميرا">
+        <input id="signalingUrl" class="coord-input" placeholder="wss://YOUR-SERVER.example/ws">
+        <div class="grid grid-cols-2 gap-1.5">
+          <button onclick="openCameraAsViewer()" class="bg-cyan-700 hover:bg-cyan-600 text-white p-2 rounded text-[10px] font-bold">هذا الجهاز: شاشة المراقبة</button>
+          <button onclick="openCameraAsPhone()" class="bg-emerald-700 hover:bg-emerald-600 text-white p-2 rounded text-[10px] font-bold">هذا الجهاز: iPhone</button>
+        </div>
+        <p class="text-[9px] text-slate-500 leading-relaxed">
+          افتح نفس الصفحة على iPhone، اختر «هذا الجهاز: iPhone» واسم الغرفة نفسه، ثم اسمح للمتصفح باستخدام الكاميرا. الصفحة يجب أن تكون HTTPS، وخادم الإشارة WSS.
+        </p>
+        <video id="local-phone-preview" class="hidden w-full h-44 object-cover rounded border border-slate-800 bg-black" autoplay muted playsinline></video>
+      </div>
+    </div>
+  </div>
 
   <!-- 1. الشاشات التعريفية -->
   <div id="step-1" class="step-screen">
@@ -226,6 +368,35 @@
           </div>
         </div>
 
+<!-- iPhone WebRTC Camera -->
+        <div id="panel-iphone-camera" class="glass-panel p-3 relative">
+          <div class="flex justify-between items-center mb-1.5 border-b border-slate-800 pb-1">
+            <span class="text-xs font-bold text-slate-200 flex items-center gap-1">
+              <i class="fa-solid fa-mobile-screen-button text-emerald-400"></i> كاميرا iPhone المباشرة
+            </span>
+            <div class="camera-status">
+              <span id="camera-status-dot" class="status-dot offline"></span>
+              <span id="camera-status-text" class="text-slate-400">غير متصلة</span>
+            </div>
+          </div>
+          <div class="panel-content">
+            <div class="relative w-full h-40 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 mb-1">
+              <video id="remote-camera-video" class="camera-video" autoplay playsinline></video>
+              <div id="camera-overlay" class="absolute inset-x-2 bottom-2 z-20 flex justify-between text-[8px]">
+                <span class="bg-slate-950/80 border border-emerald-500/30 px-1.5 py-0.5 rounded">WebRTC • iPhone</span>
+                <span id="camera-room-label" class="bg-slate-950/80 border border-cyan-500/30 px-1.5 py-0.5 rounded">CAM-01</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button onclick="openCameraControl()" class="bg-emerald-700 hover:bg-emerald-600 text-white p-1.5 rounded text-[10px] font-bold">
+                <i class="fa-solid fa-link"></i> ربط iPhone
+              </button>
+              <button onclick="disconnectRemoteCamera()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-1.5 rounded text-[10px] border border-slate-700">
+                <i class="fa-solid fa-link-slash"></i> قطع
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -299,6 +470,82 @@
             </button>
           </div>
 
+<!-- Realistic Interior Suite -->
+          <div class="bg-gradient-to-b from-slate-900 to-slate-950 p-2.5 rounded-lg border border-emerald-500/30 text-xs space-y-2">
+            <span class="text-emerald-300 font-bold block text-[11px]">
+              <i class="fa-solid fa-couch text-amber-300 ml-1"></i> بيئة داخلية واقعية
+            </span>
+            <div class="grid grid-cols-2 gap-1.5">
+              <div>
+                <label class="mini-label">عرض الغرفة (m)</label>
+                <input id="realRoomW" class="coord-input" type="number" value="6" min="2" max="30" step="0.1">
+              </div>
+              <div>
+                <label class="mini-label">عمق الغرفة (m)</label>
+                <input id="realRoomD" class="coord-input" type="number" value="6" min="2" max="30" step="0.1">
+              </div>
+            </div>
+            <select id="realRoomStyle" class="coord-input">
+              <option value="modern">Modern Home — عصري</option>
+              <option value="office">Smart Office — مكتب ذكي</option>
+              <option value="living">Luxury Living — صالة فاخرة</option>
+              <option value="security">Security Room — غرفة مراقبة</option>
+            </select>
+            <button onclick="buildRealisticInterior()" class="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 p-2 rounded text-white font-bold text-xs">
+              <i class="fa-solid fa-cubes"></i> إنشاء بيئة واقعية كاملة
+            </button>
+            <button onclick="clearRealisticInterior()" class="w-full bg-slate-800 hover:bg-slate-700 p-1.5 rounded text-slate-300 text-[10px] border border-slate-700">
+              مسح الأثاث مع إبقاء الحساس والخريطة
+            </button>
+          </div>
+
+          <!-- Real Sensor Coordinate / AI Import -->
+          <div class="bg-gradient-to-b from-slate-900 to-slate-950 p-2.5 rounded-lg border border-cyan-500/30 text-xs space-y-2">
+            <span class="text-cyan-300 font-bold block text-[11px]">
+              <i class="fa-solid fa-crosshairs text-amber-300 ml-1"></i> إحداثيات حقيقية متوافقة مع الحساس
+            </span>
+            <p class="text-[9px] text-slate-500 leading-relaxed">
+              اعتبر نقطة الحساس (0,0,0). X = يمين/يسار، Z = عمق، Y = ارتفاع. أدخل الإحداثيات بالمتر أو الصق JSON مولداً بالذكاء الاصطناعي.
+            </p>
+            <div class="grid grid-cols-3 gap-1.5">
+              <div><label class="mini-label">X</label><input id="aiX" class="coord-input" type="number" value="0" step="0.01"></div>
+              <div><label class="mini-label">Y</label><input id="aiY" class="coord-input" type="number" value="0" step="0.01"></div>
+              <div><label class="mini-label">Z</label><input id="aiZ" class="coord-input" type="number" value="2" step="0.01"></div>
+            </div>
+            <select id="aiObjectType" class="coord-input">
+              <option value="wall">جدار</option>
+              <option value="door">باب</option>
+              <option value="window">نافذة</option>
+              <option value="sofa">أريكة</option>
+              <option value="table">طاولة</option>
+              <option value="chair">كرسي</option>
+              <option value="tv">شاشة</option>
+              <option value="sensor">حساس LD2450</option>
+              <option value="danger">منطقة خطر</option>
+            </select>
+            <input id="aiObjectName" class="coord-input" placeholder="اسم العنصر (اختياري)">
+            <button onclick="placeAIRealCoordinate()" class="w-full bg-cyan-700 hover:bg-cyan-600 p-1.5 rounded text-white font-bold text-[10px]">
+              <i class="fa-solid fa-location-crosshairs"></i> وضع العنصر بالإحداثيات
+            </button>
+            <textarea id="aiCoordinateJson" class="coord-input h-20" placeholder='مثال: [{"type":"sofa","x":1.2,"y":0,"z":2.4},{"type":"door","x":-2.8,"y":0,"z":0}]'></textarea>
+            <button onclick="importAICoordinates()" class="w-full bg-indigo-700 hover:bg-indigo-600 p-1.5 rounded text-white font-bold text-[10px]">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> استيراد مخطط AI بالإحداثيات
+            </button>
+          </div>
+
+          <!-- Sensor calibration -->
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-2">
+            <span class="text-[10px] text-amber-300 font-bold block">معايرة تحويل إحداثيات LD2450</span>
+            <div class="grid grid-cols-2 gap-1.5">
+              <div><label class="mini-label">Scale X</label><input id="scaleX" class="coord-input" type="number" value="1" step="0.01"></div>
+              <div><label class="mini-label">Scale Z</label><input id="scaleZ" class="coord-input" type="number" value="1" step="0.01"></div>
+              <div><label class="mini-label">Offset X</label><input id="offsetX" class="coord-input" type="number" value="0" step="0.01"></div>
+              <div><label class="mini-label">Offset Z</label><input id="offsetZ" class="coord-input" type="number" value="0" step="0.01"></div>
+            </div>
+            <button onclick="applySensorCalibration()" class="w-full bg-slate-800 hover:bg-slate-700 p-1.5 rounded text-slate-200 text-[10px] border border-slate-700">
+              حفظ المعايرة
+            </button>
+          </div>
           <!-- Manual CAD Tools -->
           <span class="text-[10px] text-slate-400 block pt-1">أدوات البناء اليدوي:</span>
           <div id="cad-tools-panel" class="grid grid-cols-2 gap-1.5">
@@ -379,6 +626,30 @@
             </div>
           </div>
 
+<!-- Telegram / WhatsApp alert configuration -->
+          <div class="admin-only-container border-t border-slate-800 pt-2 space-y-2">
+            <span class="text-[10px] text-emerald-400 font-bold block">📲 إشعارات عبور منطقة الخطر</span>
+            <label class="flex items-center gap-2 text-[10px] text-slate-300">
+              <input id="telegramAlertEnabled" type="checkbox" checked> Telegram
+            </label>
+            <label class="flex items-center gap-2 text-[10px] text-slate-300">
+              <input id="whatsappAlertEnabled" type="checkbox" checked> WhatsApp
+            </label>
+            <input id="alertRecipient" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200" placeholder="اسم الموقع / المنطقة">
+            <div class="grid grid-cols-2 gap-1.5">
+              <input id="alertCooldown" class="coord-input" type="number" min="5" value="30" placeholder="ثواني">
+              <input id="dangerRadius" class="coord-input" type="number" min="0.2" value="1.5" step="0.1" placeholder="نصف القطر">
+            </div>
+            <button onclick="saveAlertSettings()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white p-1.5 rounded font-bold text-[10px]">
+              حفظ إعدادات التنبيه
+            </button>
+            <button onclick="testNotificationChannels()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 p-1.5 rounded border border-slate-700 text-[10px]">
+              إرسال اختبار Telegram + WhatsApp
+            </button>
+            <p class="text-[8px] text-slate-500 leading-relaxed">
+              مفاتيح Telegram وMeta/WhatsApp لا تُحفظ داخل GitHub أو المتصفح؛ توضع في ملف .env على الخادم.
+            </p>
+          </div>
           <!-- Geofencing -->
           <div class="admin-only-container border-t border-slate-800 pt-2 space-y-1.5">
             <span class="text-[10px] text-amber-400 font-bold block">🚨 إضافة منطقة خطر (Geofencing):</span>
@@ -954,6 +1225,493 @@
       
       logs.prepend(item);
     }
+
+    // =========================================================
+    // AegisRadar V2 extensions
+    // =========================================================
+    const V2 = {
+      furniture: [],
+      zones: [],
+      calibration: { scaleX: 1, scaleZ: 1, offsetX: 0, offsetZ: 0 },
+      lastAlertAt: 0,
+      lastTargetInside: false,
+      camera: { pc: null, ws: null, stream: null, role: null, room: null },
+      signalingUrl: ""
+    };
+
+    function setCameraStatus(state, text) {
+      const dot = document.getElementById('camera-status-dot');
+      const label = document.getElementById('camera-status-text');
+      if (dot) dot.className = 'status-dot ' + state;
+      if (label) label.innerText = text;
+    }
+
+    function openCameraControl() {
+      const m = document.getElementById('camera-control-modal');
+      if (m) m.classList.remove('hidden');
+      const saved = localStorage.getItem('aegis_signaling_url') || '';
+      const inp = document.getElementById('signalingUrl');
+      if (inp && saved) inp.value = saved;
+    }
+    function closeCameraControl() {
+      document.getElementById('camera-control-modal')?.classList.add('hidden');
+    }
+
+    function getSignalingConfig() {
+      const room = (document.getElementById('cameraRoom')?.value || 'aegis-cam-01').trim();
+      const url = (document.getElementById('signalingUrl')?.value || localStorage.getItem('aegis_signaling_url') || '').trim();
+      if (url) localStorage.setItem('aegis_signaling_url', url);
+      return { room, url };
+    }
+
+    function createCameraWS(url, room, role) {
+      if (!url) {
+        alert('ضع رابط WebSocket لخادم الإشارة مثل: wss://your-server.example/ws');
+        return null;
+      }
+      const ws = new WebSocket(url);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type:'join', room, role }));
+        setCameraStatus('online', role === 'phone' ? 'iPhone يبث الآن' : 'متصل بانتظار iPhone');
+      };
+      ws.onclose = () => setCameraStatus('offline', 'انقطع الاتصال');
+      ws.onerror = () => setCameraStatus('warn', 'خطأ في خادم الإشارة');
+      ws.onmessage = async (ev) => {
+        const msg = JSON.parse(ev.data);
+        await handleCameraSignal(msg);
+      };
+      return ws;
+    }
+
+    function rtcConfig() {
+      const cfg = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+      // Optional TURN can be injected by the signaling server in a future version.
+      return cfg;
+    }
+
+    async function makePeer() {
+      if (V2.camera.pc) V2.camera.pc.close();
+      const pc = new RTCPeerConnection(rtcConfig());
+      V2.camera.pc = pc;
+      pc.onicecandidate = e => {
+        if (e.candidate && V2.camera.ws?.readyState === 1)
+          V2.camera.ws.send(JSON.stringify({ type:'candidate', candidate:e.candidate }));
+      };
+      pc.ontrack = e => {
+        const v = document.getElementById('remote-camera-video');
+        if (v) { v.srcObject = e.streams[0]; v.play().catch(()=>{}); }
+        setCameraStatus('online','iPhone متصل');
+      };
+      return pc;
+    }
+
+    async function openCameraAsViewer() {
+      const {room,url} = getSignalingConfig();
+      closeCameraControl();
+      V2.camera.role = 'viewer'; V2.camera.room = room;
+      V2.camera.ws = createCameraWS(url, room, 'viewer');
+      await makePeer();
+    }
+
+    async function openCameraAsPhone() {
+      const {room,url} = getSignalingConfig();
+      closeCameraControl();
+      V2.camera.role = 'phone'; V2.camera.room = room;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal:1280 }, height:{ideal:720}, frameRate:{ideal:15,max:20} },
+          audio: false
+        });
+        V2.camera.stream = stream;
+        const preview = document.getElementById('local-phone-preview');
+        if (preview) { preview.srcObject = stream; preview.classList.remove('hidden'); }
+        V2.camera.ws = createCameraWS(url, room, 'phone');
+        await makePeer();
+        stream.getTracks().forEach(t => V2.camera.pc.addTrack(t, stream));
+        const offer = await V2.camera.pc.createOffer();
+        await V2.camera.pc.setLocalDescription(offer);
+        V2.camera.ws?.send(JSON.stringify({type:'offer', sdp:V2.camera.pc.localDescription}));
+        setCameraStatus('online','iPhone يبث الآن');
+      } catch (e) {
+        console.error(e);
+        alert('تعذر تشغيل كاميرا iPhone. تأكد من HTTPS ومنح Safari صلاحية الكاميرا.');
+        setCameraStatus('offline','صلاحية الكاميرا مرفوضة');
+      }
+    }
+
+    async function handleCameraSignal(msg) {
+      if (msg.type === 'offer' && V2.camera.role === 'viewer') {
+        const pc = V2.camera.pc || await makePeer();
+        await pc.setRemoteDescription(msg.sdp);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        V2.camera.ws?.send(JSON.stringify({type:'answer', sdp:pc.localDescription}));
+      } else if (msg.type === 'answer' && V2.camera.role === 'phone') {
+        await V2.camera.pc.setRemoteDescription(msg.sdp);
+      } else if (msg.type === 'candidate' && V2.camera.pc) {
+        try { await V2.camera.pc.addIceCandidate(msg.candidate); } catch(e) {}
+      }
+    }
+
+    function disconnectRemoteCamera() {
+      try { V2.camera.stream?.getTracks().forEach(t=>t.stop()); } catch(e) {}
+      try { V2.camera.pc?.close(); } catch(e) {}
+      try { V2.camera.ws?.close(); } catch(e) {}
+      V2.camera = { pc:null, ws:null, stream:null, role:null, room:null };
+      const v = document.getElementById('remote-camera-video');
+      if (v) v.srcObject = null;
+      setCameraStatus('offline','غير متصلة');
+    }
+
+    // -------- Realistic procedural interior --------
+    function mat(color, rough=0.65, metal=0.0) {
+      return new THREE.MeshStandardMaterial({color, roughness:rough, metalness:metal});
+    }
+    function addBox(name, x,y,z, sx,sy,sz, material, rotY=0, parentList=V2.furniture) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz), material);
+      mesh.position.set(x,y,z); mesh.rotation.y=rotY;
+      mesh.castShadow=true; mesh.receiveShadow=true; mesh.userData.v2Name=name;
+      scene.add(mesh); parentList.push(mesh); return mesh;
+    }
+    function addCylinder(name,x,y,z,r,h,material,parentList=V2.furniture) {
+      const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,32),material);
+      mesh.position.set(x,y,z); mesh.castShadow=true; mesh.receiveShadow=true;
+      mesh.userData.v2Name=name; scene.add(mesh); parentList.push(mesh); return mesh;
+    }
+    function addFurnitureText(label,x,y,z) {
+      // Keep labels lightweight; actual furniture remains the spatial reference.
+      const el=document.createElement('div');
+      el.style.display='none';
+      return el;
+    }
+
+    function buildSofa(x,z,rot=0) {
+      const base=mat(0x334155,.9), cushion=mat(0x64748b,1);
+      addBox('sofa-base',x,0.45,z,2.5,.45,1.0,base,rot);
+      addBox('sofa-back',x,1.05,z+0.42,2.5,1.0,.22,cushion,rot);
+      [-0.8,0,0.8].forEach(dx=>addBox('sofa-cushion',x+dx,0.76,z,0.72,.28,.78,mat(0x94a3b8,1),rot));
+      addBox('sofa-arm-l',x-1.25,0.8,z,.22,.75,1.0,base,rot);
+      addBox('sofa-arm-r',x+1.25,0.8,z,.22,.75,1.0,base,rot);
+    }
+    function buildTable(x,z) {
+      const wood=mat(0x8b5a2b,.75);
+      addBox('table-top',x,0.78,z,1.6,.14,1.0,wood);
+      [[-.65,-.38],[.65,-.38],[-.65,.38],[.65,.38]].forEach(([dx,dz])=>addBox('table-leg',x+dx,0.39,z+dz,.10,.72,.10,mat(0x475569,.8)));
+    }
+    function buildChair(x,z,rot=0) {
+      const c=mat(0x475569,.8);
+      addBox('chair-seat',x,.5,z,.65,.16,.65,c,rot);
+      addBox('chair-back',x,1.0,z+.27,.65,1.0,.12,c,rot);
+      [-.23,.23].forEach(dx=>addBox('chair-leg',x+dx,.25,z-.22,.08,.5,.08,c,rot));
+      [-.23,.23].forEach(dx=>addBox('chair-leg',x+dx,.25,z+.22,.08,.5,.08,c,rot));
+    }
+    function buildTVWall(x,z,rot=0) {
+      addBox('tv-console',x,.55,z,2.5,.55,.45,mat(0x1e293b,.55));
+      addBox('tv',x,1.65,z-.15,2.2,1.25,.10,mat(0x050505,.25,.2),rot);
+      addBox('tv-screen',x,1.65,z-.21,1.95,1.0,.02,mat(0x0ea5e9,.22,.1),rot);
+    }
+    function buildPlant(x,z) {
+      addCylinder('plant-pot',x,.35,z,.28,.55,mat(0x9a3412,.9));
+      for(let i=0;i<7;i++){
+        const a=i*(Math.PI*2/7), leaf=new THREE.Mesh(new THREE.ConeGeometry(.12,.9,8),mat(0x166534,.9));
+        leaf.position.set(x+Math.cos(a)*.18,.95,z+Math.sin(a)*.18);
+        leaf.rotation.z=Math.cos(a)*.35; leaf.rotation.x=Math.sin(a)*.35;
+        leaf.castShadow=true; scene.add(leaf); V2.furniture.push(leaf);
+      }
+    }
+    function buildBed(x,z) {
+      addBox('bed-frame',x,.35,z,2.4,.35,4.0,mat(0x475569,.85));
+      addBox('mattress',x,.72,z,2.25,.45,3.8,mat(0xe2e8f0,.95));
+      addBox('headboard',x,1.5,z-1.75,2.4,1.8,.18,mat(0x334155,.8));
+      addBox('pillow-l',x-.62,1.02,z-1.2,.9,.22,.55,mat(0xf8fafc,1));
+      addBox('pillow-r',x+.62,1.02,z-1.2,.9,.22,.55,mat(0xf8fafc,1));
+    }
+    function buildWindow(x,z,w=1.8,h=1.4,rot=0) {
+      addBox('window-frame',x,1.9,z,w,h,.10,mat(0x0f172a,.4),rot);
+      addBox('window-glass',x,1.9,z-.07,w-.18,h-.18,.025,new THREE.MeshPhysicalMaterial({color:0x7dd3fc,transparent:true,opacity:.32,roughness:.1,metalness:.05}),rot);
+    }
+
+    function buildRealisticInterior() {
+      if (!scene) return;
+      clearRealisticInterior();
+      const W=parseFloat(document.getElementById('realRoomW')?.value)||6;
+      const D=parseFloat(document.getElementById('realRoomD')?.value)||6;
+      const style=document.getElementById('realRoomStyle')?.value||'modern';
+      const floorMat=mat(0x475569,.82);
+      addBox('floor',0,-.08,0,W,.16,D,floorMat);
+      const wallMat=mat(0xe2e8f0,.92);
+      const t=.18, H=2.8;
+      addBox('wall-n',0,H/2,-D/2,W,H,t,wallMat);
+      addBox('wall-s',0,H/2,D/2,W,H,t,wallMat);
+      addBox('wall-w',-W/2,H/2,0,t,H,D,wallMat);
+      addBox('wall-e',W/2,H/2,0,t,H,D,wallMat);
+      buildWindow(-W/2+.12,-.4,Math.min(2.1,W*.32),1.35,Math.PI/2);
+      buildWindow(W/2-.12,.2,Math.min(1.8,W*.28),1.2,Math.PI/2);
+
+      if(style==='office' || style==='security') {
+        buildTable(0,-.7); buildChair(0,.45); buildChair(-1.2,.45,Math.PI/2);
+        buildTVWall(0,-D/2+.22);
+        buildPlant(W/2-0.55,D/2-0.6);
+      } else if(style==='living') {
+        buildSofa(0,D/2-1.0,Math.PI);
+        buildTable(0,.15);
+        buildTVWall(0,-D/2+.22);
+        buildPlant(W/2-0.55,D/2-0.55);
+        buildPlant(-W/2+0.55,D/2-0.55);
+      } else {
+        buildSofa(-.6,D/2-1.0,Math.PI);
+        buildTable(.8,.25);
+        buildChair(-1.7,.2);
+        buildChair(2.0,.2,Math.PI);
+        buildTVWall(0,-D/2+.22);
+        buildPlant(W/2-0.55,D/2-0.55);
+      }
+
+      // Sensor reference: exactly at room center unless user places another one.
+      const sensorGeom=new THREE.CylinderGeometry(.22,.28,.18,24);
+      const sensor=new THREE.Mesh(sensorGeom,mat(0x22d3ee,.25,.6));
+      sensor.position.set(0,.35,0); sensor.castShadow=true; sensor.userData.v2Name='LD2450-sensor';
+      scene.add(sensor); V2.furniture.push(sensor);
+
+      // Ceiling lights
+      for(const [x,z] of [[-W*.25,-D*.25],[W*.25,-D*.25],[-W*.25,D*.25],[W*.25,D*.25]]) {
+        addCylinder('ceiling-light',x,H-.08,z,.14,.05,mat(0xf8fafc,.2),V2.furniture);
+      }
+      logSecurityEvent(`تم إنشاء بيئة داخلية واقعية ${W}x${D}m مع جدران وأثاث ونوافذ وحساس LD2450.`, "info");
+    }
+
+    function clearRealisticInterior() {
+      V2.furniture.forEach(o=>{ try{scene.remove(o);}catch(e){} });
+      V2.furniture=[];
+    }
+
+    function transformedCoord(x,z) {
+      return {
+        x: x*V2.calibration.scaleX + V2.calibration.offsetX,
+        z: z*V2.calibration.scaleZ + V2.calibration.offsetZ
+      };
+    }
+    function applySensorCalibration() {
+      V2.calibration = {
+        scaleX: parseFloat(document.getElementById('scaleX')?.value)||1,
+        scaleZ: parseFloat(document.getElementById('scaleZ')?.value)||1,
+        offsetX: parseFloat(document.getElementById('offsetX')?.value)||0,
+        offsetZ: parseFloat(document.getElementById('offsetZ')?.value)||0
+      };
+      localStorage.setItem('aegis_calibration',JSON.stringify(V2.calibration));
+      logSecurityEvent('تم حفظ معايرة إحداثيات LD2450.', 'info');
+    }
+
+    function placeAIRealCoordinate() {
+      const x=parseFloat(document.getElementById('aiX')?.value)||0;
+      const y=parseFloat(document.getElementById('aiY')?.value)||0;
+      const z=parseFloat(document.getElementById('aiZ')?.value)||0;
+      const type=document.getElementById('aiObjectType')?.value||'wall';
+      const name=document.getElementById('aiObjectName')?.value||type;
+      placeTypedObject(type,x,y,z,name);
+    }
+
+    function placeTypedObject(type,x,y,z,name='object') {
+      const c={
+        wall:mat(0x64748b,.85), door:mat(0x8b5a2b,.75), window:new THREE.MeshPhysicalMaterial({color:0x38bdf8,transparent:true,opacity:.35,roughness:.1}),
+        sofa:mat(0x475569,.95), table:mat(0x8b5a2b,.75), chair:mat(0x475569,.85), tv:mat(0x050505,.2,.2), sensor:mat(0x22d3ee,.25,.7), danger:mat(0xef4444,.45)
+      }[type]||mat(0x94a3b8);
+      let o;
+      if(type==='danger') {
+        o=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,.06,48),new THREE.MeshStandardMaterial({color:0xef4444,transparent:true,opacity:.28}));
+        o.position.set(x,.04,z); V2.zones.push({name,x,z,radius:parseFloat(document.getElementById('dangerRadius')?.value)||1.5,mesh:o});
+      } else if(type==='sensor') {
+        o=new THREE.Mesh(new THREE.CylinderGeometry(.25,.30,.16,24),c); o.position.set(x,y+.1,z);
+      } else if(type==='wall') {
+        o=new THREE.Mesh(new THREE.BoxGeometry(2.5,2.8,.18),c); o.position.set(x,y+1.4,z);
+      } else if(type==='door') {
+        o=new THREE.Mesh(new THREE.BoxGeometry(1.0,2.2,.12),c); o.position.set(x,y+1.1,z);
+      } else if(type==='window') {
+        o=new THREE.Mesh(new THREE.BoxGeometry(1.8,1.3,.08),c); o.position.set(x,y+1.8,z);
+      } else if(type==='sofa') {
+        o=new THREE.Mesh(new THREE.BoxGeometry(2.4,.85,1.0),c); o.position.set(x,y+.45,z);
+      } else if(type==='table') {
+        o=new THREE.Mesh(new THREE.BoxGeometry(1.7,.12,1.0),c); o.position.set(x,y+.8,z);
+      } else if(type==='chair') {
+        o=new THREE.Mesh(new THREE.BoxGeometry(.65,1.0,.65),c); o.position.set(x,y+.55,z);
+      } else {
+        o=new THREE.Mesh(new THREE.BoxGeometry(2.0,1.2,.10),c); o.position.set(x,y+1.5,z);
+      }
+      o.castShadow=true; o.receiveShadow=true; o.userData={v2Name:name,type,x,y,z};
+      scene.add(o); V2.furniture.push(o);
+      if(type!=='danger') logSecurityEvent(`تم وضع ${name} عند X:${x.toFixed(2)} Y:${y.toFixed(2)} Z:${z.toFixed(2)}m`, 'info');
+      return o;
+    }
+
+    function importAICoordinates() {
+      const raw=document.getElementById('aiCoordinateJson')?.value?.trim();
+      if(!raw) return alert('الصق JSON بالإحداثيات أولاً.');
+      try {
+        let data=JSON.parse(raw);
+        if(!Array.isArray(data)) data=[data];
+        data.forEach((o,i)=>{
+          if(typeof o.x!=='number'||typeof o.z!=='number') throw new Error(`العنصر ${i+1} يحتاج x و z`);
+          placeTypedObject(o.type||'wall',o.x,o.y||0,o.z,o.name||`AI-${i+1}`);
+        });
+        logSecurityEvent(`تم استيراد ${data.length} عنصر من مخطط AI بالإحداثيات.`, 'info');
+      } catch(e) { alert('JSON غير صحيح: '+e.message); }
+    }
+
+    function saveAlertSettings() {
+      const cfg={
+        telegram:document.getElementById('telegramAlertEnabled')?.checked!==false,
+        whatsapp:document.getElementById('whatsappAlertEnabled')?.checked!==false,
+        recipient:document.getElementById('alertRecipient')?.value||'الموقع',
+        cooldown:Math.max(5,parseInt(document.getElementById('alertCooldown')?.value)||30)
+      };
+      localStorage.setItem('aegis_alert_settings',JSON.stringify(cfg));
+      logSecurityEvent('تم حفظ إعدادات إشعارات Telegram وWhatsApp.', 'info');
+    }
+
+    function loadV2Settings() {
+      try {
+        const c=JSON.parse(localStorage.getItem('aegis_calibration')||'null');
+        if(c) V2.calibration=c;
+        const a=JSON.parse(localStorage.getItem('aegis_alert_settings')||'null');
+        if(a) {
+          if(document.getElementById('telegramAlertEnabled')) document.getElementById('telegramAlertEnabled').checked=a.telegram;
+          if(document.getElementById('whatsappAlertEnabled')) document.getElementById('whatsappAlertEnabled').checked=a.whatsapp;
+          if(document.getElementById('alertRecipient')) document.getElementById('alertRecipient').value=a.recipient||'الموقع';
+          if(document.getElementById('alertCooldown')) document.getElementById('alertCooldown').value=a.cooldown||30;
+        }
+      } catch(e){}
+    }
+
+    async function sendSecurityAlert(payload, test=false) {
+      const settings=JSON.parse(localStorage.getItem('aegis_alert_settings')||'{}');
+      const message = test
+        ? '🔔 اختبار AegisRadar 360 AI: قنوات التنبيه تعمل.'
+        : `🚨 AegisRadar ALERT\nالمنطقة: ${settings.recipient||'منطقة الخطر'}\nX: ${Number(payload.x).toFixed(2)} m\nZ: ${Number(payload.z).toFixed(2)} m\nالمسافة من مركز الخطر: ${Number(payload.distance).toFixed(2)} m\nالوقت: ${new Date().toLocaleString('ar-IQ')}`;
+      try {
+        const r=await fetch('/api/alert',{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            message,
+            telegram:settings.telegram!==false,
+            whatsapp:settings.whatsapp!==false,
+            test
+          })
+        });
+        const j=await r.json().catch(()=>({}));
+        if(!r.ok) throw new Error(j.error||'alert server error');
+        logSecurityEvent(test?'تم إرسال اختبار الإشعارات.':'تم إرسال تنبيه الخطر عبر القنوات المفعلة.', 'danger');
+      } catch(e) {
+        logSecurityEvent('تعذر إرسال الإشعار: '+e.message, 'danger');
+      }
+    }
+
+    function testNotificationChannels() { sendSecurityAlert({x:0,z:0,distance:0},true); }
+
+    function checkDangerZones(x,z) {
+      if(!V2.zones.length) return;
+      const settings=JSON.parse(localStorage.getItem('aegis_alert_settings')||'{}');
+      const cooldown=Math.max(5,parseInt(settings.cooldown)||30)*1000;
+      let inside=false, closest=null;
+      for(const zone of V2.zones) {
+        const d=Math.hypot(x-zone.x,z-zone.z);
+        if(d <= zone.radius) {
+          inside=true;
+          if(!closest||d<closest.distance) closest={...zone,distance:d};
+        }
+      }
+      const now=Date.now();
+      if(inside && !V2.lastTargetInside && now-V2.lastAlertAt>cooldown && closest) {
+        V2.lastAlertAt=now;
+        sendSecurityAlert({x,z,distance:closest.distance});
+        document.getElementById('panel-logs')?.classList.add('alert-pulse');
+        logSecurityEvent(`🚨 الهدف دخل منطقة الخطر "${closest.name}"`, 'danger');
+        setTimeout(()=>document.getElementById('panel-logs')?.classList.remove('alert-pulse'),3500);
+      }
+      V2.lastTargetInside=inside;
+    }
+
+    // Override the original simulated radar stream with calibrated data + danger checking.
+    const _originalUpdateRadarData = updateRadarData;
+    updateRadarData = function(x,z) {
+      const p=transformedCoord(parseFloat(x),parseFloat(z));
+      _originalUpdateRadarData(p.x.toFixed(2),p.z.toFixed(2));
+      checkDangerZones(p.x,p.z);
+    };
+
+    // Make danger zones created from the security tab persistent in V2 tracking.
+    const _originalAddDangerZoneUI = addDangerZoneUI;
+    addDangerZoneUI = function() {
+      const name=document.getElementById('zoneName')?.value||'منطقة محظورة';
+      const x=parseFloat(document.getElementById('zoneX')?.value)||0;
+      const z=parseFloat(document.getElementById('zoneZ')?.value)||0;
+      const r=parseFloat(document.getElementById('dangerRadius')?.value)||1.5;
+      const geom=new THREE.CylinderGeometry(r,r,.08,48);
+      const zone=new THREE.Mesh(geom,new THREE.MeshStandardMaterial({color:0xef4444,transparent:true,opacity:.28}));
+      zone.position.set(x,.04,z); scene.add(zone); V2.furniture.push(zone);
+      V2.zones.push({name,x,z,radius:r,mesh:zone});
+      logSecurityEvent(`🚨 تم تعيين منطقة خطر "${name}" عند X:${x}, Z:${z}, R:${r}m`, 'danger');
+    };
+
+    // Replace the original simplistic 3D initialization with a more realistic renderer.
+    const _originalInit3DScene = init3DScene;
+    init3DScene = function() {
+      _originalInit3DScene();
+      if(renderer) {
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
+      }
+      loadV2Settings();
+      // Load a default modern interior after login.
+      setTimeout(()=>buildRealisticInterior(),250);
+    };
+
+    // The original connectMQTT uses simulated data; keep it as a safe demo mode,
+    // but make the UI clearly distinguishable and route the data through calibration.
+    const _originalConnectMQTT = connectMQTT;
+    connectMQTT = function() {
+      logSecurityEvent('وضع الرادار التجريبي فعال — لاستقبال LD2450 الحقيقي اربط MQTT Broker الخاص بالمشروع.', 'info');
+      _originalConnectMQTT();
+    };
+
+    // iPhone camera can be launched directly with ?camera=1.
+    function autoCameraMode() {
+      const params=new URLSearchParams(location.search);
+      if(params.get('camera')==='1') {
+        document.getElementById('step-1')?.classList.add('hidden');
+        document.getElementById('step-2')?.classList.add('hidden');
+        document.getElementById('main-app')?.classList.remove('hidden');
+        setTimeout(()=>openCameraControl(),300);
+      }
+    }
+    window.addEventListener('load',()=>{ loadV2Settings(); autoCameraMode(); });
+
+
   </script>
+
+<script>
+/* Mobile standalone safeguards */
+(function(){
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = async function(url, opts){
+    try { return await nativeFetch(url, opts); }
+    catch(e){
+      if(String(url).includes('/api/alert')){
+        return new Response(JSON.stringify({
+          ok:false,
+          standalone:true,
+          error:'شغّل المشروع على HTTPS مع الخادم لإرسال Telegram/WhatsApp.'
+        }), {status:503, headers:{'Content-Type':'application/json'}});
+      }
+      throw e;
+    }
+  };
+  window.addEventListener('beforeunload', ()=>{
+    try { if(window.disconnectRemoteCamera) window.disconnectRemoteCamera(); } catch(e){}
+  });
+})();
+</script>
+
 </body>
 </html>
