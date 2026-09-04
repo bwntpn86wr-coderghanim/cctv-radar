@@ -1,135 +1,27 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>AegisRadar 360 AI</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020b16;color:#e8f4ff;font-family:Segoe UI,Tahoma,Arial,sans-serif}
-:root{--bg:#03101d;--panel:rgba(3,18,32,.93);--line:#073b59;--cyan:#16b9ff;--blue:#0785d1;--green:#19e879;--red:#ff3448}
-.app{height:100vh;display:grid;grid-template-columns:180px 1fr 270px;grid-template-rows:78px 1fr 300px 76px;gap:0;background:radial-gradient(circle at 50% 35%,#06243a 0,#020b16 52%,#01060d 100%)}
-.top{grid-column:1/4;border-bottom:1px solid #0a4261;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(2,12,23,.92);z-index:5}
-.logo{font-size:25px;font-weight:900;letter-spacing:.2px}.logo b{color:#08a9f5}.sub{font-size:12px;color:#8ba7bc;margin-top:2px}
-.topinfo{display:flex;align-items:center;gap:24px;color:#d7e6f2;font-size:14px}.online{color:var(--green);font-weight:700}.gear{font-size:22px;color:#b9d0df}
-.side{grid-row:2/4;border-left:1px solid #08324a;background:rgba(2,15,28,.9);padding:20px 12px;z-index:4}
-.nav{height:52px;display:flex;align-items:center;gap:13px;padding:0 13px;margin-bottom:7px;border:1px solid transparent;border-radius:9px;color:#d2e3ee;font-weight:700;cursor:pointer}
-.nav.active{background:linear-gradient(90deg,#064d78,#06304c);border-color:#087fb9;color:#48c7ff;box-shadow:inset 0 0 18px rgba(0,173,255,.12)}
-.nav i{width:23px;text-align:center;font-style:normal;font-size:20px}.logout{margin-top:20px;color:#ff5260;background:rgba(110,10,28,.15);border-color:#4e1b29}
-.scene{grid-column:2;grid-row:2;position:relative;min-width:0;min-height:0}.scene canvas{display:block;width:100%!important;height:100%!important}
-.right{grid-column:3;grid-row:2/4;padding:10px 12px;background:rgba(2,12,23,.58);overflow:auto;z-index:3}
-.panel{background:linear-gradient(145deg,rgba(5,27,45,.96),rgba(2,14,26,.96));border:1px solid #0a4768;border-radius:10px;padding:15px;margin-bottom:10px;box-shadow:0 0 20px rgba(0,0,0,.2)}
-.panel h3{margin:0 0 12px;font-size:17px}.kv{display:flex;justify-content:space-between;gap:10px;margin:7px 0;font-size:13px;color:#a9bfce}.kv strong{color:#eef7fc}.green{color:var(--green)!important}.red{color:#ff5260!important}
-.btn{width:100%;height:48px;border:1px solid #0875aa;background:linear-gradient(#075684,#06365a);color:#eaf8ff;border-radius:8px;font-size:15px;font-weight:800;margin:5px 0;cursor:pointer}.btn.danger{background:linear-gradient(#681b29,#45101b);border-color:#a42c3e;color:#ff6977}
-.bottom{grid-column:2;grid-row:3;display:grid;grid-template-columns:1fr 1.6fr 1.25fr;gap:10px;padding:0 10px 10px;background:transparent;z-index:3}
-.bottom .panel{margin:0;height:100%;overflow:hidden}.radarbox{height:205px;position:relative}.radar{width:190px;height:190px;border:1px solid #13aeea;border-radius:50%;margin:0 auto;position:relative;background:radial-gradient(circle,transparent 0 19%,rgba(0,150,230,.06) 20% 20.5%,transparent 21% 39%,rgba(0,150,230,.06) 40% 40.5%,transparent 41% 59%,rgba(0,150,230,.06) 60% 60.5%,transparent 61%);overflow:hidden}.radar:before,.radar:after{content:"";position:absolute;background:#087cae55}.radar:before{width:100%;height:1px;top:50%}.radar:after{height:100%;width:1px;left:50%}.sweep{position:absolute;width:50%;height:2px;left:50%;top:50%;transform-origin:left center;background:#15bfff;animation:sweep 2.5s linear infinite;box-shadow:0 0 12px #15bfff}@keyframes sweep{to{transform:rotate(360deg)}}.dot{position:absolute;width:13px;height:13px;border-radius:50%;background:#ff3448;box-shadow:0 0 13px #ff3448;left:66%;top:38%}.center{position:absolute;width:12px;height:12px;border-radius:50%;background:#19e879;left:calc(50% - 6px);top:calc(50% - 6px)}
-.logs{font-size:12px}.log{background:#020e19;border:1px solid #092b40;padding:8px;border-radius:6px;margin:5px 0;color:#c8d9e4;white-space:nowrap}
-.footer{grid-column:1/4;border-top:1px solid #0a4261;display:flex;justify-content:space-between;align-items:center;padding:0 30px;background:#020b15;color:#91aabd}.footer b{color:#13aef5}
-.badge{position:absolute;background:rgba(2,10,17,.94);border:1px solid #ff3448;border-radius:8px;padding:8px 13px;left:50%;top:42%;transform:translate(-50%,-50%);font-weight:800;box-shadow:0 0 20px rgba(255,52,72,.2);pointer-events:none}.badge small{display:block;color:#b9cbd6;margin-top:4px;font-weight:500}
-.help{font-size:11px;color:#7793a5;margin-top:8px;line-height:1.6}
-@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:64px 54vh auto auto}.top{grid-column:1;padding:0 12px}.topinfo{gap:8px;font-size:11px}.side{display:none}.scene{grid-column:1;grid-row:2}.right{grid-column:1;grid-row:3;display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:7px}.right .panel{margin:0}.bottom{grid-column:1;grid-row:4;grid-template-columns:1fr 1fr;overflow:auto}.footer{display:none}.badge{font-size:11px}.logo{font-size:18px}}
-@media(max-width:600px){.app{grid-template-rows:60px 48vh auto 230px}.right{grid-template-columns:1fr 1fr}.right .panel:nth-child(3){grid-column:1/3}.bottom{grid-template-columns:1fr 1fr}.bottom .panel:nth-child(2){grid-column:1/3}.bottom .panel:nth-child(3){display:none}.top .clock{display:none}}
-</style>
-</head>
-<body>
-<div class="app">
-<header class="top">
-  <div><div class="logo">AegisRadar <b>360 AI</b></div><div class="sub">جامعة نينوى - كلية الهندسة</div></div>
-  <div class="topinfo"><span class="online">● النظام يعمل</span><span>⌁ متصل</span><span class="clock" id="clock"></span><span class="gear">⚙</span><b>الإعدادات</b></div>
-</header>
-
-<nav class="side">
-  <div class="nav active">⌂ <span>الرئيسية</span></div>
-  <div class="nav">⌁ <span>خريطة الرادار</span></div>
-  <div class="nav">▣ <span>البث المباشر</span></div>
-  <div class="nav">▤ <span>السجلات</span></div>
-  <div class="nav">⚙ <span>الإعدادات</span></div>
-  <div class="nav">♟ <span>المستخدمون</span></div>
-  <div class="nav">?</div>
-  <div class="nav logout">↪ <span>تسجيل الخروج</span></div>
-</nav>
-
-<main class="scene">
-  <div class="badge">🔴 HUMAN <small>X: 2.1 &nbsp; Y: 1.4 &nbsp; Z: 0.0 m</small></div>
-</main>
-
-<aside class="right">
-  <section class="panel"><h3>حالة الرادار</h3><div class="online">● متصل</div>
-    <div class="kv"><span>نوع الحساس</span><strong>LD2450</strong></div><div class="kv"><span>المنفذ</span><strong>COM8</strong></div>
-    <div class="kv"><span>Baud</span><strong>256000</strong></div><div class="kv"><span>الدقة</span><strong>±0.1 m</strong></div>
-  </section>
-  <section class="panel"><h3>الهدف الحالي</h3><div class="kv"><span>النوع</span><strong class="red">● إنسان</strong></div>
-    <div class="kv"><span>X</span><strong>2.1 m</strong></div><div class="kv"><span>Y</span><strong>1.4 m</strong></div>
-    <div class="kv"><span>Z</span><strong>0.0 m</strong></div><div class="kv"><span>المسافة</span><strong>2.5 m</strong></div>
-    <div class="kv"><span>السرعة</span><strong>0.0 m/s</strong></div><div class="kv"><span>الحالة</span><strong class="green">متحرك</strong></div>
-  </section>
-  <section class="panel"><h3>إجراءات</h3><button class="btn" id="pause">Ⅱ &nbsp; إيقاف الرادار</button><button class="btn" id="reset">⟳ &nbsp; إعادة الضبط</button><button class="btn danger" id="alert">🔔 &nbsp; تنبيه</button></section>
-</aside>
-
-<section class="bottom">
-  <div class="panel"><h3>مخطط الرادار (Top View)</h3><div class="radarbox"><div class="radar"><div class="sweep"></div><div class="center"></div><div class="dot"></div></div></div></div>
-  <div class="panel"><h3>(RSSI) قوة الإشارة</h3><canvas id="chart"></canvas></div>
-  <div class="panel"><h3>السجلات الحديثة</h3><div class="logs"><div class="log">15:56:48 &nbsp; Human detected at (2.1, 1.4, 0.0)</div><div class="log">15:56:42 &nbsp; Target moving</div><div class="log">15:56:35 &nbsp; RSSI: -42 dBm</div><div class="log">15:56:28 &nbsp; System started</div><div class="log">15:56:21 &nbsp; Radar connected (COM8)</div></div></div>
-</section>
-
-<footer class="footer"><div><b>AegisRadar 360 AI</b><br><span class="sub">جامعة نينوى - كلية الهندسة</span></div><div>Advanced Radar Monitoring System</div><div>v1.0.0 &nbsp; <span class="online">●</span></div></footer>
-</div>
-
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AegisRadar 360 AI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script><script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>*{box-sizing:border-box}body{margin:0;background:#071018;color:#d9f5ff;font-family:Arial,sans-serif;overflow:hidden}.app{height:100vh;display:grid;grid-template-columns:240px 1fr 310px;grid-template-rows:64px 1fr 190px}.top{grid-column:1/4;background:#0a151e;border-bottom:1px solid #163342;display:flex;align-items:center;justify-content:space-between;padding:0 18px}.brand{font-size:20px;font-weight:800;color:#54d8ff}.status{font-size:12px;padding:7px 12px;border:1px solid #1c5369;border-radius:20px}.side{background:#08131b;border-left:1px solid #163342;padding:15px}.left{border-left:0;border-right:1px solid #163342}.nav button,.actions button,.primary{width:100%;margin:6px 0;padding:11px;border:1px solid #1b4658;background:#0b202b;color:#bfefff;border-radius:8px;cursor:pointer}.primary{background:#08799b;color:#fff}.main{position:relative;min-width:0}.scene{width:100%;height:100%}.panel{background:#091720;padding:14px;overflow:auto}.card{border:1px solid #173d4c;background:#0b1d27;border-radius:10px;padding:12px;margin-bottom:10px}.title{font-size:12px;color:#7eaabd;margin-bottom:8px}.value{font-size:20px;font-weight:700}.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}.input{width:100%;padding:8px;background:#07141c;border:1px solid #244858;color:#fff;border-radius:6px}.bottom{grid-column:1/4;background:#08131b;border-top:1px solid #163342;display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:12px;padding:10px}.chart{height:165px}.logs{height:150px;overflow:auto;font-size:12px}.log{padding:5px;border-bottom:1px solid #12303d}.modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:20}.modal.open{display:flex}.modalbox{width:min(760px,94vw);max-height:90vh;overflow:auto;background:#0b1a23;border:1px solid #24596d;border-radius:14px;padding:18px}.modalbox h2{margin-top:0}.objrow{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr;gap:6px;margin:6px 0}.hint{font-size:11px;color:#7895a2}.danger{color:#ff6875}.ok{color:#62e6a1}@media(max-width:900px){.app{grid-template-columns:0 1fr 0;grid-template-rows:56px 1fr 150px}.side{display:none}.bottom{grid-template-columns:1fr}.bottom>.card:not(:first-child){display:none}.top{grid-column:1/4}.right{display:none}}
+</style></head><body><div class="app"><header class="top"><div class="brand">AEGISRADAR 360 AI</div><div id="conn" class="status">غير متصل</div><div id="clock"></div></header>
+<aside class="side left"><div class="title">النظام</div><div class="nav"><button onclick="openBuilder()">🏗️ Smart 3D Architect</button><button onclick="saveRoom()">💾 حفظ الغرفة</button><button onclick="loadRoom()">↻ تحميل الغرفة</button><button onclick="clearTargets()">⌫ مسح الأهداف</button></div><div class="card"><div class="title">MQTT</div><input id="broker" class="input" value="wss://broker.emqx.io:8084/mqtt"><input id="topic" class="input" style="margin-top:6px" value="aegisradar/ld2450"><button class="primary" onclick="connectMQTT()">اتصال ESP32</button><button class="actions button" onclick="startSerial()">USB Serial</button></div></aside>
+<main class="main"><div id="scene" class="scene"></div></main>
+<aside class="side right"><div class="card"><div class="title">الغرفة الحالية</div><div id="roomName" class="value">Room 1</div><div class="grid"><div>W <b id="rw">6.00</b> m</div><div>D <b id="rdp">6.00</b> m</div><div>H <b id="rh">3.00</b> m</div><div>Targets <b id="tc">0</b></div></div></div><div class="card"><div class="title">LD2450 / Target 1</div><div>X <b id="tx">--</b> m</div><div>Y <b id="ty">--</b> m</div><div>Z <b id="tz">--</b> m*</div><div>Distance <b id="td">--</b> m</div><div>Speed <b id="ts">--</b> m/s</div><p class="hint">* Z ارتفاع تقديري؛ LD2450 نفسه ثنائي الأبعاد.</p></div><div class="card"><div class="title">الحساس</div><div id="sensorInfo">X 0.00 · Y 2.20 · Z 0.00 · Rot 0°</div></div></aside>
+<section class="bottom"><div class="card"><div class="title">RSSI / Detection</div><div class="chart"><canvas id="chart"></canvas></div></div><div class="card"><div class="title">Raw MQTT</div><pre id="raw" style="white-space:pre-wrap;font-size:10px">--</pre></div><div class="card"><div class="title">السجل</div><div id="logs" class="logs"></div></div></section></div>
+<div id="modal" class="modal"><div class="modalbox"><h2>🏗️ Smart 3D Architect</h2><div class="grid3"><label>اسم الغرفة<input id="rn" class="input" value="Room 1"></label><label>العرض W<input id="W" class="input" value="6"></label><label>العمق D<input id="D" class="input" value="6"></label><label>الارتفاع H<input id="H" class="input" value="3"></label><label>Sensor X<input id="SX" class="input" value="0"></label><label>Sensor Y<input id="SY" class="input" value="2.2"></label><label>Sensor Z<input id="SZ" class="input" value="0"></label><label>Rotation°<input id="SR" class="input" value="0"></label><label>Target Z<input id="TZ" class="input" value="1.4"></label></div><p class="hint">الإحداثيات: X من اليسار/اليمين، Y على مستوى الأرض/العمق حسب النظام الداخلي، Z ارتفاع الهدف. Rotation يحدد اتجاه LD2450.</p><div style="display:flex;gap:8px;margin-top:12px"><button class="primary" onclick="applyRoom()">تطبيق وبناء الغرفة</button><button class="actions button" onclick="closeBuilder()">إغلاق</button></div></div></div>
 <script>
-const scene=document.querySelector('.scene');
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(scene.clientWidth,scene.clientHeight); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.outputEncoding=THREE.sRGBEncoding; scene.appendChild(renderer.domElement);
-const camera=new THREE.PerspectiveCamera(48,scene.clientWidth/scene.clientHeight,.1,100); camera.position.set(8,7,9);
-const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.target.set(0,1,0); controls.minDistance=6; controls.maxDistance=17; controls.maxPolarAngle=Math.PI*.48;
-
-const world=new THREE.Scene(); world.background=null;
-world.add(new THREE.HemisphereLight(0x9edcff,0x07121b,1.7));
-const key=new THREE.DirectionalLight(0xffffff,2.1); key.position.set(2,8,5); key.castShadow=true; world.add(key);
-const warm=new THREE.PointLight(0xffb36b,4,12); warm.position.set(-2,3,1); world.add(warm);
-const cyan=new THREE.PointLight(0x00aaff,3,10); cyan.position.set(3,2,-3); world.add(cyan);
-
-function mat(color,rough=.65,metal=0){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});}
-function box(w,h,d,m,x,y,z){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;world.add(o);return o;}
-const floor=box(8,.16,6,mat(0x68727a,.4,.15),0,0,0);
-const rug=box(3.3,.035,2.2,mat(0x343c43,.9),-1,0.11,.3);
-box(8,3,.12,mat(0xd2d5d6,.75),0,1.5,-3); box(.12,3,6,mat(0xc7cbcc,.75),-4,1.5,0); box(.12,3,6,mat(0xc7cbcc,.75),4,1.5,0);
-box(8,.12,6,mat(0x1a2730,.7),0,3.02,0);
-
-function sofa(x,z){box(2.8,.55,1.0,mat(0x6d7479,.8),x,.65,z);box(2.8,1.0,.35,mat(0x767e84,.85),x,.95,z+.35);for(let i=-1;i<=1;i++){box(.75,.45,.85,mat(0x788087,.85),x+i*.85,.9,z-.02)}}
-sofa(-2,1.45);
-box(1.7,.18,.9,mat(0x59493b,.65),-1,.55,.2);box(.15,.45,.15,mat(0x3b3028),-1.65,.35,.5);box(.15,.45,.15,mat(0x3b3028),-.35,.35,.5);
-box(2.0,.2,.8,mat(0x3c3028,.55,.15),1.9,1.0,-1.9);box(2,.15,.8,mat(0x3c3028,.55,.15),1.9,.3,-1.9);
-for(let i=0;i<3;i++)box(.08,1.5,.08,mat(0x11171b,.6,.7),.8+i*.9,1.2,-2.92);
-box(1.9,.12,.6,mat(0x15191d,.4,.4),0,1.65,-2.82);box(1.4,.8,.05,mat(0x030507,.25,.2),0,2.05,-2.84);
-
-function cabinet(x,z){box(1.6,.8,.45,mat(0x24272a,.45,.25),x,.42,z);for(let i=0;i<3;i++)box(.7,.025,.02,mat(0x9a7046,.35,.3),x-.35+i*.35,.72,z-.24)}
-cabinet(0,-2.65);
-function plant(x,z){const p=box(.35,.35,.35,mat(0x80543a),x,.28,z);const stem=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,.75,8),mat(0x3b6e3f));stem.position.set(x,.75,z);world.add(stem);for(let i=0;i<7;i++){const leaf=new THREE.Mesh(new THREE.SphereGeometry(.13,8,6),mat(0x2c8a50,.9));leaf.scale.set(1.5,.45,.65);leaf.position.set(x+(Math.random()-.5)*.45,1.05+Math.random()*.35,z+(Math.random()-.5)*.45);world.add(leaf)}}
-plant(-3.25,2.0);plant(3.15,-1.5);plant(2.9,2.1);
-
-const table=new THREE.Group();const top=new THREE.Mesh(new THREE.BoxGeometry(1.3,.12,.8),mat(0x7a573b,.5,.1));top.position.y=.75;table.add(top);for(const a of [-.5,.5])for(const b of [-.3,.3]){const l=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,.75,8),mat(0x292b2c,.4,.4));l.position.set(a,.38,b);table.add(l)}table.position.set(-1,.12,.25);world.add(table);
-
-function chair(x,z){box(.55,.1,.55,mat(0x30383d,.7,.15),x,.62,z);box(.55,.65,.08,mat(0x30383d,.7,.15),x,.95,z+.25)}
-for(const a of [1.2,2.6])for(const b of [-1.5,-.1])chair(a,b);
-
-const roomGrid=new THREE.GridHelper(12,24,0x087cae,0x07304b);roomGrid.position.y=.1;roomGrid.material.opacity=.28;roomGrid.material.transparent=true;world.add(roomGrid);
-
-const target=new THREE.Group();const bodyMat=new THREE.MeshBasicMaterial({color:0x21ff9a,wireframe:true,transparent:true,opacity:.9});
-const head=new THREE.Mesh(new THREE.SphereGeometry(.15,12,8),bodyMat);head.position.y=1.75;target.add(head);
-const torso=new THREE.Mesh(new THREE.CylinderGeometry(.2,.25,.65,8),bodyMat);torso.position.y=1.28;target.add(torso);
-for(const s of [-1,1]){let arm=new THREE.Mesh(new THREE.CylinderGeometry(.045,.06,.62,8),bodyMat);arm.rotation.z=s*.25;arm.position.set(s*.27,1.28,0);target.add(arm);let leg=new THREE.Mesh(new THREE.CylinderGeometry(.055,.07,.75,8),bodyMat);leg.rotation.z=s*.08;leg.position.set(s*.12,.7,0);target.add(leg)}
-target.position.set(.6,.1,.3);world.add(target);
-const ring=new THREE.Mesh(new THREE.RingGeometry(.45,.5,48),new THREE.MeshBasicMaterial({color:0x00e5ff,side:THREE.DoubleSide,transparent:true,opacity:.8}));ring.rotation.x=-Math.PI/2;ring.position.set(.6,.16,.3);world.add(ring);
-
-function animate(){requestAnimationFrame(animate);target.position.x=.6+Math.sin(Date.now()*.001)*.5;ring.position.x=target.position.x;controls.update();renderer.render(world,camera)}animate();
-window.addEventListener('resize',()=>{camera.aspect=scene.clientWidth/scene.clientHeight;camera.updateProjectionMatrix();renderer.setSize(scene.clientWidth,scene.clientHeight)});
-document.getElementById('clock').textContent=new Date().toLocaleString('ar-IQ',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-let paused=false;document.getElementById('pause').onclick=()=>{paused=!paused;document.getElementById('pause').innerHTML=paused?'▶ تشغيل الرادار':'Ⅱ &nbsp; إيقاف الرادار'};document.getElementById('reset').onclick=()=>{target.position.set(.6,.1,.3)};document.getElementById('alert').onclick=()=>alert('تنبيه: تم تسجيل هدف داخل منطقة المراقبة');
-const ctx=document.getElementById('chart').getContext('2d');const labels=Array.from({length:45},(_,i)=>i);const data=labels.map(()=>-52-Math.random()*12);
-new Chart(ctx,{type:'line',data:{labels,datasets:[{data,borderColor:'#10aef5',borderWidth:1.5,pointRadius:0,fill:false,tension:.25}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{min:-80,max:-20,grid:{color:'#0b3045'},ticks:{color:'#8ba7bc'}}}}});
-</script>
-</body>
-</html>
+let scene,camera,renderer,roomGroup,targets=[],room={name:'Room 1',w:6,d:6,h:3,sensor:{x:0,y:2.2,z:0,rot:0},targetZ:1.4},mqttClient=null,serialPort=null;
+const $=id=>document.getElementById(id); function log(x){let d=document.createElement('div');d.className='log';d.textContent=new Date().toLocaleTimeString('ar-IQ')+' '+x;$('logs').prepend(d)}
+function init(){scene=new THREE.Scene();scene.background=new THREE.Color(0x061018);camera=new THREE.PerspectiveCamera(48,1,.1,100);camera.position.set(7,7,8);renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;$('scene').appendChild(renderer.domElement);scene.add(new THREE.HemisphereLight(0x9eeaff,0x16242c,1.4));buildRoom();animate();window.onresize=resize}
+function mat(c,rough=.6){return new THREE.MeshStandardMaterial({color:c,roughness:rough,metalness:.1})}
+function buildRoom(){if(roomGroup)scene.remove(roomGroup);roomGroup=new THREE.Group();scene.add(roomGroup);let w=room.w,d=room.d,h=room.h;let floor=new THREE.Mesh(new THREE.BoxGeometry(w,.12,d),mat(0x26353c));floor.position.y=-.06;floor.receiveShadow=true;roomGroup.add(floor);[[w,h,.1,0,h/2,-d/2],[w,h,.1,0,h/2,d/2],[.1,h,d,-w/2,h/2,0],[.1,h,d,w/2,h/2,0]].forEach(a=>{let m=new THREE.Mesh(new THREE.BoxGeometry(a[0],a[1],a[2]),mat(0x70808a));m.position.set(a[3],a[4],a[5]);roomGroup.add(m)});let s=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,.18,20),mat(0x27d7ff));s.position.set(room.sensor.x,room.sensor.z+.18,room.sensor.y);s.rotation.z=Math.PI/2;s.userData.sensor=true;roomGroup.add(s);for(let x=-w/2+1;x<w/2;x+=1){let l=new THREE.Mesh(new THREE.BoxGeometry(.012,.008,d),mat(0x14272f));l.position.set(x,.005,0);roomGroup.add(l)}for(let z=-d/2+1;z<d/2;z+=1){let l=new THREE.Mesh(new THREE.BoxGeometry(w,.008,.012),mat(0x14272f));l.position.set(0,.006,z);roomGroup.add(l)}targets.forEach(t=>drawTarget(t));updateUI()}
+function drawTarget(t){let g=new THREE.Group(),head=new THREE.Mesh(new THREE.SphereGeometry(.16,12,8),mat(0x39ff9a));head.position.y=1.65;g.add(head);let body=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,.75,10),mat(0x39ff9a));body.position.y=1.18;g.add(body);g.position.set(t.x,t.z||room.targetZ,t.y);let ring=new THREE.Mesh(new THREE.RingGeometry(.35,.39,40),new THREE.MeshBasicMaterial({color:0x39ff9a,side:THREE.DoubleSide,transparent:true,opacity:.8}));ring.rotation.x=-Math.PI/2;ring.position.y=.02;g.add(ring);g.userData.target=true;roomGroup.add(g)}
+function resize(){let e=$('scene');renderer.setSize(e.clientWidth,e.clientHeight);camera.aspect=e.clientWidth/e.clientHeight;camera.updateProjectionMatrix()}function animate(){requestAnimationFrame(animate);camera.lookAt(0,1,0);renderer.render(scene,camera)}
+function openBuilder(){$('modal').classList.add('open')}function closeBuilder(){$('modal').classList.remove('open')}
+function applyRoom(){room={name:$('rn').value||'Room 1',w:+$('W').value||6,d:+$('D').value||6,h:+$('H').value||3,sensor:{x:+$('SX').value||0,y:+$('SY').value||0,z:+$('SZ').value||0,rot:+$('SR').value||0},targetZ:+$('TZ').value||1.4};localStorage.setItem('aegisRoom',JSON.stringify(room));buildRoom();closeBuilder();log('تم تطبيق مخطط الغرفة: '+room.name)}
+function saveRoom(){localStorage.setItem('aegisRoom',JSON.stringify(room));log('تم حفظ الغرفة')}function loadRoom(){let r=localStorage.getItem('aegisRoom');if(r){room=JSON.parse(r);buildRoom();log('تم تحميل الغرفة')}}function clearTargets(){targets=[];buildRoom();log('تم مسح الأهداف')}
+function convert(x,y){let a=room.sensor.rot*Math.PI/180;let fx=y,rx=x;let dx=rx*Math.cos(a)-fx*Math.sin(a),dz=rx*Math.sin(a)+fx*Math.cos(a);return {x:room.sensor.x+dx,y:room.sensor.y+dz,z:room.targetZ}}
+function handleData(o){$('raw').textContent=JSON.stringify(o,null,2).slice(0,1800);let arr=o.targets||o.data||[];if(!Array.isArray(arr))arr=[arr];targets=arr.filter(t=>t&&((t.detected!==false)&&('x' in t||'x_mm' in t))).slice(0,3).map(t=>{let x=('x_m'in t)?+t.x_m:(('x_mm'in t)?+t.x_mm/1000:+t.x);let y=('y_m'in t)?+t.y_m:(('y_mm'in t)?+t.y_mm/1000:+t.y);let p=convert(x,y);return {x:p.x,y:p.y,z:room.targetZ,d:+t.distance_m||Math.hypot(x,y),speed:+t.speed_mps||0}});buildRoom();if(targets[0]){$('tx').textContent=targets[0].x.toFixed(2);$('ty').textContent=targets[0].y.toFixed(2);$('tz').textContent=targets[0].z.toFixed(2);$('td').textContent=targets[0].d.toFixed(2);$('ts').textContent=targets[0].speed.toFixed(2)}log('هدف حقيقي: '+targets.length)}
+function connectMQTT(){let url=$('broker').value.trim(),topic=$('topic').value.trim();try{mqttClient=mqtt.connect(url,{clean:true,reconnectPeriod:3000});mqttClient.on('connect',()=>{$('conn').textContent='MQTT متصل';$('conn').className='status ok';mqttClient.subscribe(topic);log('MQTT connected: '+url)});mqttClient.on('message',(t,m)=>{if(t===topic){try{handleData(JSON.parse(m.toString()))}catch(e){log('JSON غير صالح')}}});mqttClient.on('error',e=>log('MQTT error '+e.message));mqttClient.on('close',()=>{$('conn').textContent='MQTT غير متصل'})}catch(e){alert(e.message)}}
+async function startSerial(){if(!('serial'in navigator)){alert('Web Serial غير مدعوم؛ استخدم Chrome/Edge على الكمبيوتر.');return}try{serialPort=await navigator.serial.requestPort();await serialPort.open({baudRate:256000});$('conn').textContent='USB Serial متصل';const dec=new TextDecoderStream();serialPort.readable.pipeTo(dec.writable);const reader=dec.readable.getReader();let buf='';while(true){let {value,done}=await reader.read();if(done)break;buf+=value;let lines=buf.split(/\r?\n/);buf=lines.pop();for(const line of lines){try{if(line.trim().startsWith('{'))handleData(JSON.parse(line))}catch{}}}}catch(e){log('Serial: '+e.message)}}
+function updateUI(){$('roomName').textContent=room.name;$('rw').textContent=room.w.toFixed(2);$('rdp').textContent=room.d.toFixed(2);$('rh').textContent=room.h.toFixed(2);$('tc').textContent=targets.length;$('sensorInfo').textContent=`X ${room.sensor.x.toFixed(2)} · Y ${room.sensor.y.toFixed(2)} · Z ${room.sensor.z.toFixed(2)} · Rot ${room.sensor.rot}°`}
+setInterval(()=>$('clock').textContent=new Date().toLocaleString('ar-IQ'),1000);const ctx=$('chart').getContext('2d');new Chart(ctx,{type:'line',data:{labels:Array(40).fill(''),datasets:[{data:Array(40).fill(-55),borderColor:'#35d7ff',pointRadius:0,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:-80,max:-20}}}});init();
+</script></body></html>
