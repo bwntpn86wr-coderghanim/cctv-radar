@@ -23,7 +23,7 @@ nav{border-left:1px solid #075f99;background:#03111d;padding:8px 6px;display:fle
 nav button{min-height:63px;border:1px solid #074d78;border-radius:11px;background:#041a2b;color:#cdefff}.navActive,nav button:hover{border-color:#00aaff;background:#063354;color:#fff;box-shadow:0 0 14px #008cff33}
 main{min-width:0;display:flex;flex-direction:column;padding:10px;gap:8px;overflow:hidden}
 .toolbar{display:flex;gap:7px;overflow:auto;direction:rtl}.tool{min-width:70px;padding:8px 7px;border:1px solid #086da8;background:#061b2c;color:#d8f5ff;border-radius:10px}.tool.active{background:#075e9e;border-color:#22c7ff}.tool.danger{border-color:#d6293e;color:#ff7080}
-.canvasWrap{position:relative;flex:1;min-height:320px;border:1px solid #0785c9;border-radius:13px;background:#020b14;overflow:hidden}.canvasWrap canvas{display:block;width:100%;height:100%}
+.canvasWrap{position:relative;flex:1;min-height:320px;border:1px solid #0785c9;border-radius:13px;background:#020b14;overflow:hidden}.canvasWrap canvas{display:block;width:100%;height:100%;cursor:grab}.canvasWrap canvas.dragging{cursor:grabbing}
 .overlay{position:absolute;left:10px;bottom:10px;background:#031525dd;border:1px solid #0b83c5;border-radius:8px;padding:8px 12px;direction:ltr}
 #hint{position:absolute;top:9px;left:50%;transform:translateX(-50%);background:#041c2ddd;border:1px solid #0789cc;padding:7px 14px;border-radius:9px;font-size:12px}
 .bottom{height:185px;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px}.card{border:1px solid #0785c9;border-radius:12px;background:#031522;padding:10px;overflow:auto}.card h3{margin:0 0 8px;color:#fff;font-size:16px}.target{display:flex;justify-content:space-between;border:1px solid #155b80;border-radius:8px;padding:8px;margin:5px 0}.green{color:var(--green)}.red{color:var(--red)}.gold{color:var(--gold)}
@@ -57,6 +57,25 @@ aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:au
 .serialStatus{font-size:11px;line-height:1.7;padding:7px;border:1px solid #155b80;border-radius:8px;background:#02101a}
 .deleteOne{background:#5a101b!important;border-color:#ff3348!important}
 .objList{max-height:170px;overflow:auto}.objItem{display:flex;justify-content:space-between;align-items:center;gap:5px;padding:6px;border-bottom:1px solid #0a3046;font-size:11px}.objItem button{padding:4px 7px;border-radius:6px;border:1px solid #ff3348;background:#43101a;color:#fff}
+
+.page-radar aside,.page-camera aside,.page-people aside,.page-logs aside{display:none!important}
+.page-radar .toolbar,.page-camera .toolbar,.page-people .toolbar,.page-logs .toolbar{display:none!important}
+.page-radar .canvasWrap{display:block;height:calc(100vh - 250px)}
+.page-radar .bottom{height:220px;grid-template-columns:1fr 1fr}
+.page-radar .bottom .card:nth-child(3){display:none}
+.page-camera .canvasWrap,.page-camera .bottom .card:nth-child(1),.page-camera .bottom .card:nth-child(2){display:none!important}
+.page-camera .bottom{height:calc(100vh - 150px);grid-template-columns:1fr}
+.page-camera .bottom .card:nth-child(3){display:block!important;height:100%}
+.page-camera .cameraPanel,.page-camera .cameraPanel video,.page-camera .cameraPanel img{min-height:calc(100vh - 300px);height:calc(100vh - 300px)}
+.page-people .canvasWrap,.page-people .bottom .card:nth-child(2),.page-people .bottom .card:nth-child(3){display:none!important}
+.page-people .bottom{height:calc(100vh - 150px);grid-template-columns:1fr}
+.page-people .bottom .card:nth-child(1){display:block!important;height:100%;overflow:auto}
+.page-logs aside{display:block!important;overflow:auto}
+.page-logs main{display:none!important}
+.page-logs .panel.logsPanel{display:block!important}
+.page-settings aside{display:block!important;overflow:auto}
+.page-settings .toolbar,.page-settings .canvasWrap,.page-settings .bottom{display:none!important}
+@media(max-width:1000px){.page-radar aside,.page-camera aside,.page-people aside,.page-logs aside{display:none!important}}
 </style>
 </head>
 <body>
@@ -126,8 +145,8 @@ aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:au
  <div class="toolbar adminOnly">
   <button class="tool" data-tool="select">↖ تحديد</button>
   <button class="tool" data-tool="wall2">🧱 جدار بنقطتين</button>
-  <button class="tool" data-tool="door">🚪 باب</button>
-  <button class="tool" data-tool="window">🪟 شباك</button>
+  <button class="tool" data-tool="door2">🚪 باب بنقطتين</button>
+  <button class="tool" data-tool="window2">🪟 شباك بنقطتين</button>
   <button class="tool" data-tool="bed">🛏️ سرير</button>
   <button class="tool" data-tool="sofa">🛋️ أريكة</button>
   <button class="tool" data-tool="table">▱ طاولة</button>
@@ -138,7 +157,7 @@ aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:au
   <button class="tool danger" data-tool="danger">⚠️ منطقة خطر</button>
  </div>
  <div class="canvasWrap">
-  <div id="hint">اختر العنصر ثم اضغط مكانه بالماوس. بعد وضعه اسحبه بالماوس لتغيير موقعه. الجدار: اضغط البداية ثم النهاية، ويمكن رسمه بأي اتجاه.</div>
+  <div id="hint">التحديد: اسحب بالزر الأيسر لتحريك العنصر، الزر الأيمن لتدويره، واسحب مكاناً فارغاً لتدوير الخريطة. الجدار/الباب/الشباك: نقطتان بأي اتجاه.</div>
   <div id="scene"></div>
   <div class="overlay">X: <span id="cx">0.00</span> m &nbsp; Y: <span id="cy">0.00</span> m &nbsp; Z: <span id="cz">0.00</span> m</div>
  </div>
@@ -223,6 +242,7 @@ aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:au
   <button id="save" class="save adminOnly">💾 حفظ</button><button id="load">📂 تحميل</button>
   <button id="export" class="adminOnly">JSON ⬇</button><button id="clear" class="dangerBtn adminOnly">مسح البناء بالكامل</button>
  </div></div>
+ <div class="panel logsPanel"><h3>📋 سجل الأحداث</h3><div id="logs" class="objList" style="max-height:260px"></div></div>
 </aside>
 </div>
 </div>
@@ -239,7 +259,7 @@ const state={W:25,D:20,H:3,floors:1,currentFloor:1,objects:[],selected:null,tool
   {id:2,x:12,y:2,z:2.2,rot:90,topic:'aegisradar/ld2450/2',online:false,last:0},
   {id:3,x:22,y:10,z:2.2,rot:180,topic:'aegisradar/ld2450/3',online:false,last:0}
  ],targets:[]};
-let role='viewer',scene,camera,renderer,raycaster,mouse=new THREE.Vector2(),group,floorGroup,dragging=false,dragObj=null;
+let role='viewer',scene,camera,renderer,raycaster,mouse=new THREE.Vector2(),group,floorGroup,dragging=false,dragObj=null,orbiting=false,rotating=false,activePointerId=null,lastPX=0,lastPY=0,theta=Math.PI/4,phi=Math.PI/3,radius=30,faceBusy=false;
 const toast=m=>{ $('toast').textContent=m;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',1800) };
 document.getElementById('enterSystem').addEventListener('click',()=>{document.getElementById('intro').style.display='none';document.getElementById('pass').focus();});
 function login(){
@@ -257,9 +277,14 @@ function init(){
  group=new THREE.Group();scene.add(group);raycaster=new THREE.Raycaster();
  scene.add(new THREE.HemisphereLight(0x8edbff,0x05101a,1.2));
  const dl=new THREE.DirectionalLight(0xffffff,1.5);dl.position.set(10,20,10);scene.add(dl);
- renderer.domElement.addEventListener('pointerdown',onCanvas); renderer.domElement.addEventListener('pointermove',onDragMove); renderer.domElement.addEventListener('pointerup',()=>dragging=false);
+ renderer.domElement.addEventListener('pointerdown',onPointerDown);
+ renderer.domElement.addEventListener('pointermove',onPointerMove);
+ renderer.domElement.addEventListener('pointerup',onPointerUp);
+ renderer.domElement.addEventListener('pointercancel',onPointerUp);
+ renderer.domElement.addEventListener('wheel',onWheel,{passive:false});
+ renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
  renderer.domElement.addEventListener('pointermove',movePointer);
- window.addEventListener('resize',resize);resize();rebuild(); state.sensors.forEach((sn,i)=>{const n=i+1;$('sx'+n).value=sn.x;$('sy'+n).value=sn.y;$('sz'+n).value=sn.z;$('srot'+n).value=sn.rot;});
+ window.addEventListener('resize',resize);resize();rebuild();fitView(); state.sensors.forEach((sn,i)=>{const n=i+1;$('sx'+n).value=sn.x;$('sy'+n).value=sn.y;$('sz'+n).value=sn.z;$('srot'+n).value=sn.rot;});
  animate();
 }
 function resize(){if(!renderer)return;const r=$('scene').getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();}
@@ -275,6 +300,10 @@ function addWall(x1,z1,x2,z2,h,th=.18,color=0x18bfff){
 function rebuild(){
  clearGroup();
  const grid=new THREE.GridHelper(Math.max(state.W,state.D)*1.5,Math.max(20,Math.round(Math.max(state.W,state.D)*2)),0x0873a8,0x12344c);grid.position.y=floorY();group.add(grid);
+ for(let fi=1;fi<=state.floors;fi++){
+   const slab=cube(state.W,.08,state.D,0x06243a,fi===state.currentFloor?.82:.22);
+   slab.position.set(0,(fi-1)*state.H-.05,0);group.add(slab);
+ }
  // current floor boundary
  const y=floorY();
  const walls=[
@@ -282,7 +311,6 @@ function rebuild(){
  ];
  walls.forEach(a=>group.add(addWall(...a,state.H,.18,0x00aaff)));
  // floor slab
- const slab=cube(state.W,.08,state.D,0x06243a,0.75);slab.position.set(0,y-.05,0);group.add(slab);
  // axes
  addAxes();
  state.objects.filter(o=>o.floor===state.currentFloor).forEach(addObjectMesh);
@@ -368,18 +396,18 @@ function addObjectMesh(o){
  if(o.type==='wall'){m=createWallDetailed(o)}
  else if(['bed','sofa','table','chair','plant','camera','sensor'].includes(o.type)){m=createFurniture(o.type,o)}
  else if(o.type==='door'){
-   const g=new THREE.Group(), y0=floorY();
-   boxPart(g,1.0,2.15,.16,0,y0+1.075,0,0x6d4327);
-   boxPart(g,.78,1.92,.04,0,y0+1.08,-.085,0x8a5b36);
-   cylPart(g,.045,.08,.36,y0+1.05,-.12,0xd9b35f,Math.PI/2);
-   g.position.set(roomX(o.x),0,roomZ(o.y));g.rotation.y=(o.rot||0)*Math.PI/180;g.userData.obj=o;m=g;
+   const x2=o.x2??(o.x+1), y2=o.y2??o.y, len=Math.max(.8,Math.hypot(x2-o.x,y2-o.y)), g=new THREE.Group(), y0=floorY();
+   boxPart(g,len,2.15,.16,0,y0+1.075,0,0x6d4327);
+   boxPart(g,Math.max(.5,len-.22),1.92,.04,0,y0+1.08,-.085,0x8a5b36);
+   cylPart(g,.045,.08,len*.22,y0+1.05,-.12,0xd9b35f,Math.PI/2);
+   g.position.set(roomX((o.x+x2)/2),0,roomZ((o.y+y2)/2));g.rotation.y=-Math.atan2(y2-o.y,x2-o.x);g.userData.obj=o;m=g;
  } else if(o.type==='window'){
-   const g=new THREE.Group(), y0=floorY();
-   boxPart(g,1.55,1.35,.12,0,y0+1.75,0,0xeef4f7);
-   boxPart(g,1.25,1.08,.04,0,y0+1.75,-.07,0x4aaee0,.0,.72);
+   const x2=o.x2??(o.x+1.5), y2=o.y2??o.y, len=Math.max(1.0,Math.hypot(x2-o.x,y2-o.y)), g=new THREE.Group(), y0=floorY();
+   boxPart(g,len,1.35,.12,0,y0+1.75,0,0xeef4f7);
+   boxPart(g,Math.max(.7,len-.25),1.08,.04,0,y0+1.75,-.07,0x4aaee0,0,.72);
    boxPart(g,.08,1.1,.05,0,y0+1.75,-.10,0x354c59);
-   boxPart(g,1.3,.08,.05,0,y0+1.75,-.10,0x354c59);
-   g.position.set(roomX(o.x),0,roomZ(o.y));g.rotation.y=(o.rot||0)*Math.PI/180;g.userData.obj=o;m=g;
+   boxPart(g,Math.max(.4,len-.12),.08,.05,0,y0+1.75,-.10,0x354c59);
+   g.position.set(roomX((o.x+x2)/2),0,roomZ((o.y+y2)/2));g.rotation.y=-Math.atan2(y2-o.y,x2-o.x);g.userData.obj=o;m=g;
  } else if(o.type==='danger'){
    const g=new THREE.Group(), w=o.w||2,d=o.d||2,y0=floorY();
    const mesh=cube(w,.06,d,0xff2038,.28);mesh.position.y=y0+.04;g.add(mesh);
@@ -402,40 +430,56 @@ function worldPoint(ev){
  const r=renderer.domElement.getBoundingClientRect();mouse.x=((ev.clientX-r.left)/r.width)*2-1;mouse.y=-((ev.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(mouse,camera);
  const plane=new THREE.Plane(new THREE.Vector3(0,1,0),-floorY());const p=new THREE.Vector3();return raycaster.ray.intersectPlane(plane,p)?p:null;
 }
-function onCanvas(ev){
+function hitObject(ev){
+ const r=renderer.domElement.getBoundingClientRect();mouse.x=((ev.clientX-r.left)/r.width)*2-1;mouse.y=-((ev.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(mouse,camera);
+ return raycaster.intersectObjects(group.children,true).find(h=>h.object.userData&&h.object.userData.obj);
+}
+function updateOrbit(){
+ const x=radius*Math.sin(phi)*Math.sin(theta),y=radius*Math.cos(phi),z=radius*Math.sin(phi)*Math.cos(theta);
+ camera.position.set(x,y,z);camera.lookAt(0,Math.max(0,((state.floors-1)*state.H)/2),0);
+}
+function onPointerDown(ev){
  if(role!=='admin')return;
- const p=worldPoint(ev);if(!p)return;
- const x=Math.max(0,Math.min(state.W,p.x+state.W/2)),z=Math.max(0,Math.min(state.D,p.z+state.D/2));
- $('cx').textContent=x.toFixed(2);$('cy').textContent=z.toFixed(2);$('cz').textContent=floorY().toFixed(2);
- if(state.tool==='wall2'){
-   if(!state.wallStart){state.wallStart={x,z};toast('تم تحديد بداية الجدار — اختر النهاية');return}
-   if(Math.hypot(x-state.wallStart.x,z-state.wallStart.z)<.15){state.wallStart=null;return}
-   state.objects.push({id:crypto.randomUUID(),type:'wall',floor:state.currentFloor,x:state.wallStart.x,y:state.wallStart.z,x2:x,y2:z,h:state.H,th:.18,rot:0});
-   const wallLen=Math.hypot(x-state.wallStart.x,z-state.wallStart.z);state.wallStart=null;rebuild();log('تم بناء جدار بطول '+wallLen.toFixed(2)+' m');return;
- }
- if(state.tool==='select'){
-   const hits=raycaster.intersectObjects(group.children,true);
-   const hit=hits.find(h=>h.object.userData.obj);
-   if(hit){
-     state.selected=hit.object.userData.obj.id; dragObj=hit.object.userData.obj; dragging=true;
-     syncProps(); rebuild();
+ activePointerId=ev.pointerId;lastPX=ev.clientX;lastPY=ev.clientY;
+ if(['wall2','door2','window2'].includes(state.tool)){
+   const p=worldPoint(ev);if(!p)return;const x=Math.max(0,Math.min(state.W,p.x+state.W/2)),z=Math.max(0,Math.min(state.D,p.z+state.D/2));
+   $('cx').textContent=x.toFixed(2);$('cy').textContent=z.toFixed(2);$('cz').textContent=floorY().toFixed(2);
+   if(!state.wallStart){state.wallStart={x,z};toast('تم تحديد نقطة البداية — اختر نقطة النهاية');}
+   else if(Math.hypot(x-state.wallStart.x,z-state.wallStart.z)>=.15){
+     const type=state.tool==='wall2'?'wall':state.tool==='door2'?'door':'window';
+     state.objects.push({id:crypto.randomUUID(),type,floor:state.currentFloor,x:state.wallStart.x,y:state.wallStart.z,x2:x,y2:z,h:state.H,th:type==='wall'?.18:.14,rot:0,z:1});
+     const len=Math.hypot(x-state.wallStart.x,z-state.wallStart.z);state.wallStart=null;rebuild();refreshObjList();syncProps();toast('تم بناء '+typeName(type)+' بطول '+len.toFixed(2)+' م');log('Built '+type+' length '+len.toFixed(2)+'m');
    }
    return;
  }
- const type=state.tool;
+ if(state.tool==='select'){
+   const hit=hitObject(ev);
+   if(hit){state.selected=hit.object.userData.obj.id;dragObj=hit.object.userData.obj;syncProps();if(ev.button===2)rotating=true;else dragging=true;renderer.domElement.classList.add('dragging');}
+   else {orbiting=true;renderer.domElement.classList.add('dragging');}
+   return;
+ }
+ const p=worldPoint(ev);if(!p)return;const x=Math.max(0,Math.min(state.W,p.x+state.W/2)),z=Math.max(0,Math.min(state.D,p.z+state.D/2)),type=state.tool;
  if(type==='danger')state.objects.push({id:crypto.randomUUID(),type,floor:state.currentFloor,x,y:z,w:2,d:2,rot:0});
  else state.objects.push({id:crypto.randomUUID(),type,floor:state.currentFloor,x,y:z,z:floorY()+1,rot:0,h:state.H});
- rebuild();syncProps();toast('تم وضع '+typeName(type));
+ rebuild();syncProps();refreshObjList();toast('تم وضع '+typeName(type));
 }
-function onDragMove(ev){
- if(!dragging || !dragObj || role!=='admin') return;
- const p=worldPoint(ev); if(!p)return;
- dragObj.x=Math.max(0,Math.min(state.W,p.x)); dragObj.y=Math.max(0,Math.min(state.D,p.z));
- rebuild(); syncProps();
+function moveObjectLive(o){
+ const mesh=group.children.find(m=>m.userData&&m.userData.obj&&m.userData.obj.id===o.id);if(!mesh)return;
+ if(['wall','door','window'].includes(o.type)){mesh.position.set(roomX((o.x+o.x2)/2),mesh.position.y,roomZ((o.y+o.y2)/2));mesh.rotation.y=-Math.atan2(o.y2-o.y,o.x2-o.x);}
+ else{mesh.position.set(roomX(o.x),mesh.position.y,roomZ(o.y));mesh.rotation.y=(o.rot||0)*Math.PI/180;}
 }
+function onPointerMove(ev){
+ if(activePointerId!==ev.pointerId)return;const dx=ev.clientX-lastPX,dy=ev.clientY-lastPY;lastPX=ev.clientX;lastPY=ev.clientY;
+ if(dragging&&dragObj){const p=worldPoint(ev);if(!p)return;const x=Math.max(0,Math.min(state.W,p.x+state.W/2)),z=Math.max(0,Math.min(state.D,p.z+state.D/2));
+   if(['wall','door','window'].includes(dragObj.type)){const ddx=x-dragObj.x,ddy=z-dragObj.y;dragObj.x=x;dragObj.y=z;dragObj.x2+=ddx;dragObj.y2+=ddy;}else{dragObj.x=x;dragObj.y=z;}moveObjectLive(dragObj);syncProps();
+ }else if(rotating&&dragObj){dragObj.rot=(dragObj.rot||0)+dx*.7;if(['wall','door','window'].includes(dragObj.type)){const cx=(dragObj.x+dragObj.x2)/2,cy=(dragObj.y+dragObj.y2)/2,len=Math.hypot(dragObj.x2-dragObj.x,dragObj.y2-dragObj.y),a=dragObj.rot*Math.PI/180;dragObj.x=cx-Math.cos(a)*len/2;dragObj.x2=cx+Math.cos(a)*len/2;dragObj.y=cy-Math.sin(a)*len/2;dragObj.y2=cy+Math.sin(a)*len/2;}moveObjectLive(dragObj);syncProps();
+ }else if(orbiting){theta-=dx*.008;phi=Math.max(.18,Math.min(Math.PI/2,phi+dy*.008));updateOrbit();}
+}
+function onPointerUp(ev){if(activePointerId!==null&&ev.pointerId!==activePointerId)return;dragging=false;rotating=false;orbiting=false;activePointerId=null;renderer.domElement.classList.remove('dragging');}
+function onWheel(ev){ev.preventDefault();radius=Math.max(3,Math.min(250,radius*(ev.deltaY>0?1.08:.92)));updateOrbit();}
 
 function movePointer(ev){const p=worldPoint(ev);if(p){$('cx').textContent=(p.x+state.W/2).toFixed(2);$('cy').textContent=(p.z+state.D/2).toFixed(2);$('cz').textContent=floorY().toFixed(2)}}
-function typeName(t){return ({wall:'الجدار',door:'الباب',window:'الشباك',bed:'السرير',sofa:'الأريكة',table:'الطاولة',chair:'الكرسي',plant:'النبات',camera:'الكاميرا',sensor:'LD2450',danger:'منطقة الخطر'})[t]||t}
+function typeName(t){return ({wall:'الجدار',door:'الباب',window:'الشباك',door2:'الباب بنقطتين',window2:'الشباك بنقطتين',bed:'السرير',sofa:'الأريكة',table:'الطاولة',chair:'الكرسي',plant:'النبات',camera:'الكاميرا',sensor:'LD2450',danger:'منطقة الخطر'})[t]||t}
 function selectedObj(){return state.objects.find(o=>o.id===state.selected)}
 function syncProps(){const o=selectedObj();if(!o)return; $('ox').value=o.x||0;$('oy').value=o.y||0;$('oz').value=o.z||floorY();$('rot').value=o.rot||0}
 $('applyRoom').onclick=()=>{state.W=+$('roomW').value||15;state.D=+$('roomD').value||12;state.H=+$('roomH').value||3;state.floors=Math.max(1,+$('floors').value||1);state.currentFloor=Math.min(state.currentFloor,state.floors);fitView();rebuild();toast('تم تطبيق حجم المبنى')};
@@ -445,10 +489,10 @@ $('prevFloor').onclick=()=>{if(state.currentFloor>1){state.currentFloor--;rebuil
 $('addFloor').onclick=()=>{state.floors++;state.currentFloor=state.floors;rebuild();toast('تمت إضافة طابق')};
 $('fit').onclick=fitView;
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{state.tool=b.dataset.tool;document.querySelectorAll('.tool').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.wallStart=null;$('hint').textContent=state.tool==='wall2'?'الجدار: اضغط نقطة البداية ثم نقطة النهاية — يمكنك الرسم بأي اتجاه':'اضغط على أرضية الغرفة لوضع '+typeName(state.tool)});
-function fitView(){const s=Math.max(state.W,state.D);camera.position.set(s*1.25,s*1.05,s*1.25);camera.lookAt(0,((state.floors-1)*state.H)/2,0)}
+function fitView(){const s=Math.max(state.W,state.D);radius=Math.max(8,s*1.65);theta=Math.PI/4;phi=Math.PI/3;updateOrbit()}
 function save(){localStorage.setItem('aegisradar_project',JSON.stringify(state));toast('تم حفظ المخطط')}
 $('save').onclick=save;
-$('load').onclick=()=>{const x=localStorage.getItem('aegisradar_project');if(!x)return toast('لا يوجد مخطط محفوظ');Object.assign(state,JSON.parse(x)); state.sensors.forEach((sn,i)=>{const n=i+1;$('sx'+n).value=sn.x;$('sy'+n).value=sn.y;$('sz'+n).value=sn.z;$('srot'+n).value=sn.rot;}); rebuild();fitView();toast('تم تحميل المخطط')};
+$('load').onclick=()=>{const x=localStorage.getItem('aegisradar_project');if(!x)return toast('لا يوجد مخطط محفوظ');Object.assign(state,JSON.parse(x)); state.floors=Math.max(1,Number(state.floors)||1); state.currentFloor=Math.min(Math.max(1,Number(state.currentFloor)||1),state.floors); state.objects=(state.objects||[]).map(o=>{if(['wall','door','window'].includes(o.type)&&(o.x2==null||o.y2==null)){o.x2=o.x+(o.type==='window'?1.5:1);o.y2=o.y}return o}); state.sensors.forEach((sn,i)=>{const n=i+1;$('sx'+n).value=sn.x;$('sy'+n).value=sn.y;$('sz'+n).value=sn.z;$('srot'+n).value=sn.rot;}); rebuild();fitView();toast('تم تحميل المخطط')};
 $('export').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='aegisradar-room.json';a.click();URL.revokeObjectURL(a.href)};
 $('clear').onclick=()=>{if(confirm('مسح جميع عناصر البناء؟')){state.objects=[];state.selected=null;rebuild();toast('تم مسح البناء')}};
 $('aiBuild').onclick=()=>{
@@ -459,7 +503,7 @@ $('aiBuild').onclick=()=>{
  state.objects=[];
  const w=state.W,d=state.D;
  const add=(type,x,y,rot=0)=>state.objects.push({id:crypto.randomUUID(),type,floor:1,x,y,z:1,rot,h:state.H});
- add('bed',w*.25,d*.25);add('sofa',w*.62,d*.35);add('table',w*.58,d*.55);add('chair',w*.7,d*.55);add('plant',w*.12,d*.8);add('door',w*.5,0,0);add('window',w*.8,d,0);
+ add('bed',w*.25,d*.25);add('sofa',w*.62,d*.35);add('table',w*.58,d*.55);add('chair',w*.7,d*.55);add('plant',w*.12,d*.8);state.objects.push({id:crypto.randomUUID(),type:'door',floor:1,x:w*.45,y:0,x2:w*.55,y2:0,h:state.H,th:.14,rot:0});state.objects.push({id:crypto.randomUUID(),type:'window',floor:1,x:w*.72,y:d,x2:w*.88,y2:d,h:state.H,th:.14,rot:0});
  rebuild();fitView();toast('تم إنشاء مخطط أولي من الوصف — عدّله بالماوس والإحداثيات');
 };
 function log(s){const el=document.createElement('div');el.textContent=new Date().toLocaleTimeString()+'  '+s;el.style.padding='4px;border-bottom:1px solid #0a3046';$('logs').prepend(el)}
@@ -527,7 +571,7 @@ function renderTargets3D(){
   const c=t.id==='P1'?0x00ef82:t.id==='P2'?0x00aaff:0xffc52f;
   const body=cube(.18,.85,.18,c,.9);body.position.y=floorY()+.45;g.add(body);
   const head=new THREE.Mesh(new THREE.SphereGeometry(.16,12,12),mat(c));head.position.y=floorY()+.95;g.add(head);
-  g.position.set(t.x,0,t.y);group.add(g);
+  g.position.set(roomX(t.x),floorY(),roomZ(t.y));group.add(g);
  });
 }
 $('connectSerial').onclick=connectSerial;$('disconnectSerial').onclick=disconnectSerial;
@@ -551,41 +595,15 @@ function deleteObject(id){
 }
 $('deleteSelected').onclick=()=>{if(!state.selected)return toast('حدد عنصراً أولاً');deleteObject(state.selected)};
 
-/* ---------- Face tracking / digital zoom ---------- */
-let camStream=null,faceDetector=null,faceTracking=false,faceZooming=false,faceLast=null;
-async function startCam(){
- try{
-  camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
-  $('localCam').srcObject=camStream;await $('localCam').play();toast('تم تشغيل كاميرا الهاتف');
- }catch(e){toast('تعذر تشغيل الكاميرا: '+e.message)}
-}
-function stopCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}$('localCam').srcObject=null;$('localCam').style.transform='scale(1)';$('faceBox').style.display='none';$('faceInfo').style.display='none';}
-async function initFace(){
- if(typeof FaceDetection==='undefined'){toast('مكتبة تتبع الوجه غير متاحة');return}
- faceDetector=new FaceDetection({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}`});
- faceDetector.setOptions({model:'short',minDetectionConfidence:.55});
- faceDetector.onResults(res=>{
-  const v=$('localCam'),box=$('faceBox'),info=$('faceInfo');
-  if(!res.detections||!res.detections.length){box.style.display='none';info.style.display='none';if(faceZooming)v.style.transform='scale(1)';return}
-  const bb=res.detections[0].boundingBox;
-  const x=(bb.xCenter-bb.width/2)*100,y=(bb.yCenter-bb.height/2)*100,w=bb.width*100,h=bb.height*100;
-  box.style.display='block';box.style.left=x+'%';box.style.top=y+'%';box.style.width=w+'%';box.style.height=h+'%';
-  info.style.display='block';info.textContent='👤 وجه مكتشف';
-  if(faceZooming){const scale=Math.min(3.0,Math.max(1.25,1.0/Math.max(bb.width,.18)));v.style.transform=`scale(${scale})`;faceLast={x:bb.xCenter,y:bb.yCenter,scale};}
- });
-}
-async function faceLoop(){
- if(faceTracking&&faceDetector&&$('localCam').readyState>=2){
-  try{await faceDetector.send({image:$('localCam')})}catch(e){}
- }
- requestAnimationFrame(faceLoop);
-}
-$('startCam').onclick=startCam;$('stopCam').onclick=stopCam;
-$('faceTrack').onclick=async()=>{if(!faceDetector)await initFace();faceTracking=!faceTracking;toast(faceTracking?'تم تفعيل تتبع الوجه':'تم إيقاف تتبع الوجه')};
-$('faceZoom').onclick=async()=>{if(!faceDetector)await initFace();faceZooming=!faceZooming;toast(faceZooming?'تم تفعيل الزوم التلقائي على الوجه':'تم إيقاف زوم الوجه')};
-$('resetZoom').onclick=()=>{$('localCam').style.transform='scale(1)';faceZooming=false;toast('تمت إعادة الزوم إلى 1×')};
-faceLoop();
-
+/* ---------- Single camera source + Face tracking / digital zoom ---------- */
+let camStream=null,faceDetector=null,faceTracking=false,faceZooming=false,faceLast=null,ipCamActive=false;
+function setCameraUI(local){$('localCam').style.display=local?'block':'none';$('ipCam').style.display=local?'none':'block';}
+async function startCam(){try{stopCam();if(!window.isSecureContext)return toast('كاميرا الهاتف تحتاج HTTPS — افتح الموقع عبر GitHub Pages HTTPS');if(!navigator.mediaDevices?.getUserMedia)return toast('المتصفح لا يدعم كاميرا الهاتف');camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});const v=$('localCam');setCameraUI(true);v.srcObject=camStream;v.muted=true;v.playsInline=true;await v.play();$('ipCamStatus').textContent='كاميرا الهاتف تعمل — مصدر واحد فقط';toast('تم تشغيل كاميرا الهاتف');}catch(e){toast('تعذر تشغيل الكاميرا: '+e.message)}}
+function stopCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}const v=$('localCam');if(v){v.pause();v.srcObject=null;v.style.transform='scale(1) translate(0,0)'}const img=$('ipCam');if(img){img.onload=null;img.onerror=null;img.src='';img.style.display='none'}$('faceBox').style.display='none';$('faceInfo').style.display='none';ipCamActive=false;if($('ipCamStatus'))$('ipCamStatus').textContent='الكاميرا متوقفة'}
+function startIPCam(){stopCam();const url=$('ipCamUrl').value.trim();if(!url)return toast('ضع رابط MJPEG للآيفون أولاً');const img=$('ipCam');setCameraUI(false);img.onload=()=>{ipCamActive=true;$('ipCamStatus').textContent='IP Camera متصلة ✓ — بث الآيفون فقط';toast('تم تشغيل بث الآيفون')};img.onerror=()=>{ipCamActive=false;$('ipCamStatus').textContent='تعذر تحميل IP Camera — تحقق من الشبكة والرابط';toast('تعذر فتح بث IP Camera')};img.src=url+(url.includes('?')?'&':'?')+'t='+Date.now()}
+async function initFace(){if(faceDetector)return true;if(typeof FaceDetection==='undefined'){toast('مكتبة تتبع الوجه غير متاحة');return false}faceDetector=new FaceDetection({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}`});faceDetector.setOptions({model:'short',minDetectionConfidence:.55});faceDetector.onResults(res=>{const v=$('localCam'),box=$('faceBox'),info=$('faceInfo');if(!v.srcObject){box.style.display='none';info.style.display='none';return}if(!res.detections?.length){box.style.display='none';info.style.display='none';if(faceZooming)v.style.transform='scale(1) translate(0,0)';return}const bb=res.detections[0].boundingBox,x=bb.xCenter-bb.width/2,y=bb.yCenter-bb.height/2,w=bb.width,h=bb.height;box.style.display='block';box.style.left=(x*100)+'%';box.style.top=(y*100)+'%';box.style.width=(w*100)+'%';box.style.height=(h*100)+'%';info.style.display='block';info.textContent='👤 وجه مكتشف — تتبع فعال';if(faceZooming){const scale=Math.min(3.2,Math.max(1.15,.62/Math.max(w,.16))),tx=(.5-bb.xCenter)*100*(scale-1),ty=(.5-bb.yCenter)*100*(scale-1);v.style.transform=`scale(${scale}) translate(${tx}%,${ty}%)`;faceLast={x:bb.xCenter,y:bb.yCenter,scale}}else v.style.transform='scale(1) translate(0,0)'}) ;return true}
+async function faceLoop(){if(faceTracking&&!faceBusy&&faceDetector&&$('localCam').srcObject&&$('localCam').readyState>=2){faceBusy=true;try{await faceDetector.send({image:$('localCam')})}catch(e){}faceBusy=false}requestAnimationFrame(faceLoop)}
+$('startCam').onclick=startCam;$('startIPCam').onclick=startIPCam;$('stopCam').onclick=stopCam;$('faceTrack').onclick=async()=>{if(!$('localCam').srcObject)return toast('شغّل كاميرا الهاتف أولاً');if(!await initFace())return;faceTracking=!faceTracking;toast(faceTracking?'تم تفعيل تتبع الوجه':'تم إيقاف تتبع الوجه')};$('faceZoom').onclick=async()=>{if(!$('localCam').srcObject)return toast('شغّل كاميرا الهاتف أولاً');if(!await initFace())return;faceZooming=!faceZooming;toast(faceZooming?'تم تفعيل الزوم والتوسيط التلقائي على الوجه':'تم إيقاف زوم الوجه');if(!faceZooming)$('localCam').style.transform='scale(1) translate(0,0)'};$('resetZoom').onclick=()=>{$('localCam').style.transform='scale(1) translate(0,0)';faceZooming=false;toast('تمت إعادة الزوم إلى 1×')};faceLoop();
 
 /* ================= MQTT REAL LD2450 — 3 SENSORS ================= */
 let mqttClient=null;
@@ -662,45 +680,16 @@ function connectMQTT(){
 function disconnectMQTT(){if(mqttClient){mqttClient.end(true);mqttClient=null}state.sensors.forEach(s=>s.online=false);setMqttStatus('تم فصل MQTT');log('MQTT disconnected')}
 $('mqttConnect').onclick=connectMQTT;$('mqttDisconnect').onclick=disconnectMQTT;
 
-/* =============== IPHONE LOCAL CAMERA + IP CAMERA APP =============== */
-let ipCamActive=false;
-async function startCam(){
- try{
-  stopCam();
-  if(!window.isSecureContext){toast('كاميرا الهاتف تحتاج HTTPS. افتح الموقع عبر GitHub Pages HTTPS');return}
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('المتصفح لا يدعم كاميرا الهاتف');return}
-  camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
-  const v=$('localCam'); v.style.display='block'; v.srcObject=camStream; v.muted=true; v.playsInline=true;
-  $('ipCam').style.display='none';
-  await v.play(); $('ipCamStatus').textContent='كاميرا الهاتف تعمل مباشرة'; toast('تم تشغيل كاميرا الهاتف');
- }catch(e){
-  console.error(e);
-  if(e.name==='NotAllowedError')toast('اسمح للموقع باستخدام الكاميرا من إعدادات المتصفح');
-  else if(e.name==='NotFoundError')toast('لم يتم العثور على كاميرا');
-  else toast('تعذر تشغيل الكاميرا: '+e.message);
- }
-}
-function startIPCam(){
- stopCam();
- const url=$('ipCamUrl').value.trim();
- if(!url){toast('ضع رابط MJPEG للآيفون أولاً');return}
- const img=$('ipCam');
- img.style.display='block'; $('localCam').style.display='none';
- img.onload=()=>{ipCamActive=true;$('ipCamStatus').textContent='IP Camera متصلة ✓ — '+url;toast('تم تشغيل بث الآيفون على الموقع');};
- img.onerror=()=>{ipCamActive=false;$('ipCamStatus').textContent='تعذر تحميل البث. إذا كان الموقع HTTPS والرابط HTTP سيمنعه المتصفح (Mixed Content).';toast('تعذر فتح بث IP Camera');};
- img.src=url+(url.includes('?')?'&':'?')+'t='+Date.now();
-}
-function stopCam(){
- if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
- const v=$('localCam'); if(v){v.pause();v.srcObject=null;v.style.transform='scale(1)';v.style.display='block'}
- const img=$('ipCam'); if(img){img.src='';img.style.display='none'}
- ipCamActive=false; $('ipCamStatus').textContent='IP Camera: غير مشغلة';
-}
-$('startIPCam').onclick=startIPCam;
-$('ipCamUrl').addEventListener('change',()=>{if(ipCamActive)startIPCam()});
-
 function animate(){requestAnimationFrame(animate);if(!renderer)return;renderer.render(scene,camera);radarDraw();updateTargets()}
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('navActive'));b.classList.add('navActive');toast('صفحة '+b.textContent.replace(/[\n🏠🏗️📡📷👥📋⚙️]/g,'').trim())});
+function setPage(page){
+ const app=document.getElementById('app');
+ app.classList.remove('page-home','page-build','page-radar','page-camera','page-people','page-logs','page-settings');
+ app.classList.add('page-'+page);
+ document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('navActive',x.dataset.page===page));
+ if(page==='home'||page==='build'){fitView();resize();}else if(page==='radar'){resize();}else if(page==='camera'){stopCam();}else if(page==='logs'){if(typeof log==='function')log('فتح سجل الأحداث');}else if(page==='settings'){toast('الإعدادات جاهزة للتعديل من اللوحة الجانبية');}
+}
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.page)));
+setPage('home');
 })();
 </script>
 </body>
