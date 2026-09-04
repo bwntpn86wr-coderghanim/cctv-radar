@@ -31,6 +31,20 @@ aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:au
 #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);padding:10px 16px;border:1px solid #08a8ff;background:#041c2deF;border-radius:9px;display:none;z-index:200}
 .modal{position:fixed;inset:0;background:#000b;display:none;place-items:center;z-index:90}.modalBox{width:min(700px,94vw);max-height:90vh;overflow:auto;background:#041522;border:1px solid #08a8ff;border-radius:16px;padding:18px}.modalGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.modalGrid button{padding:13px;background:#06253a;border:1px solid #0a7eaf;color:#fff;border-radius:9px}
 .viewerOnly .adminOnly{display:none!important}
+.roleBadge{padding:7px 11px;border:1px solid #0785c9;border-radius:9px;background:#031b2a;color:#8fe6ff;font-size:11px;font-weight:800}
+.settingsPage{display:none;padding:14px;overflow:auto;height:calc(100vh - 90px)}
+.page-settings .settingsPage{display:block!important}
+.page-settings aside{display:none!important}
+.page-settings .toolbar,.page-settings .canvasWrap,.page-settings .bottom{display:none!important}
+.settingsHeader{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;border:1px solid #0b80bb;border-radius:12px;padding:12px;background:#031725}
+.settingsHeader h2{margin:0;color:#dff7ff;font-size:20px}.rolePill{padding:7px 12px;border-radius:999px;background:#063a52;border:1px solid #00b7ff;color:#fff;font-size:11px}
+.settingsGrid{display:grid;grid-template-columns:repeat(2,minmax(280px,1fr));gap:12px}.settingsGrid .panel{margin:0}
+.ipZoomRow{margin-top:7px;padding:7px;border:1px solid #0b5f85;border-radius:8px;background:#031522}.ipZoomRow label{display:block;margin-bottom:4px;color:#bde7f6}.ipZoomRow input{width:100%}
+.cameraPanel img{transform-origin:center center;transition:transform .12s ease-out}
+.viewerOnly nav button[data-page="build"],.viewerOnly nav button[data-page="logs"],.viewerOnly nav button[data-page="settings"]{display:none!important}
+.viewerOnly .roleBadge{color:#ffd27a;border-color:#8d641d}
+@media(max-width:800px){.settingsGrid{grid-template-columns:1fr}.settingsPage{height:calc(100vh - 135px)}.settingsHeader{align-items:flex-start;flex-direction:column}}
+
 @media(max-width:1000px){.layout{grid-template-columns:70px 1fr}.layout aside{display:none}.bottom{grid-template-columns:1fr 1fr;height:170px}.bottom .card:last-child{display:none}}
 @media(max-width:650px){header{height:64px}.brand{font-size:16px}.center,.meta{font-size:9px}.layout{grid-template-columns:1fr;height:calc(100vh - 64px)}nav{position:absolute;bottom:0;left:0;right:0;height:65px;z-index:30;flex-direction:row;justify-content:space-around;border-top:1px solid #075f99;border-left:0}nav button{min-height:50px;flex:1;font-size:10px}.canvasWrap{min-height:360px}.bottom{height:150px;grid-template-columns:1fr}.bottom .card:not(:first-child){display:none}main{padding-bottom:70px}.toolbar .tool{min-width:62px;font-size:10px}}
 
@@ -128,7 +142,7 @@ aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:au
 <header>
  <div class="brand">AegisRadar <span>360 AI</span><small style="display:block;font-size:10px;color:#8eb8ca">People Tracking & Smart Building</small></div>
  <div class="center"><b>جامعة نينوى — هندسة الاتصالات</b><br>مشروع التخرج</div>
- <div class="meta">المشرف: <b>الأستاذ إبراهيم</b><br>الطلبة: غانم فراس - إبراهيم غسان - سما غسان</div>
+ <div class="meta">المشرف: <b>الأستاذ إبراهيم</b><br>الطلبة: غانم فراس - إبراهيم غسان - سما غسان</div><div id="roleBadge" class="roleBadge">—</div>
 </header>
 <div class="layout">
 <nav>
@@ -156,6 +170,55 @@ aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:au
   <button class="tool" data-tool="sensor">📡 LD2450</button>
   <button class="tool danger" data-tool="danger">⚠️ منطقة خطر</button>
  </div>
+
+ <section id="settingsPage" class="settingsPage adminOnly">
+  <div class="settingsHeader">
+   <h2>⚙️ إعدادات AegisRadar 360 AI</h2>
+   <span id="settingsRole" class="rolePill">مهندس — تحكم كامل</span>
+  </div>
+  <div class="settingsGrid">
+   <div class="panel">
+    <h3>🏢 معلومات المشروع</h3>
+    <div class="field"><label>اسم النظام</label><input id="setProjectName" value="AegisRadar 360 AI"></div>
+    <div class="field"><label>الجامعة</label><input id="setUniversity" value="جامعة نينوى"></div>
+    <div class="field"><label>القسم</label><input id="setDepartment" value="هندسة الاتصالات"></div>
+    <div class="field"><label>المشرف</label><input id="setSupervisor" value="الأستاذ إبراهيم"></div>
+   </div>
+   <div class="panel">
+    <h3>📶 MQTT</h3>
+    <div class="field"><label>Broker WebSocket</label><input id="setMqttUrl"></div>
+    <div class="field"><label>Username</label><input id="setMqttUser"></div>
+    <div class="field"><label>Password</label><input id="setMqttPass" type="password"></div>
+    <div class="field"><label>Topic 1</label><input id="setTopic1"></div>
+    <div class="field"><label>Topic 2</label><input id="setTopic2"></div>
+    <div class="field"><label>Topic 3</label><input id="setTopic3"></div>
+   </div>
+   <div class="panel">
+    <h3>📷 كاميرا iPhone IP</h3>
+    <div class="field"><label>MJPEG URL</label><input id="setIpUrl"></div>
+    <div class="serialStatus">الزوم يعمل رقمياً على بث IP. تتبع الوجه بالذكاء الاصطناعي يحتاج أن يسمح خادم الكاميرا بـ CORS حتى يستطيع المتصفح قراءة إطارات MJPEG.</div>
+    <div class="field"><label>زوم افتراضي</label><input id="setIpZoom" type="number" min="1" max="4" step=".1" value="1"></div>
+   </div>
+   <div class="panel">
+    <h3>🏠 المبنى</h3>
+    <div class="row"><div class="field"><label>الطول X (م)</label><input id="setW" type="number" step=".1"></div><div class="field"><label>العرض Y (م)</label><input id="setD" type="number" step=".1"></div></div>
+    <div class="row"><div class="field"><label>ارتفاع الطابق (م)</label><input id="setH" type="number" step=".1"></div><div class="field"><label>الطوابق</label><input id="setFloors" type="number" min="1" max="10"></div></div>
+   </div>
+   <div class="panel">
+    <h3>📡 مواقع الحساسات</h3>
+    <div id="settingsSensors"></div>
+   </div>
+   <div class="panel">
+    <h3>💾 إدارة الإعدادات</h3>
+    <div class="actions">
+     <button id="applySettings" class="smallBtn">تطبيق وحفظ الإعدادات</button>
+     <button id="resetSettings" class="smallBtn">إرجاع الافتراضي</button>
+     <button id="logout" class="dangerBtn">تسجيل الخروج</button>
+    </div>
+    <div id="settingsMsg" class="serialStatus" style="margin-top:8px">الإعدادات محفوظة محلياً على هذا المتصفح.</div>
+   </div>
+  </div>
+ </section>
  <div class="canvasWrap">
   <div id="hint">التحديد: اسحب بالزر الأيسر لتحريك العنصر، الزر الأيمن لتدويره، واسحب مكاناً فارغاً لتدوير الخريطة. الجدار/الباب/الشباك: نقطتان بأي اتجاه.</div>
   <div id="scene"></div>
@@ -177,6 +240,11 @@ aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:au
     </div>
     <div style="display:flex;gap:6px;margin-top:7px">
       <input id="ipCamUrl" value="http://192.168.1.3:8081/video" placeholder="MJPEG URL من تطبيق IP Camera" style="flex:1">
+      <button id="ipTestAI" title="فحص دعم قراءة الإطارات">🧠 فحص AI</button>
+    </div>
+    <div class="ipZoomRow">
+      <label>زوم IP: <b id="ipZoomValue">1.0×</b></label>
+      <input id="ipZoomSlider" type="range" min="1" max="4" step=".1" value="1">
     </div>
     <div id="ipCamStatus" style="font-size:10px;color:#8fb8ca;margin-top:5px">IP Camera: غير مشغلة — استخدم رابط MJPEG الظاهر في الآيفون</div>
   </div>
@@ -264,8 +332,8 @@ const toast=m=>{ $('toast').textContent=m;$('toast').style.display='block';setTi
 document.getElementById('enterSystem').addEventListener('click',()=>{document.getElementById('intro').style.display='none';document.getElementById('pass').focus();});
 function login(){
  const p=$('pass').value.trim();
- if(p==='1234'){role='admin';$('login').style.display='none';$('app').style.display='block';document.body.classList.remove('viewerOnly');init();toast('تم الدخول بصلاحيات التحكم الكامل');}
- else if(p==='5678'){role='viewer';$('login').style.display='none';$('app').style.display='block';document.body.classList.add('viewerOnly');init();toast('تم الدخول بوضع المشاهدة');}
+ if(p==='2004'){role='admin';$('login').style.display='none';$('app').style.display='block';document.body.classList.remove('viewerOnly');init();updateRoleUI();toast('تم الدخول بصلاحيات المهندس — تحكم كامل');}
+ else if(p==='2006'){role='viewer';$('login').style.display='none';$('app').style.display='block';document.body.classList.add('viewerOnly');init();updateRoleUI();toast('تم الدخول بوضع المشاهدة فقط');}
  else {$('error').textContent='الرمز غير صحيح';$('pass').select();}
 }
 $('loginBtn').addEventListener('click',login);$('pass').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
@@ -596,14 +664,168 @@ function deleteObject(id){
 $('deleteSelected').onclick=()=>{if(!state.selected)return toast('حدد عنصراً أولاً');deleteObject(state.selected)};
 
 /* ---------- Single camera source + Face tracking / digital zoom ---------- */
-let camStream=null,faceDetector=null,faceTracking=false,faceZooming=false,faceLast=null,ipCamActive=false;
-function setCameraUI(local){$('localCam').style.display=local?'block':'none';$('ipCam').style.display=local?'none':'block';}
-async function startCam(){try{stopCam();if(!window.isSecureContext)return toast('كاميرا الهاتف تحتاج HTTPS — افتح الموقع عبر GitHub Pages HTTPS');if(!navigator.mediaDevices?.getUserMedia)return toast('المتصفح لا يدعم كاميرا الهاتف');camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});const v=$('localCam');setCameraUI(true);v.srcObject=camStream;v.muted=true;v.playsInline=true;await v.play();$('ipCamStatus').textContent='كاميرا الهاتف تعمل — مصدر واحد فقط';toast('تم تشغيل كاميرا الهاتف');}catch(e){toast('تعذر تشغيل الكاميرا: '+e.message)}}
-function stopCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}const v=$('localCam');if(v){v.pause();v.srcObject=null;v.style.transform='scale(1) translate(0,0)'}const img=$('ipCam');if(img){img.onload=null;img.onerror=null;img.src='';img.style.display='none'}$('faceBox').style.display='none';$('faceInfo').style.display='none';ipCamActive=false;if($('ipCamStatus'))$('ipCamStatus').textContent='الكاميرا متوقفة'}
-function startIPCam(){stopCam();const url=$('ipCamUrl').value.trim();if(!url)return toast('ضع رابط MJPEG للآيفون أولاً');const img=$('ipCam');setCameraUI(false);img.onload=()=>{ipCamActive=true;$('ipCamStatus').textContent='IP Camera متصلة ✓ — بث الآيفون فقط';toast('تم تشغيل بث الآيفون')};img.onerror=()=>{ipCamActive=false;$('ipCamStatus').textContent='تعذر تحميل IP Camera — تحقق من الشبكة والرابط';toast('تعذر فتح بث IP Camera')};img.src=url+(url.includes('?')?'&':'?')+'t='+Date.now()}
-async function initFace(){if(faceDetector)return true;if(typeof FaceDetection==='undefined'){toast('مكتبة تتبع الوجه غير متاحة');return false}faceDetector=new FaceDetection({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}`});faceDetector.setOptions({model:'short',minDetectionConfidence:.55});faceDetector.onResults(res=>{const v=$('localCam'),box=$('faceBox'),info=$('faceInfo');if(!v.srcObject){box.style.display='none';info.style.display='none';return}if(!res.detections?.length){box.style.display='none';info.style.display='none';if(faceZooming)v.style.transform='scale(1) translate(0,0)';return}const bb=res.detections[0].boundingBox,x=bb.xCenter-bb.width/2,y=bb.yCenter-bb.height/2,w=bb.width,h=bb.height;box.style.display='block';box.style.left=(x*100)+'%';box.style.top=(y*100)+'%';box.style.width=(w*100)+'%';box.style.height=(h*100)+'%';info.style.display='block';info.textContent='👤 وجه مكتشف — تتبع فعال';if(faceZooming){const scale=Math.min(3.2,Math.max(1.15,.62/Math.max(w,.16))),tx=(.5-bb.xCenter)*100*(scale-1),ty=(.5-bb.yCenter)*100*(scale-1);v.style.transform=`scale(${scale}) translate(${tx}%,${ty}%)`;faceLast={x:bb.xCenter,y:bb.yCenter,scale}}else v.style.transform='scale(1) translate(0,0)'}) ;return true}
-async function faceLoop(){if(faceTracking&&!faceBusy&&faceDetector&&$('localCam').srcObject&&$('localCam').readyState>=2){faceBusy=true;try{await faceDetector.send({image:$('localCam')})}catch(e){}faceBusy=false}requestAnimationFrame(faceLoop)}
-$('startCam').onclick=startCam;$('startIPCam').onclick=startIPCam;$('stopCam').onclick=stopCam;$('faceTrack').onclick=async()=>{if(!$('localCam').srcObject)return toast('شغّل كاميرا الهاتف أولاً');if(!await initFace())return;faceTracking=!faceTracking;toast(faceTracking?'تم تفعيل تتبع الوجه':'تم إيقاف تتبع الوجه')};$('faceZoom').onclick=async()=>{if(!$('localCam').srcObject)return toast('شغّل كاميرا الهاتف أولاً');if(!await initFace())return;faceZooming=!faceZooming;toast(faceZooming?'تم تفعيل الزوم والتوسيط التلقائي على الوجه':'تم إيقاف زوم الوجه');if(!faceZooming)$('localCam').style.transform='scale(1) translate(0,0)'};$('resetZoom').onclick=()=>{$('localCam').style.transform='scale(1) translate(0,0)';faceZooming=false;toast('تمت إعادة الزوم إلى 1×')};faceLoop();
+let camStream=null,faceDetector=null,faceTracking=false,faceZooming=false,faceLast=null,ipCamActive=false,ipFaceLooping=false,ipCanvas=null,ipCtx=null;
+function setCameraUI(local){
+ $('localCam').style.display=local?'block':'none';
+ $('ipCam').style.display=local?'none':'block';
+}
+function resetCameraTransforms(){
+ const v=$('localCam'),img=$('ipCam');
+ if(v)v.style.transform='scale(1) translate(0,0)';
+ if(img)img.style.transform='scale(1)';
+ $('ipZoomSlider').value='1';$('ipZoomValue').textContent='1.0×';
+}
+async function startCam(){
+ try{
+  stopCam();
+  if(!window.isSecureContext)return toast('كاميرا الهاتف تحتاج HTTPS — افتح الموقع عبر GitHub Pages HTTPS');
+  if(!navigator.mediaDevices?.getUserMedia)return toast('المتصفح لا يدعم كاميرا الهاتف');
+  camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+  const v=$('localCam');setCameraUI(true);v.srcObject=camStream;v.muted=true;v.playsInline=true;await v.play();
+  $('ipCamStatus').textContent='كاميرا الهاتف تعمل — مصدر واحد فقط';
+  toast('تم تشغيل كاميرا الهاتف');
+ }catch(e){toast('تعذر تشغيل الكاميرا: '+e.message)}
+}
+function stopCam(){
+ if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
+ const v=$('localCam');if(v){v.pause();v.srcObject=null;v.style.transform='scale(1) translate(0,0)'}
+ const img=$('ipCam');if(img){img.onload=null;img.onerror=null;img.src='';img.style.display='none';img.style.transform='scale(1)'}
+ $('faceBox').style.display='none';$('faceInfo').style.display='none';
+ ipCamActive=false;ipFaceLooping=false;
+ if($('ipCamStatus'))$('ipCamStatus').textContent='الكاميرا متوقفة';
+}
+function setIPZoom(v){
+ v=Math.max(1,Math.min(4,Number(v)||1));
+ $('ipZoomSlider').value=v;$('ipZoomValue').textContent=v.toFixed(1)+'×';
+ $('ipCam').style.transform=`scale(${v})`;
+}
+function startIPCam(){
+ stopCam();
+ const url=$('ipCamUrl').value.trim();
+ if(!url)return toast('ضع رابط MJPEG للآيفون أولاً');
+ const img=$('ipCam');img.crossOrigin='anonymous';setCameraUI(false);img.style.display='block';
+ img.onload=()=>{
+  ipCamActive=true;
+  $('ipCamStatus').textContent='IP Camera متصلة ✓ — بث الآيفون';
+  toast('تم تشغيل بث الآيفون');
+  if(faceTracking||faceZooming)startIPFaceLoop();
+ };
+ img.onerror=()=>{
+  ipCamActive=false;
+  $('ipCamStatus').textContent='تعذر تحميل IP Camera — تحقق من الشبكة والرابط';
+  toast('تعذر فتح بث IP Camera');
+ };
+ img.src=url+(url.includes('?')?'&':'?')+'t='+Date.now();
+}
+async function initFace(){
+ if(faceDetector)return true;
+ if(typeof FaceDetection==='undefined'){toast('مكتبة تتبع الوجه غير متاحة');return false}
+ faceDetector=new FaceDetection({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}`});
+ faceDetector.setOptions({model:'short',minDetectionConfidence:.55});
+ faceDetector.onResults(res=>{
+  const v=$('localCam'),box=$('faceBox'),info=$('faceInfo');
+  if(!v.srcObject){box.style.display='none';info.style.display='none';return}
+  if(!res.detections?.length){box.style.display='none';info.style.display='none';if(faceZooming)v.style.transform='scale(1) translate(0,0)';return}
+  const bb=res.detections[0].boundingBox,x=bb.xCenter-bb.width/2,y=bb.yCenter-bb.height/2,w=bb.width,h=bb.height;
+  box.style.display='block';box.style.left=(x*100)+'%';box.style.top=(y*100)+'%';box.style.width=(w*100)+'%';box.style.height=(h*100)+'%';
+  info.style.display='block';info.textContent='👤 وجه مكتشف — تتبع فعال';
+  if(faceZooming){
+   const scale=Math.min(3.2,Math.max(1.15,.62/Math.max(w,.16))),tx=(.5-bb.xCenter)*100*(scale-1),ty=(.5-bb.yCenter)*100*(scale-1);
+   v.style.transform=`scale(${scale}) translate(${tx}%,${ty}%)`;faceLast={x:bb.xCenter,y:bb.yCenter,scale};
+  }else v.style.transform='scale(1) translate(0,0)';
+ });
+ return true
+}
+async function faceLoop(){
+ if(faceTracking&&!faceBusy&&faceDetector&&$('localCam').srcObject&&$('localCam').readyState>=2){
+  faceBusy=true;try{await faceDetector.send({image:$('localCam')})}catch(e){}faceBusy=false;
+ }
+ requestAnimationFrame(faceLoop);
+}
+/* IP MJPEG AI: browser can inspect the frames only when the iPhone server sends CORS headers. */
+async function startIPFaceLoop(){
+ if(ipFaceLooping)return;
+ if(!await initFace())return;
+ ipFaceLooping=true;
+ ipCanvas=ipCanvas||document.createElement('canvas');ipCtx=ipCanvas.getContext('2d',{willReadFrequently:true});
+ const tick=async()=>{
+  if(!ipFaceLooping||!ipCamActive)return;
+  try{
+   const img=$('ipCam');
+   if(!img.naturalWidth){requestAnimationFrame(tick);return}
+   ipCanvas.width=img.naturalWidth;ipCanvas.height=img.naturalHeight;ipCtx.drawImage(img,0,0);
+   /* If CORS is absent, drawImage above will taint the canvas and throw on pixel inspection. */
+   ipCtx.getImageData(0,0,1,1);
+   await faceDetector.send({image:ipCanvas});
+  }catch(e){
+   $('ipCamStatus').textContent='IP Camera تعمل، لكن AI لا يستطيع قراءة الإطارات بسبب CORS من خادم الآيفون';
+   ipFaceLooping=false;
+   $('faceBox').style.display='none';$('faceInfo').style.display='none';
+   return;
+  }
+  setTimeout(tick,100);
+ };
+ tick();
+}
+/* Dedicated handler for IP face results, because MediaPipe's normal callback targets localCam. */
+let ipFaceDetector=null;
+async function detectIPFrame(){
+ if(!ipFaceDetector){
+  ipFaceDetector=new FaceDetection({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${f}`});
+  ipFaceDetector.setOptions({model:'short',minDetectionConfidence:.55});
+  ipFaceDetector.onResults(res=>{
+   const img=$('ipCam'),box=$('faceBox'),info=$('faceInfo');
+   if(!ipCamActive||!res.detections?.length){box.style.display='none';info.style.display='none';return}
+   const bb=res.detections[0].boundingBox,x=bb.xCenter-bb.width/2,y=bb.yCenter-bb.height/2,w=bb.width,h=bb.height;
+   box.style.display='block';box.style.left=(x*100)+'%';box.style.top=(y*100)+'%';box.style.width=(w*100)+'%';box.style.height=(h*100)+'%';
+   info.style.display='block';info.textContent='👤 وجه مكتشف — IP AI';
+   if(faceZooming){
+    const scale=Math.min(3.2,Math.max(1.15,.62/Math.max(w,.16))),tx=(.5-bb.xCenter)*100*(scale-1),ty=(.5-bb.yCenter)*100*(scale-1);
+    img.style.transform=`scale(${scale}) translate(${tx}%,${ty}%)`;
+   }
+  });
+ }
+}
+async function startIPFaceLoopReal(){
+ await detectIPFrame();if(ipFaceLooping)return;ipFaceLooping=true;
+ const tick=async()=>{
+  if(!ipFaceLooping||!ipCamActive)return;
+  try{
+   const img=$('ipCam');if(!img.naturalWidth){setTimeout(tick,150);return}
+   ipCanvas=ipCanvas||document.createElement('canvas');ipCtx=ipCtx||ipCanvas.getContext('2d',{willReadFrequently:true});
+   ipCanvas.width=img.naturalWidth;ipCanvas.height=img.naturalHeight;ipCtx.drawImage(img,0,0);ipCtx.getImageData(0,0,1,1);
+   await ipFaceDetector.send({image:ipCanvas});
+  }catch(e){
+   $('ipCamStatus').textContent='IP Camera تعمل، لكن تتبع الوجه يحتاج CORS من خادم IP Camera';
+   ipFaceLooping=false;$('faceBox').style.display='none';$('faceInfo').style.display='none';return;
+  }
+  setTimeout(tick,120);
+ };
+ tick();
+}
+$('startCam').onclick=startCam;
+$('startIPCam').onclick=startIPCam;
+$('stopCam').onclick=stopCam;
+$('faceTrack').onclick=async()=>{
+ if($('localCam').srcObject){if(!await initFace())return;faceTracking=!faceTracking;toast(faceTracking?'تم تفعيل تتبع الوجه':'تم إيقاف تتبع الوجه');return}
+ if(ipCamActive){faceTracking=!faceTracking;faceTracking?startIPFaceLoopReal():($('faceBox').style.display='none',$('faceInfo').style.display='none');toast(faceTracking?'تم تفعيل تتبع وجه IP':'تم إيقاف تتبع وجه IP');return}
+ toast('شغّل كاميرا الهاتف أو IP Camera أولاً')
+};
+$('faceZoom').onclick=async()=>{
+ if($('localCam').srcObject){if(!await initFace())return;faceZooming=!faceZooming;toast(faceZooming?'تم تفعيل الزوم والتوسيط التلقائي على الوجه':'تم إيقاف زوم الوجه');if(!faceZooming)$('localCam').style.transform='scale(1) translate(0,0)';return}
+ if(ipCamActive){faceZooming=!faceZooming;toast(faceZooming?'تم تفعيل زوم IP — وإذا توفر CORS يصبح التوسيط تلقائياً':'تم إيقاف زوم IP');if(faceZooming&&faceTracking)startIPFaceLoopReal();return}
+ toast('شغّل كاميرا أولاً')
+};
+$('resetZoom').onclick=()=>{resetCameraTransforms();faceZooming=false;toast('تمت إعادة الزوم إلى 1×')};
+$('ipZoomSlider').oninput=e=>setIPZoom(e.target.value);
+$('ipTestAI').onclick=async()=>{
+ if(!ipCamActive)return toast('شغّل IP Camera أولاً');
+ try{
+  const img=$('ipCam'),c=document.createElement('canvas'),x=c.getContext('2d');c.width=img.naturalWidth;c.height=img.naturalHeight;x.drawImage(img,0,0);x.getImageData(0,0,1,1);
+  $('ipCamStatus').textContent='✓ IP Camera تسمح للمتصفح بقراءة الإطارات — AI متاح';
+ }catch(e){$('ipCamStatus').textContent='⚠️ البث يعمل، لكن CORS يمنع AI. الزوم الرقمي يعمل، أما تتبع الوجه فيحتاج تعديل خادم IP Camera أو Proxy محلي.'}
+};
+faceLoop();
 
 /* ================= MQTT REAL LD2450 — 3 SENSORS ================= */
 let mqttClient=null;
@@ -680,13 +902,71 @@ function connectMQTT(){
 function disconnectMQTT(){if(mqttClient){mqttClient.end(true);mqttClient=null}state.sensors.forEach(s=>s.online=false);setMqttStatus('تم فصل MQTT');log('MQTT disconnected')}
 $('mqttConnect').onclick=connectMQTT;$('mqttDisconnect').onclick=disconnectMQTT;
 
+
+/* ---------- Engineer settings / viewer mode ---------- */
+const DEFAULT_CFG={
+ projectName:'AegisRadar 360 AI', university:'جامعة نينوى', department:'هندسة الاتصالات', supervisor:'الأستاذ إبراهيم',
+ mqttUrl:'wss://broker.emqx.io:8084/mqtt', mqttUser:'', mqttPass:'',
+ topics:['aegisradar/ld2450/1','aegisradar/ld2450/2','aegisradar/ld2450/3'],
+ ipUrl:'http://192.168.1.3:8081/video', ipZoom:1
+};
+function syncSettingsUI(){
+ const c=JSON.parse(localStorage.getItem('aegisradar_settings')||'null')||DEFAULT_CFG;
+ const set=(id,v)=>{if($(id))$(id).value=v??''};
+ set('setProjectName',c.projectName);set('setUniversity',c.university);set('setDepartment',c.department);set('setSupervisor',c.supervisor);
+ set('setMqttUrl',c.mqttUrl);set('setMqttUser',c.mqttUser);set('setMqttPass',c.mqttPass);
+ set('setTopic1',c.topics?.[0]||DEFAULT_CFG.topics[0]);set('setTopic2',c.topics?.[1]||DEFAULT_CFG.topics[1]);set('setTopic3',c.topics?.[2]||DEFAULT_CFG.topics[2]);
+ set('setIpUrl',c.ipUrl);set('setIpZoom',c.ipZoom||1);
+ set('setW',state.W);set('setD',state.D);set('setH',state.H);set('setFloors',state.floors);
+ const el=$('settingsSensors');if(el){
+  el.innerHTML='';
+  state.sensors.forEach(sn=>{const d=document.createElement('div');d.className='panel';d.style.marginBottom='8px';
+   d.innerHTML=`<b>LD2450 #${sn.id}</b><div class="row">
+   <div class="field"><label>X (m)</label><input id="ssx${sn.id}" type="number" step=".01" value="${sn.x}"></div>
+   <div class="field"><label>Y (m)</label><input id="ssy${sn.id}" type="number" step=".01" value="${sn.y}"></div></div>
+   <div class="row"><div class="field"><label>Z (m)</label><input id="ssz${sn.id}" type="number" step=".01" value="${sn.z}"></div>
+   <div class="field"><label>Rotation °</label><input id="ssr${sn.id}" type="number" step="1" value="${sn.rot}"></div></div>`;el.appendChild(d);
+  });
+ }
+}
+function applySettings(){
+ const c={
+  projectName:$('setProjectName').value.trim(),university:$('setUniversity').value.trim(),department:$('setDepartment').value.trim(),supervisor:$('setSupervisor').value.trim(),
+  mqttUrl:$('setMqttUrl').value.trim(),mqttUser:$('setMqttUser').value,mqttPass:$('setMqttPass').value,
+  topics:[$('setTopic1').value.trim(),$('setTopic2').value.trim(),$('setTopic3').value.trim()],
+  ipUrl:$('setIpUrl').value.trim(),ipZoom:+$('setIpZoom').value||1
+ };
+ localStorage.setItem('aegisradar_settings',JSON.stringify(c));
+ state.W=Math.max(2,Math.min(100,+$('setW').value||state.W));state.D=Math.max(2,Math.min(100,+$('setD').value||state.D));
+ state.H=Math.max(2,Math.min(20,+$('setH').value||state.H));state.floors=Math.max(1,Math.min(10,Math.round(+$('setFloors').value||state.floors)));state.currentFloor=Math.min(state.currentFloor,state.floors);
+ state.sensors.forEach(sn=>{sn.x=Math.max(0,Math.min(state.W,+$('ssx'+sn.id).value||0));sn.y=Math.max(0,Math.min(state.D,+$('ssy'+sn.id).value||0));sn.z=+$('ssz'+sn.id).value||2.2;sn.rot=+$('ssr'+sn.id).value||0;sn.topic=c.topics[sn.id-1]||sn.topic});
+ $('mqttUrl').value=c.mqttUrl;$('mqttUser').value=c.mqttUser;$('mqttPass').value=c.mqttPass;
+ $('mqttTopic1').value=c.topics[0];$('mqttTopic2').value=c.topics[1];$('mqttTopic3').value=c.topics[2];$('ipCamUrl').value=c.ipUrl;setIPZoom(c.ipZoom);
+ rebuild();toast('تم تطبيق الإعدادات وحفظها');
+}
+function resetSettings(){
+ localStorage.removeItem('aegisradar_settings');syncSettingsUI();toast('تم إرجاع الإعدادات الافتراضية');
+}
+function updateRoleUI(){
+ const admin=role==='admin';
+ document.body.classList.toggle('viewerOnly',!admin);
+ $('roleBadge').textContent=admin?'👨‍💻 المهندس — تحكم كامل':'👁️ المشاهد — مشاهدة فقط';
+ $('settingsRole').textContent=admin?'مهندس — تحكم كامل':'مشاهد — مشاهدة فقط';
+}
+$('applySettings').onclick=applySettings;$('resetSettings').onclick=resetSettings;
+$('logout').onclick=()=>{try{disconnectMQTT();}catch(e){}try{disconnectSerial();}catch(e){}stopCam();$('app').style.display='none';$('login').style.display='flex';$('pass').value='';$('error').textContent='';role='viewer';document.body.classList.remove('viewerOnly');setPage('home')};
+syncSettingsUI();updateRoleUI();
+
 function animate(){requestAnimationFrame(animate);if(!renderer)return;renderer.render(scene,camera);radarDraw();updateTargets()}
 function setPage(page){
+ if(page==='settings' && role!=='admin'){toast('الإعدادات متاحة للمهندس فقط');page='home';}
+ if(page==='build' && role!=='admin'){toast('البناء متاح للمهندس فقط');page='home';}
+ if(page==='logs' && role!=='admin'){toast('السجلات متاحة للمهندس فقط');page='home';}
  const app=document.getElementById('app');
  app.classList.remove('page-home','page-build','page-radar','page-camera','page-people','page-logs','page-settings');
  app.classList.add('page-'+page);
  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('navActive',x.dataset.page===page));
- if(page==='home'||page==='build'){fitView();resize();}else if(page==='radar'){resize();}else if(page==='camera'){stopCam();}else if(page==='logs'){if(typeof log==='function')log('فتح سجل الأحداث');}else if(page==='settings'){toast('الإعدادات جاهزة للتعديل من اللوحة الجانبية');}
+ if(page==='home'||page==='build'){fitView();resize();}else if(page==='radar'){resize();}else if(page==='camera'){resize();}else if(page==='logs'){if(typeof log==='function')log('فتح سجل الأحداث');}else if(page==='settings'){toast('الإعدادات جاهزة للتعديل من اللوحة الجانبية');}
 }
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.page)));
 setPage('home');
