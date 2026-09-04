@@ -17,10 +17,7 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-    
-    /* تحسينات الآيفون وسفاري */
-    body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; position: fixed; 
-           padding-bottom: env(safe-area-inset-bottom); padding-top: env(safe-area-inset-top); }
+    body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; position: fixed; }
     #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
     
     .glass-panel {
@@ -45,7 +42,7 @@
     }
     .nav-btn {
       background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 8px 16px;
-      border-radius: 8px; cursor: pointer; font-size: 12px; transition: 0.2s; white-space: nowrap;
+      border-radius: 8px; cursor: pointer; font-size: 11px; transition: 0.2s; white-space: nowrap;
     }
     .nav-btn.active, .nav-btn:hover { background: #0284c7; color: #fff; border-color: #38bdf8; }
     .step-screen {
@@ -55,6 +52,7 @@
     .collapsed .panel-content { display: none !important; }
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    .read-only-disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
   </style>
 </head>
 <body>
@@ -65,10 +63,10 @@
         <i class="fa-solid fa-shield-halved text-2xl text-white"></i>
       </div>
       <h1 class="text-2xl font-black hud-title mb-1 system-title-text">AegisRadar 360 AI</h1>
-      <h2 class="text-[11px] text-slate-400 mb-3">نظام المراقبة الهندسية وإدارة المنازل الذكية ثلاثي الأبعاد V2</h2>
+      <h2 class="text-[11px] text-slate-400 mb-3">نظام المراقبة الهندسية وإدارة المنازل الذكية ثلاثي الأبعاد</h2>
       
       <div class="bg-slate-900/80 border-r-4 border-cyan-500 p-2.5 text-right text-xs leading-relaxed text-slate-300 mb-3 rounded">
-        نظام أمني هندسي هجين يدمج حساس الرادار المليمتري مع البث المباشر وبناء الغرف الذكية بمقاسات حقيقية.
+        نظام أمني هندسي مدمج يدمج حساس الرادار المليمتري مع البث المباشر وبناء الغرف الذكية.
       </div>
 
       <div class="bg-slate-950 p-2.5 rounded-lg text-right text-xs border border-slate-800 mb-4 space-y-1">
@@ -91,6 +89,7 @@
         <select id="user-role-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200">
           <option value="admin">المهندس غانم (Admin)</option>
           <option value="operator">المشرف الأمني (Operator)</option>
+          <option value="viewer">حساب مراقب (View Only)</option>
         </select>
       </div>
 
@@ -109,7 +108,7 @@
   <div id="main-app" class="hidden relative w-full h-full">
     <div id="canvas-container"></div>
     
-    <img id="webcam-stream" src="http://192.168.1.3:8081/video" crossorigin="anonymous" class="hidden" alt="IP Camera Stream" onerror="handleCamError()" />
+    <img id="webcam-stream" src="http://ghanim.local:8081/video" crossorigin="anonymous" class="hidden" alt="IP Camera Stream" onerror="handleCamError()" />
 
     <div class="glass-panel absolute top-2 right-2 left-2 z-20 p-2 flex flex-col sm:flex-row justify-between items-center gap-2">
       <div class="flex items-center space-x-2 space-x-reverse">
@@ -117,7 +116,7 @@
           <i class="fa-solid fa-layer-group text-sm text-white"></i>
         </div>
         <div>
-          <h1 class="font-black text-xs hud-title system-title-text">AegisRadar Suite V2</h1>
+          <h1 class="font-black text-xs hud-title system-title-text">AegisRadar 360 AI</h1>
           <p class="text-[9px] text-slate-400">المستخدم: <span id="active-user-display" class="text-emerald-400 font-bold">---</span></p>
         </div>
       </div>
@@ -137,12 +136,12 @@
       </div>
     </div>
 
-    <div id="tab-dashboard" class="tab-content relative z-10 pointer-events-none w-full h-full pt-20 pb-16 px-2 overflow-y-auto max-h-screen mb-safe">
+    <div id="tab-dashboard" class="tab-content relative z-10 pointer-events-none w-full h-full pt-20 pb-16 px-2 overflow-y-auto max-h-screen">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pointer-events-auto max-w-7xl mx-auto">
         <div class="glass-panel p-3">
-          <h3 class="text-xs font-bold text-slate-200 mb-1.5 border-b border-slate-800 pb-1"><i class="fa-solid fa-camera text-cyan-400 ml-1"></i> بث الكاميرا وتحليل الوضعية</h3>
+          <h3 class="text-xs font-bold text-slate-200 mb-1.5 border-b border-slate-800 pb-1"><i class="fa-solid fa-camera text-cyan-400 ml-1"></i> بث الكاميرا الحية وتحليل الوضعية</h3>
           <div class="relative w-full h-48 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 mb-1">
-            <img id="dashboard-cam-view" src="http://192.168.1.3:8081/video" class="w-full h-full object-cover relative z-10" onerror="handleCamErrorDashboard(this)" />
+            <img id="dashboard-cam-view" src="http://ghanim.local:8081/video" class="w-full h-full object-cover relative z-10" onerror="this.src='https://via.placeholder.com/640x480.png?text=Camera+Offline'" />
             <div class="absolute top-1.5 left-1.5 z-30 bg-slate-950/80 px-1.5 py-0.5 rounded border border-cyan-500/40">
               <p class="text-[8px] text-slate-400">الوضعية:</p>
               <p id="hud-pose-text" class="text-[10px] font-black text-emerald-400 font-mono">في انتظار البيانات...</p>
@@ -151,7 +150,7 @@
         </div>
 
         <div class="glass-panel p-3 relative">
-          <h3 class="text-xs font-bold text-slate-300 mb-1.5 border-b border-slate-800 pb-1"><i class="fa-solid fa-radar text-amber-400 ml-1"></i> سجل الأهداف الرادارية</h3>
+          <h3 class="text-xs font-bold text-slate-300 mb-1.5 border-b border-slate-800 pb-1"><i class="fa-solid fa-shield-cat text-amber-400 ml-1"></i> سجل الأهداف الرادارية</h3>
           <div class="panel-content space-y-2">
             <div id="security-logs" class="space-y-1.5 h-36 overflow-y-auto text-[10px] pr-1 font-mono text-slate-400"></div>
             <div class="grid grid-cols-2 gap-1.5 text-center text-xs pt-1 border-t border-slate-800 coordinates-hud">
@@ -164,7 +163,7 @@
     </div>
 
     <div id="tab-architect" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
-      <div id="panel-architect" class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[82vh] overflow-y-auto mb-safe">
+      <div id="panel-architect" class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[82vh] overflow-y-auto">
         <h3 class="text-xs font-bold text-cyan-400 mb-1 border-b border-slate-800 pb-1"><i class="fa-solid fa-wand-magic-sparkles text-amber-300 ml-1"></i> مولد الغرف والأثاث الذكي</h3>
         
         <div class="panel-content space-y-2.5 admin-only-container">
@@ -172,9 +171,9 @@
             <div>
               <label class="text-[9px] text-slate-400 block mb-0.5">نوع التصميم (والأثاث):</label>
               <select id="aiRoomType" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-[11px] text-slate-200">
-                <option value="living_real">غرفة معيشة واقعية (كنبة + TV)</option>
-                <option value="office_real">مكتب أمني (مكتب + شاشات)</option>
-                <option value="hall_real">صالة استقبال (اجتماعات + نباتات)</option>
+                <option value="living_real">غرفة معيشة واقعية (كنبة + TV + فتحات)</option>
+                <option value="office_real">مكتب أمني (مكتب + شاشات + خزانة)</option>
+                <option value="hall_real">صالة استقبال (طاولة اجتماعات + نباتات)</option>
               </select>
             </div>
 
@@ -183,11 +182,11 @@
               <select id="aiRoomSize" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-[11px] text-slate-200">
                 <option value="4">صغيرة (4×4 متر)</option>
                 <option value="6">متوسطة (6×6 متر)</option>
-                <option value="8" selected>كبيرة (8×8 متر)</option>
+                <option value="8" selected>كبيرة (8×8 متر - مثل الصورة)</option>
               </select>
             </div>
 
-            <button onclick="createAIAutomatedRoom()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 p-2.5 rounded-lg text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/20">
+            <button id="tool-ai-room" onclick="createAIAutomatedRoom()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 p-2.5 rounded-lg text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/20">
               <i class="fa-solid fa-hammer"></i> بنـاء الغرفة الآن 🏗️
             </button>
           </div>
@@ -205,14 +204,14 @@
               <i class="fa-solid fa-floppy-disk"></i> حفظ 💾
             </button>
             <button onclick="clearCADObjects()" class="bg-red-950/60 hover:bg-red-900/80 text-red-300 p-2.5 rounded-lg text-xs font-semibold border border-red-800/50 flex items-center justify-center gap-1">
-              <i class="fa-solid fa-trash-can"></i> مسح الخريطة
+              <i class="fa-solid fa-trash-can"></i> مسح
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="glass-panel absolute bottom-2 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 flex items-center gap-3 text-[10px] text-slate-300 border border-cyan-500/30 whitespace-nowrap rounded-full mb-safe">
+    <div class="glass-panel absolute bottom-2 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 flex items-center gap-3 text-[10px] text-slate-300 border border-cyan-500/30 whitespace-nowrap rounded-full">
       <div>X: <span id="pos-x" class="text-cyan-400 font-mono font-bold">0.00</span> م</div>
       <div>Z: <span id="pos-z" class="text-emerald-400 font-mono font-bold">0.00</span> م</div>
       <div class="w-px h-3 bg-slate-700"></div>
@@ -223,14 +222,15 @@
 
   <script>
     // ==========================================
-    // 1. Core & Auth
+    // Core & Auth
     // ==========================================
     let currentUserRole = null;
     const currentIP = "192.168.1.3"; // مربوط بـ IP الكاميرا الظاهر في الصورة
 
     const ACCOUNTS = {
       admin: { name: "المهندس غانم (Admin)", pin: "1234", canEdit: true },
-      operator: { name: "المشرف الأمني", pin: "5678", canEdit: false }
+      operator: { name: "المشرف الأمني", pin: "5678", canEdit: false },
+      viewer: { name: "حساب مراقب", pin: "0000", canEdit: false }
     };
 
     function goToStep(step) {
@@ -262,13 +262,8 @@
 
     function logout() { location.reload(); }
 
-    function handleCamErrorDashboard(img) {
-      img.src = 'https://via.placeholder.com/640x480.png?text=Camera+Offline';
-      notifyLog("⚠️ فشل الاتصال ببث الكاميرا التقليدي.");
-    }
-
     // ==========================================
-    // 2. Three.js 3D Engine (الواقعي والمقاييس المترية)
+    // Three.js 3D Engine (الواقعي والمقاييس المترية)
     // ==========================================
     let scene, camera, renderer, controls, raycaster;
     let activeTool = 'select';
@@ -298,11 +293,11 @@
       // Lights
       scene.add(new THREE.AmbientLight(0x404040, 1.5));
       const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-      sunLight.position.set(5, 10, 7.5);
+      sunLight.position.set(Sun, 10, Sun); // سنستخدم الـ Sun لسهولة التعديل
       scene.add(sunLight);
 
       // الجريد الهندسي الحقيقي (كل خانة = 1 متر)
-      const gridHelper = new THREE.GridHelper(50, 50, 0x0ea5e9, 0x1e293b);
+      const gridHelper = new THREE.GridHelper(Sun, Sun, 0x0ea5e9, 0x1e293b);
       scene.add(gridHelper);
 
       // Ground Plane
@@ -333,17 +328,15 @@
     }
 
     // ==========================================
-    // 3. Real-world Room & Furniture Generation (Meters)
+    // Real-world Room & Furniture Generation (Meters)
     // ==========================================
     const wallMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6 }); // جدران بيضاء
     const doorMat = new THREE.MeshStandardMaterial({ color: 0x78350f }); // باب بني
     const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.3 }); // شباك زجاجي
 
-    // خامات للأرضيات
-    const tLoader = new THREE.TextureLoader();
     const floorTextures = {
-      parquet: tLoader.load('https://threejs.org/examples/textures/hardwood2_diffuse.jpg'), // مثال خامة خشب
-      tiles: tLoader.load('https://threejs.org/examples/textures/floors/FloorsCheckerboard_S_Diffuse.jpg') // بلاط
+      parquet: new THREE.TextureLoader().load('https://threejs.org/examples/textures/hardwood2_diffuse.jpg'), // مثال خامة خشب
+      tiles: new THREE.TextureLoader().load('https://threejs.org/examples/textures/floors/FloorsCheckerboard_S_Diffuse.jpg') // بلاط
     };
 
     function createAIAutomatedRoom() {
@@ -370,13 +363,13 @@
       // الجدار الأمامي (فيه فتحة باب 1 متر)
       addWallSegment(roomSize, wallHeight, 0, hSize, 1.1, hSize); // قطعة يمين الباب
       addWallSegment(roomSize, wallHeight, 0, hSize, -hSize, -1.1); // قطعة يسار الباب
-      addWallOverOpening(0, hSize, 0, 2.1, wallHeight, 1); // قطعة فوق الباب
+      addWallOverOpening(0, hSize, 0, 2.1, 2.8, 1); // قطعة فوق الباب
 
       // الجدار الخلفي (فيه فتحة شباك 2 متر)
       addWallSegment(roomSize, wallHeight, 0, -hSize, -hSize, -2.5); 
       addWallSegment(roomSize, wallHeight, 0, -hSize, 2.5, hSize);
-      addWallOverOpening(0, -hSize, 0, 0, 1.2, 2); // قطعة تحت الشباك
-      addWallOverOpening(0, -hSize, 0, 2.4, wallHeight, 2); // قطعة فوق الشباك
+      addWallOverOpening(0, -hSize, 0, 0, 1.2); // قطعة تحت الشباك
+      addWallOverOpening(0, -hSize, 0, 2.4, 2.8); // قطعة فوق الشباك
 
       // الجدران الجانبية (كاملة)
       const sideWallObjL = createMeshObj(new THREE.BoxGeometry(0.2, wallHeight, roomSize), wallMat, 'wall', -hSize, wallHeight/2, 0);
@@ -415,23 +408,19 @@
     function generateSmartFurniture(type, hSize) {
       if (type === 'office_real') {
         createComplexObject('desk', 0, 0); // طاولة مكتب
-        createComplexObject('chair', -0.5, 0, Math.PI / 2); // كرسي
-        createComplexObject('tv', 0, hSize-0.1, Math.PI); // شاشة مراقبة على الجدار الأمامي
+        createComplexObject('chair', -0.5, 0); // كرسي
+        createComplexObject('tv', 0.5, hSize-0.1, Math.PI); // شاشة مراقبة على الجدار الأمامي
         createComplexObject('plant', hSize-1, -hSize+1); // نبات في زاوية
       } else if (type === 'living_real') {
         createComplexObject('sofa', 0, -hSize+1.5); // كنبة ضخمة
         createComplexObject('coffee_table', 0, -hSize+2.8); // طاولة قهوة
         createComplexObject('tv', 0, hSize-0.1, Math.PI); // TV على الجدار الأمامي
-        createComplexObject('plant', -hSize+1, hSize-1); // نبات
-      } else if (type === 'hall_real') {
-        createComplexObject('desk', 0, 0, 0, 2, 2); // طاولة اجتماعات مستديرة
-        createComplexObject('plant', hSize-1, hSize-1); 
-        createComplexObject('plant', -hSize+1, -hSize+1); 
+        createComplexObject('rug', 0, -hSize+2.5, 0, 2.5, 3.5); // سجادة
       }
     }
 
     // ==========================================
-    // 4. Real Save/Load CAD Design (LocalStorage JSON)
+    // Real Save/Load CAD Design (JSON)
     // ==========================================
     function saveCADDesign() {
       if (!currentUserRole.canEdit) return alert("❌ قراءة فقط.");
@@ -446,16 +435,15 @@
         ry: obj.rotation.y,
         width: obj.geometry ? (obj.geometry.parameters ? obj.geometry.parameters.width : undefined) : undefined,
         depth: obj.geometry ? (obj.geometry.parameters ? obj.geometry.parameters.depth : undefined) : undefined,
-        height: obj.geometry ? (obj.geometry.parameters ? obj.geometry.parameters.height : undefined) : undefined
       }));
 
-      localStorage.setItem('aegis_realistic_design_v2', JSON.stringify(dataToSave));
+      localStorage.setItem('aegis_realistic_design', JSON.stringify(dataToSave));
       alert("✅ تم حفظ تصميم الرسم المنشآتي وقطع الأثاث بنجاح في مخزن المتصفح!");
       notifyLog("💾 تم حفظ التصميم في LocalStorage.");
     }
 
     function loadCADDesign() {
-      const savedData = localStorage.getItem('aegis_realistic_design_v2');
+      const savedData = localStorage.getItem('aegis_realistic_design');
       if (!savedData) return;
       
       clearCADObjects(true); // مسح المشهد الحالي
@@ -463,8 +451,6 @@
       try {
         const objects = JSON.parse(savedData);
         objects.forEach(data => {
-          if (data.type.includes('_part')) return; // تخطي أجزاء الأثاث
-
           let geo, mat;
           switch (data.type) {
             case 'floor':
@@ -473,14 +459,12 @@
               mat = new THREE.MeshStandardMaterial({ map: floorTextures.parquet });
               break;
             case 'wall':
-              geo = new THREE.BoxGeometry(data.width || 2, data.height || 2.8, 0.2); 
+              geo = new THREE.BoxGeometry(data.width || 2, 2.8, 0.2); // ارتفاع ثابت
               mat = wallMat;
               break;
-            case 'door_viz': geo = new THREE.BoxGeometry(1, 2.1, 0.1); mat = doorMat; break;
-            case 'window_viz': geo = new THREE.BoxGeometry(2, 1.2, 0.1); mat = glassMat; break;
             default: // أثاث معقد
               createComplexObject(data.type, data.x, data.z, data.ry);
-              return; 
+              return; // createComplexObject يضيف للسلسة بنفسه
           }
           if (geo) {
             const mesh = createMeshObj(geo, mat, data.type, data.x, data.y, data.z);
@@ -494,7 +478,7 @@
     }
 
     // ==========================================
-    // 5. CAD Mesh Helpers & Complex Objects (Furniture)
+    // CAD Mesh Helpers & Complex Objects (Furniture)
     // ==========================================
     function createMeshObj(geo, mat, type, x, y, z, isStatic=false) {
       const mesh = new THREE.Mesh(geo, mat);
@@ -505,7 +489,7 @@
     }
 
     // توليد أثاث معقد من مجسمات بسيطة
-    function createComplexObject(type, x, z, ry=0) {
+    function createComplexObject(type, x, z, ry=0, w=1, d=1) {
       const group = new THREE.Group();
       group.position.set(x, 0, z);
       group.rotation.y = ry;
@@ -517,20 +501,10 @@
         const top = createMeshObj(new THREE.BoxGeometry(1.6, 0.05, 0.8), wallMat.clone(), 'desk_part', 0, 0.75, 0, true);
         top.material.color.set(0x3f2e1e); // خشب غامق
         group.add(top);
-        addLeg(group, 0.7, 1.5, 0.7, 0.75, 0.35); // Leg RR
-        addLeg(group, 0.7, -1.5, 0.7, 0.75, 0.35); // Leg LR
-        addLeg(group, 0.7, 1.5, -0.7, 0.75, 0.35); // Leg RF
-        addLeg(group, 0.7, -1.5, -0.7, 0.75, 0.35); // Leg LF
-      } else if (type === 'chair') {
-        const seat = createMeshObj(new THREE.BoxGeometry(0.5, 0.05, 0.5), wallMat.clone(), 'chair_part', 0, 0.45, 0, true);
-        seat.material.color.set(0x1e293b); // قماش أسود
-        group.add(seat);
-        const back = createMeshObj(new THREE.BoxGeometry(0.5, 0.5, 0.05), wallMat.clone(), 'chair_part', 0, 0.7, -0.23, true);
-        back.material.color.set(0x1e293b);
-        group.add(back);
-        const leg = createMeshObj(new THREE.CylinderGeometry(0.05, 0.05, 0.45, 8), wallMat.clone(), 'chair_part', 0, 0.225, 0, true);
-        leg.material.color.set(0xeeeeee);
-        group.add(leg);
+        addLeg(group, 0.7, 0.7, 0.35, 0.7, 0.35); // Leg RR
+        addLeg(group, 0.7, -0.7, 0.35, 0.7, 0.35); // Leg LR
+        addLeg(group, 0.7, 0.7, -0.35, 0.7, 0.35); // Leg RF
+        addLeg(group, 0.7, -0.7, -0.35, 0.7, 0.35); // Leg LF
       } else if (type === 'plant') {
         const pot = createMeshObj(new THREE.CylinderGeometry(0.3, 0.2, 0.5, 8), wallMat.clone(), 'plant_part', 0, 0.25, 0, true);
         pot.material.color.set(0x78350f);
@@ -549,12 +523,6 @@
         const screen = createMeshObj(new THREE.BoxGeometry(1.8, 1, 0.05), wallMat.clone(), 'tv_part', 0, 1.5, 0, true);
         screen.material.color.set(0x020617); // شاشة سوداء
         group.add(screen);
-      } else if (type === 'coffee_table') {
-        const top = createMeshObj(new THREE.BoxGeometry(1.2, 0.05, 0.6), glassMat, 'coffee_part', 0, 0.4, 0, true);
-        group.add(top);
-        const base = createMeshObj(new THREE.BoxGeometry(0.8, 0.4, 0.4), wallMat.clone(), 'coffee_part', 0, 0.2, 0, true);
-        base.material.color.set(0x3f2e1e);
-        group.add(base);
       }
     }
     
@@ -565,7 +533,7 @@
     }
 
     // ==========================================
-    // 6. Interaction & Animation Loop
+    // Interaction & Animation Loop
     // ==========================================
     function setCadTool(tool) {
       activeTool = tool;
@@ -579,7 +547,6 @@
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
     function onPointerMove(event) {
-      if (event.isPrimary === false) return; // للآيفون
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
       
@@ -607,7 +574,7 @@
       if (!force && !confirm("⚠️ هل أنت متأكد من مسح الخريطة بالكامل؟ لن يمكن التراجع.")) return;
       cadObjects.forEach(obj => scene.remove(obj));
       cadObjects = [];
-      if (!force) localStorage.removeItem('aegis_realistic_design_v2');
+      if (!force) localStorage.removeItem('aegis_realistic_design');
       notifyLog("🗑️ تم مسح الخريطة.");
     }
 
