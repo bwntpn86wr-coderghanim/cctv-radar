@@ -1,81 +1,266 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AegisRadar 360 AI</title>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script><script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script><script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>AegisRadar 360 AI</title>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#01070d;color:#e8f8ff;font-family:Arial,Tahoma,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}
-.login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,#07304a,#01050a 62%)}.loginbox{width:min(440px,92vw);padding:28px;border:1px solid #08aeea;border-radius:18px;background:#031522;box-shadow:0 0 50px #00aaff22;text-align:center}.loginbox h1{color:#16c9ff;margin:0 0 8px}.loginbox input{width:100%;padding:13px;margin:12px 0;background:#020a11;color:#fff;border:1px solid #087aa8;border-radius:8px}.btn{border:1px solid #12c7ff;background:linear-gradient(#079fec,#0561ad);color:#fff;border-radius:8px;padding:11px 14px;font-weight:bold}.btn.green{background:linear-gradient(#08b879,#087d57);border-color:#17e49b}.btn.red{background:linear-gradient(#e33d4f,#8f1728);border-color:#ff596b}.btn.gray{background:#071722;border-color:#17617f}.app{display:grid;grid-template-columns:88px 1fr 350px;grid-template-rows:72px 1fr 190px;gap:8px;padding:8px;height:100vh;background:radial-gradient(circle at 55% 45%,#062238,#01050a 54%)}header{grid-column:1/4;border:1px solid #078dcc;border-radius:13px;background:#03131f;display:flex;align-items:center;padding:0 18px;gap:20px}.brand{font-size:24px;font-weight:800;direction:ltr}.brand b{color:#12c8ff}.headerCenter{text-align:center;flex:1}.headerCenter strong{font-size:18px}.headerRight{text-align:right;font-size:12px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#31ff86;box-shadow:0 0 12px #31ff86;margin-left:5px}.nav{grid-row:2/4;border:1px solid #087fae;border-radius:13px;background:#02111b;padding:7px 5px;display:flex;flex-direction:column;gap:7px;align-items:center}.nav button{width:74px;height:64px;border:1px solid #075d80;border-radius:9px;background:#041723;color:#b8e4f2}.nav button.active,.nav button:hover{border-color:#13c7ff;color:#16c9ff;box-shadow:0 0 14px #00aaff18}.nav i{display:block;font-size:22px;font-style:normal}.main{grid-column:2;grid-row:2;position:relative;border:1px solid #008dcc;border-radius:13px;overflow:hidden;background:#010912}.scene,.scene canvas{position:absolute;inset:0;width:100%;height:100%}.scene canvas{display:block}.overlay{position:absolute;z-index:3}.sceneInfo{top:10px;right:10px;padding:8px 12px;border:1px solid #087ba6;border-radius:8px;background:#031421d9;font-size:12px}.axis{bottom:12px;left:12px;padding:8px;border:1px solid #087ba6;border-radius:8px;background:#031421dd;direction:ltr}.right{grid-column:3;grid-row:2/4;overflow:auto}.card{border:1px solid #087fae;border-radius:11px;background:linear-gradient(#061a29,#020b13);padding:11px;margin-bottom:8px}.card h3{margin:0 0 9px}.row{display:flex;gap:6px;align-items:center;margin:6px 0}.row label{width:90px;color:#a9cad6;font-size:12px}.row input,.row select,.row textarea{flex:1;background:#020b12;color:#eaffff;border:1px solid #096c96;border-radius:7px;padding:7px}.tools{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.tool{padding:7px 2px;background:#041521;border:1px solid #09678d;color:#d8f7ff;border-radius:7px;text-align:center;font-size:11px}.tool:hover{border-color:#16c8ff}.targetList{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.target{border:1px solid #00ad72;border-radius:8px;padding:7px;font-size:11px}.target:nth-child(2){border-color:#159eff}.target:nth-child(3){border-color:#e4b522}.bottom{grid-column:2;grid-row:3;display:grid;grid-template-columns:1.15fr 1fr 1.5fr;gap:8px}.bottom .card{margin:0;overflow:auto}.log{padding:5px;border:1px solid #075579;border-radius:6px;margin:3px 0;font-size:10px}.page{display:none;position:absolute;inset:0;background:#020a12;overflow:auto;padding:16px}.page.active{display:block}.builderTop{display:flex;justify-content:space-between;gap:10px;align-items:center}.builderGrid{display:grid;grid-template-columns:1fr 360px;gap:10px}.builderScene{height:calc(100vh - 180px);min-height:520px;border:1px solid #078dcc;border-radius:12px;overflow:hidden;position:relative}.builderPanel{border:1px solid #087fae;border-radius:12px;background:#03131e;padding:11px}.objectGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.savebar{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:8px}.cameraGrid{display:grid;grid-template-columns:1fr 350px;gap:10px}.video{width:100%;background:#000;border:1px solid #087fae;border-radius:10px;min-height:350px}.note{font-size:11px;color:#8fb2bf;line-height:1.7}.switch{display:flex;align-items:center;gap:7px}.switch input{width:auto}.toast{position:fixed;bottom:15px;left:15px;z-index:99;background:#062b42;border:1px solid #14c7ff;border-radius:8px;padding:10px}.danger{color:#ff4e5d}.ok{color:#3dff96}
-@media(max-width:1100px){.app{grid-template-columns:70px 1fr;grid-template-rows:64px 65vh auto}.right{display:none}.bottom{grid-column:2;grid-row:3}.app header{grid-column:1/3}.builderGrid,.cameraGrid{grid-template-columns:1fr}.nav button{width:58px}.nav span{display:none}}@media(max-width:650px){.app{grid-template-columns:1fr;grid-template-rows:60px 68vh auto}.nav{display:none}.app header{grid-column:1}.main,.bottom{grid-column:1}.bottom{grid-template-columns:1fr}.brand{font-size:17px}.headerCenter{display:none}}
-.visionWrap{position:relative}.visionCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.videoBox{position:relative}.aiBadge{display:inline-block;padding:4px 8px;border:1px solid #00d9ff;border-radius:999px;background:#03283ad9;color:#5fe7ff;font-size:11px}.dangerFlash{animation:dangerPulse .8s infinite}@keyframes dangerPulse{50%{box-shadow:0 0 28px #ff263866}}.objectSelected{outline:2px solid #fff}.statusGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.mini{padding:7px;border:1px solid #095a78;border-radius:7px;background:#03131e;font-size:11px}.faceThumb{width:86px;height:64px;object-fit:cover;border:1px solid #078dcc;border-radius:6px}.cameraControls{display:grid;grid-template-columns:1fr 1fr;gap:6px}.wide{grid-column:1/-1}.</style></head><body>
-<div id="login" class="login"><div class="loginbox"><h1>AegisRadar 360 AI</h1><div>جامعة نينوى — هندسة الاتصالات</div><p>مشروع التخرج</p><p class="note">الطلبة: غانم فراس • إبراهيم غسان • سما غسان<br>المشرف: <b>الأستاذ إبراهيم</b></p><input id="loginPass" type="password" placeholder="أدخل الرمز السري"><button id="loginBtn" type="button" class="btn" style="width:100%">دخول النظام</button><p class="note">الوصول محمي برمز سري</p></div></div>
-<div id="app" class="app hidden"><header><div class="brand">AegisRadar <b>360 AI</b></div><div class="headerCenter"><strong>جامعة نينوى — هندسة الاتصالات</strong><br><span class="note">مشروع التخرج • المشرف: الأستاذ إبراهيم</span></div><div class="headerRight"><span class="dot"></span><span id="roleText">Admin</span><br><span id="clock"></span></div></header>
-<nav class="nav"><button class="active" onclick="showPage('dash',this)"><i>⌂</i><span>الرئيسية</span></button><button data-admin onclick="showPage('builder',this)"><i>⬡</i><span>بناء الغرفة</span></button><button onclick="showPage('radar',this)"><i>◉</i><span>الرادار</span></button><button onclick="showPage('camera',this)"><i>▣</i><span>كاميرا الآيفون</span></button><button onclick="showPage('people',this)"><i>♙</i><span>الأشخاص</span></button><button data-admin onclick="showPage('danger',this)"><i>⚠</i><span>منطقة الخطر</span></button><button data-admin onclick="showPage('saved',this)"><i>▣</i><span>المحفوظات</span></button><button data-admin onclick="showPage('settings',this)"><i>⚙</i><span>الإعدادات</span></button></nav>
-<section class="main"><div id="dash" class="page active"><div id="dashScene" class="scene"></div><div class="overlay sceneInfo">3D ROOM MAP • <span class="ok" id="connText">غير متصل</span></div><div class="overlay axis"><span class="x">X</span> <span class="y">Y</span> <span class="z">Z</span></div></div><div id="radar" class="page"><div id="radarScene" class="scene"></div></div>
-<div id="builder" class="page"><div class="builderTop"><h2>🏗️ بناء الغرفة 3D</h2><span class="note">اختر أداة ثم اضغط داخل أرضية الغرفة لوضع العنصر، وبعدها اضبط X/Y/Z والدوران من الخصائص</span></div><div class="builderGrid"><div class="builderScene" id="builderScene"></div><div class="builderPanel"><div class="card"><h3>✨ بناء بالذكاء الاصطناعي</h3><textarea id="aiPrompt" rows="3" placeholder="مثال: غرفة 5 × 4 متر فيها باب وشباكين وسرير وأريكة وطاولة وكاميرا في الزاوية"></textarea><button class="btn" style="width:100%;margin-top:6px" onclick="aiBuild()">إنشاء الغرفة تلقائياً ✨</button></div><div class="card"><h3>أبعاد الغرفة</h3><div class="row"><label>الطول m</label><input id="rw" type="number" value="5" step="0.1" oninput="updateRoom()"></div><div class="row"><label>العرض m</label><input id="rd" type="number" value="4" step="0.1" oninput="updateRoom()"></div><div class="row"><label>الارتفاع m</label><input id="rh" type="number" value="3" step="0.1" oninput="updateRoom()"></div></div><div class="card"><h3>إضافة عناصر</h3><div class="objectGrid"><button class="tool" onclick="addObj('wall')">🧱 جدار</button><button class="tool" onclick="addObj('door')">🚪 باب</button><button class="tool" onclick="addObj('window')">🪟 شباك</button><button class="tool" onclick="addObj('bed')">🛏️ سرير</button><button class="tool" onclick="addObj('sofa')">🛋️ أريكة</button><button class="tool" onclick="addObj('chair')">🪑 كرسي</button><button class="tool" onclick="addObj('table')">▱ طاولة</button><button class="tool" onclick="addObj('plant')">🌿 نبات</button><button class="tool" onclick="addObj('camera')">📷 كاميرا</button><button class="tool" onclick="addObj('sensor')">📡 LD2450</button><button class="tool" onclick="addObj('danger')">⚠️ خطر</button><button class="tool" onclick="clearObjects()">🗑️ مسح</button></div></div><div class="card"><h3>خصائص العنصر</h3><div class="row"><label>X</label><input id="ox" type="number" step="0.1" oninput="editSelected()"></div><div class="row"><label>Y</label><input id="oy" type="number" step="0.1" oninput="editSelected()"></div><div class="row"><label>Z</label><input id="oz" type="number" step="0.1" oninput="editSelected()"></div><div class="row"><label>الدوران</label><input id="or" type="number" step="1" oninput="editSelected()"></div><button class="btn red" style="width:100%" onclick="deleteSelected()">حذف العنصر المحدد</button></div></div></div><div class="savebar"><button class="btn green" onclick="saveRoom()">💾 حفظ المخطط</button><button class="btn" onclick="loadRoom()">📂 تحميل</button><button class="btn gray" onclick="exportRoom()">⬇ تصدير JSON</button><button class="btn" onclick="resetRoom()">↻ إعادة ضبط</button></div></div>
-<div id="camera" class="page"><h2>📷 كاميرا الآيفون + Face / Pose AI</h2><div class="cameraGrid"><div class="card"><div class="videoBox"><video id="phoneVideo" class="video" autoplay playsinline muted></video><img id="ipStream" class="video" style="display:none;object-fit:contain" alt="IP Camera Stream"><canvas id="visionOverlay" class="visionCanvas"></canvas></div><canvas id="captureCanvas" class="hidden"></canvas><div class="row"><input id="cameraUrl" value="http://192.168.1.3:8081/video"><button class="btn" onclick="openIpCamera()">فتح IP Camera</button></div><div class="cameraControls"><button class="btn" onclick="startPhoneCamera()">📱 تشغيل كاميرا الآيفون</button><button class="btn" onclick="startVisionAI()">🤖 تشغيل AI</button><button class="btn gray" onclick="captureFace()">📸 التقاط وحفظ</button><button class="btn gray" onclick="stopVisionAI()">⏹ إيقاف AI</button></div></div><div class="card"><h3>🧠 الرؤية الحاسوبية</h3><p id="visionStatus" class="note">جاهز. سيكشف وجود الوجه ويقدّر الوضعية: واقف / جالس / مستلقٍ.</p><div class="statusGrid"><div class="mini">الوجه: <b id="faceState">غير مكتشف</b></div><div class="mini">الوضعية: <b id="poseState">غير معروفة</b></div><div class="mini">الأشخاص بالكاميرا: <b id="camPeople">0</b></div><div class="mini">آخر لقطة: <b id="lastCapture">—</b></div></div><hr style="border-color:#07384b"><h3>📨 التنبيهات</h3><label class="switch"><input type="checkbox" id="sendTelegram"> إرسال Telegram عند الخطر/الوجه</label><label class="switch"><input type="checkbox" id="sendWhatsApp"> إرسال WhatsApp/Webhook</label><div class="row"><label>اسم الشخص</label><input id="personName" placeholder="اختياري"></div><div class="row"><label>Webhook</label><input id="notifyEndpoint" placeholder="https://your-server.example/api/notify"></div><p class="note">لأمان GitHub Pages لا يتم وضع Bot Token داخل الملف العام. ضع Endpoint آمن في الخادم ليقوم بالإرسال إلى Telegram/WhatsApp.</p></div></div></div>
-<div id="people" class="page"><h2>👥 تتبع الأشخاص + AI</h2><div class="targetList" id="peopleList"></div><div class="card"><h3>حالات الوضعية</h3><div class="statusGrid"><div class="mini">P1: <b id="poseP1">—</b></div><div class="mini">P2: <b id="poseP2">—</b></div><div class="mini">P3: <b id="poseP3">—</b></div><div class="mini">Face ID: <b id="faceName">غير معروف</b></div></div><p class="note">LD2450 مسؤول عن الموقع والحركة حتى 3 أهداف. الكاميرا/AI هي التي تستنتج الوجه والوضعية. لا يتم ادعاء ارتفاع Z كقياس من LD2450.</p></div><div class="card"><h3>📸 اللقطات المحفوظة</h3><div id="faceGallery" class="row" style="flex-wrap:wrap"></div></div></div>
-<div id="danger" class="page"><h2>⚠️ منطقة الخطر</h2><div class="card"><div class="row"><label>X</label><input id="dx" type="number" value="2"></div><div class="row"><label>Y</label><input id="dy" type="number" value="2"></div><div class="row"><label>العرض</label><input id="dw" type="number" value="1"></div><div class="row"><label>العمق</label><input id="dd" type="number" value="1"></div><button class="btn red" onclick="applyDanger()">تطبيق منطقة الخطر</button><p id="dangerStatus" class="note"></p></div></div>
-<div id="saved" class="page"><h2>💾 المخططات المحفوظة</h2><div id="savedList" class="card"></div></div><div id="settings" class="page"><h2>⚙️ الإعدادات</h2><div class="card"><div class="row"><label>MQTT WebSocket</label><input id="mqttUrl" placeholder="wss://broker.example.com:8084/mqtt"></div><div class="row"><label>Topic</label><input id="mqttTopic" value="aegisradar/ld2450"></div><button class="btn" onclick="connectMQTT()">اتصال MQTT</button><hr><p class="note">التحكم الكامل متاح للرمز الإداري. حساب المشاهدة لا يستطيع تعديل المخطط أو الإعدادات.</p></div></div></section>
-<aside class="right"><div class="card"><h3>📡 حالة الرادار</h3><div>LD2450 • <span id="radarState" class="danger">غير متصل</span></div><div class="note">Serial 256000 Baud • دقة تقريبية حسب المعايرة</div></div><div class="card"><h3>🎯 الهدف الحالي</h3><div id="currentTarget" class="note">لا يوجد هدف</div></div><div class="card"><h3>⚡ إجراءات سريعة</h3><button class="btn" onclick="showPage('builder')">بناء غرفة</button><button class="btn" style="margin-top:6px" onclick="showPage('camera')">كاميرا الآيفون</button></div><div class="card"><h3>🧾 السجلات الحديثة</h3><div id="logs"></div></div></aside><section class="bottom"><div class="card"><h3>الأهداف المكتشفة</h3><div class="targetList" id="targetCards"></div></div><div class="card"><h3>اتصال الرادار</h3><div class="note">LD2450 → ESP32 → MQTT/Web Serial → AegisRadar</div><div id="linkState" class="ok">جاهز</div></div><div class="card"><h3>السجلات</h3><div id="bottomLogs"></div></div></section></div>
-<div id="toast" class="toast hidden"></div>
+*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Tahoma,Arial,sans-serif;background:#020912;color:#e8f6ff;overflow:hidden}
+button,input,select{font:inherit}button{cursor:pointer}
+:root{--b:#00aaff;--b2:#0077ff;--panel:#061725;--line:#008ee8;--green:#00ef82;--red:#ff3348;--gold:#ffc52f}
+#login{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle,#08243b,#01050a 65%);z-index:100}
+.loginBox{width:min(430px,92vw);padding:30px;border:1px solid #08a8ff;border-radius:22px;background:rgba(3,16,28,.95);box-shadow:0 0 50px #007cff55;text-align:center}
+.logo{font-size:30px;font-weight:800;color:#15baff}.sub{color:#9cc9df;margin:8px 0 24px}.loginBox input{width:100%;padding:15px;border-radius:10px;border:1px solid #167fb9;background:#03101b;color:white;text-align:center;font-size:20px}.primary{width:100%;margin-top:12px;padding:13px;border:1px solid #09aaff;border-radius:10px;background:linear-gradient(90deg,#0078dd,#00b4ff);color:#fff;font-weight:700}
+#error{color:#ff6372;min-height:22px;margin-top:10px}
+#app{display:none;height:100vh}
+header{height:74px;border-bottom:1px solid #075f99;background:#03111e;display:flex;align-items:center;justify-content:space-between;padding:8px 18px;gap:20px}
+.brand{font-size:23px;font-weight:800}.brand span{color:#00aaff}.center{text-align:center;line-height:1.4}.center b{color:#00b5ff}.meta{text-align:right;font-size:12px;color:#a9c7d8}
+.layout{display:grid;grid-template-columns:92px 1fr 330px;height:calc(100vh - 74px)}
+nav{border-left:1px solid #075f99;background:#03111d;padding:8px 6px;display:flex;flex-direction:column;gap:7px}
+nav button{min-height:63px;border:1px solid #074d78;border-radius:11px;background:#041a2b;color:#cdefff}.navActive,nav button:hover{border-color:#00aaff;background:#063354;color:#fff;box-shadow:0 0 14px #008cff33}
+main{min-width:0;display:flex;flex-direction:column;padding:10px;gap:8px;overflow:hidden}
+.toolbar{display:flex;gap:7px;overflow:auto;direction:rtl}.tool{min-width:70px;padding:8px 7px;border:1px solid #086da8;background:#061b2c;color:#d8f5ff;border-radius:10px}.tool.active{background:#075e9e;border-color:#22c7ff}.tool.danger{border-color:#d6293e;color:#ff7080}
+.canvasWrap{position:relative;flex:1;min-height:320px;border:1px solid #0785c9;border-radius:13px;background:#020b14;overflow:hidden}.canvasWrap canvas{display:block;width:100%;height:100%}
+.overlay{position:absolute;left:10px;bottom:10px;background:#031525dd;border:1px solid #0b83c5;border-radius:8px;padding:8px 12px;direction:ltr}
+#hint{position:absolute;top:9px;left:50%;transform:translateX(-50%);background:#041c2ddd;border:1px solid #0789cc;padding:7px 14px;border-radius:9px;font-size:12px}
+.bottom{height:185px;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px}.card{border:1px solid #0785c9;border-radius:12px;background:#031522;padding:10px;overflow:auto}.card h3{margin:0 0 8px;color:#fff;font-size:16px}.target{display:flex;justify-content:space-between;border:1px solid #155b80;border-radius:8px;padding:8px;margin:5px 0}.green{color:var(--green)}.red{color:var(--red)}.gold{color:var(--gold)}
+aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:auto}.panel{border:1px solid #087db9;border-radius:12px;background:#041522;margin-bottom:9px;padding:11px}.panel h3{margin:0 0 10px;color:#fff}.row{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:6px 0}.field label{display:block;font-size:11px;color:#9fc5d6;margin-bottom:3px}.field input,.field select{width:100%;padding:8px;border:1px solid #12698f;border-radius:7px;background:#02101a;color:#fff}.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.actions button,.smallBtn{padding:9px;border:1px solid #087db9;border-radius:8px;background:#05243a;color:#dff7ff}.save{background:#006b46!important;border-color:#00d681!important}.dangerBtn{background:#5a101b!important;border-color:#ff3348!important}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);padding:10px 16px;border:1px solid #08a8ff;background:#041c2deF;border-radius:9px;display:none;z-index:200}
+.modal{position:fixed;inset:0;background:#000b;display:none;place-items:center;z-index:90}.modalBox{width:min(700px,94vw);max-height:90vh;overflow:auto;background:#041522;border:1px solid #08a8ff;border-radius:16px;padding:18px}.modalGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.modalGrid button{padding:13px;background:#06253a;border:1px solid #0a7eaf;color:#fff;border-radius:9px}
+.viewerOnly .adminOnly{display:none!important}
+@media(max-width:1000px){.layout{grid-template-columns:70px 1fr}.layout aside{display:none}.bottom{grid-template-columns:1fr 1fr;height:170px}.bottom .card:last-child{display:none}}
+@media(max-width:650px){header{height:64px}.brand{font-size:16px}.center,.meta{font-size:9px}.layout{grid-template-columns:1fr;height:calc(100vh - 64px)}nav{position:absolute;bottom:0;left:0;right:0;height:65px;z-index:30;flex-direction:row;justify-content:space-around;border-top:1px solid #075f99;border-left:0}nav button{min-height:50px;flex:1;font-size:10px}.canvasWrap{min-height:360px}.bottom{height:150px;grid-template-columns:1fr}.bottom .card:not(:first-child){display:none}main{padding-bottom:70px}.toolbar .tool{min-width:62px;font-size:10px}}
+</style>
+</head>
+<body>
+<div id="login">
+ <div class="loginBox">
+  <div class="logo">AegisRadar 360 AI</div>
+  <div class="sub">جامعة نينوى — هندسة الاتصالات<br>مشروع التخرج<br><b>المشرف: الأستاذ إبراهيم</b></div>
+  <input id="pass" type="password" inputmode="numeric" placeholder="أدخل الرمز السري" autocomplete="off">
+  <button class="primary" id="loginBtn" type="button">دخول النظام</button>
+  <div id="error"></div>
+ </div>
+</div>
+
+<div id="app">
+<header>
+ <div class="brand">AegisRadar <span>360 AI</span><small style="display:block;font-size:10px;color:#8eb8ca">People Tracking & Smart Building</small></div>
+ <div class="center"><b>جامعة نينوى — هندسة الاتصالات</b><br>مشروع التخرج</div>
+ <div class="meta">المشرف: <b>الأستاذ إبراهيم</b><br>الطلبة: غانم فراس - إبراهيم غسان - سما غسان</div>
+</header>
+<div class="layout">
+<nav>
+ <button data-page="home" class="navActive">🏠<br>الرئيسية</button>
+ <button data-page="build">🏗️<br>بناء الغرفة</button>
+ <button data-page="radar">📡<br>رؤية الرادار</button>
+ <button data-page="camera">📷<br>الكاميرا</button>
+ <button data-page="people">👥<br>الأشخاص</button>
+ <button data-page="logs">📋<br>السجلات</button>
+ <button data-page="settings">⚙️<br>الإعدادات</button>
+</nav>
+
+<main>
+ <div class="toolbar adminOnly">
+  <button class="tool" data-tool="select">↖ تحديد</button>
+  <button class="tool" data-tool="wall2">🧱 جدار بنقطتين</button>
+  <button class="tool" data-tool="door">🚪 باب</button>
+  <button class="tool" data-tool="window">🪟 شباك</button>
+  <button class="tool" data-tool="bed">🛏️ سرير</button>
+  <button class="tool" data-tool="sofa">🛋️ أريكة</button>
+  <button class="tool" data-tool="table">▱ طاولة</button>
+  <button class="tool" data-tool="chair">🪑 كرسي</button>
+  <button class="tool" data-tool="plant">🌿 نبات</button>
+  <button class="tool" data-tool="camera">📷 كاميرا</button>
+  <button class="tool" data-tool="sensor">📡 LD2450</button>
+  <button class="tool danger" data-tool="danger">⚠️ منطقة خطر</button>
+ </div>
+ <div class="canvasWrap">
+  <div id="hint">اختر أداة ثم اضغط على أرضية الغرفة. الجدار: اضغط البداية ثم النهاية.</div>
+  <div id="scene"></div>
+  <div class="overlay">X: <span id="cx">0.00</span> m &nbsp; Y: <span id="cy">0.00</span> m &nbsp; Z: <span id="cz">0.00</span> m</div>
+ </div>
+ <div class="bottom">
+  <div class="card"><h3>الأهداف المكتشفة — LD2450</h3><div id="targets"></div></div>
+  <div class="card"><h3>رؤية الرادار</h3><canvas id="radar2d" width="300" height="125" style="width:100%;height:125px"></canvas></div>
+  <div class="card"><h3>السجلات الحديثة</h3><div id="logs"></div></div>
+ </div>
+</main>
+
+<aside>
+ <div class="panel"><h3>أبعاد المبنى</h3>
+  <div class="row"><div class="field"><label>الطول X (م)</label><input id="roomW" type="number" value="15" min="2" max="100" step=".1"></div>
+  <div class="field"><label>العرض Y (م)</label><input id="roomD" type="number" value="12" min="2" max="100" step=".1"></div></div>
+  <div class="row"><div class="field"><label>ارتفاع الطابق (م)</label><input id="roomH" type="number" value="3" min="2" max="20" step=".1"></div>
+  <div class="field"><label>عدد الطوابق</label><input id="floors" type="number" value="1" min="1" max="10"></div></div>
+  <button class="smallBtn" id="applyRoom" style="width:100%">تطبيق حجم المبنى</button>
+ </div>
+ <div class="panel"><h3>إدارة الطوابق</h3><div class="actions">
+   <button id="prevFloor">⬇ السابق</button><button id="nextFloor">⬆ التالي</button>
+   <button id="addFloor" class="adminOnly">＋ طابق</button><button id="fit">ملاءمة المشهد</button>
+ </div><div style="margin-top:7px">الطابق الحالي: <b id="floorLabel">1 / 1</b></div></div>
+ <div class="panel"><h3>خصائص العنصر المحدد</h3>
+  <div class="row"><div class="field"><label>X</label><input id="ox" type="number" step=".01"></div><div class="field"><label>Y</label><input id="oy" type="number" step=".01"></div></div>
+  <div class="row"><div class="field"><label>Z</label><input id="oz" type="number" step=".01"></div><div class="field"><label>الدوران °</label><input id="rot" type="number" step="1"></div></div>
+  <button class="smallBtn" id="applyObj" style="width:100%">تطبيق الإحداثيات</button>
+ </div>
+ <div class="panel"><h3>بناء سريع / AI</h3>
+  <input id="aiText" style="width:100%;padding:9px;background:#02101a;border:1px solid #12698f;color:#fff;border-radius:7px" placeholder="مثال: منزل 20x15 بطابقين">
+  <button class="smallBtn" id="aiBuild" style="width:100%;margin-top:7px">✨ إنشاء المخطط من الوصف</button>
+ </div>
+ <div class="panel"><h3>الحفظ</h3><div class="actions">
+  <button id="save" class="save adminOnly">💾 حفظ</button><button id="load">📂 تحميل</button>
+  <button id="export" class="adminOnly">JSON ⬇</button><button id="clear" class="dangerBtn adminOnly">مسح البناء</button>
+ </div></div>
+</aside>
+</div>
+</div>
+
+<div id="toast"></div>
+
 <script>
-let role='';let room={w:5,d:4,h:3,objects:[]};let selected=null;let dashScene,builderScene,renderer,controls,bRenderer,bControls;let targets=[null,null,null];let danger={x:2,y:2,w:1,d:1};
-const $=id=>document.getElementById(id);function toast(t){$('toast').textContent=t;$('toast').classList.remove('hidden');setTimeout(()=>$('toast').classList.add('hidden'),2200)}function log(t){let s=new Date().toLocaleTimeString('ar-IQ');let x=`<div class="log">${t}<span style="float:left">${s}</span></div>`;$('logs').insertAdjacentHTML('afterbegin',x);$('bottomLogs').insertAdjacentHTML('afterbegin',x);while($('logs').children.length>8)$('logs').lastElementChild.remove();}
-function login(){let p=$('loginPass').value;if(p==='1234'){role='admin'}else if(p==='5678'){role='viewer'}else{return toast('الرمز غير صحيح')} $('login').classList.add('hidden');$('app').classList.remove('hidden');$('roleText').textContent=role==='admin'?'Admin — تحكم كامل':'Viewer — مشاهدة فقط';if(role!=='admin')document.querySelectorAll('[data-admin]').forEach(x=>x.style.display='none');initAll();log('System started');}
-document.getElementById('loginBtn').addEventListener('click',login);document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
-function showPage(id,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');if(id==='builder')setTimeout(()=>resizeBuilder(),50);}
-setInterval(()=>{$('clock').textContent=new Date().toLocaleString('ar-IQ')},1000);
-function makeRenderer(el){let r=new THREE.WebGLRenderer({antialias:true,alpha:true});r.setPixelRatio(Math.min(devicePixelRatio,2));r.setSize(el.clientWidth,el.clientHeight);el.appendChild(r.domElement);return r}
-function initDash(){let el=$('dashScene');dashScene=new THREE.Scene();dashScene.background=new THREE.Color(0x010912);let cam=new THREE.PerspectiveCamera(50,el.clientWidth/el.clientHeight,.1,100);cam.position.set(8,7,9);renderer=makeRenderer(el);controls=new THREE.OrbitControls(cam,renderer.domElement);controls.enableDamping=true;controls.target.set(0,1,0);dashScene.add(new THREE.AmbientLight(0x80bfff,.7));let l=new THREE.DirectionalLight(0xffffff,1);l.position.set(4,8,3);dashScene.add(l);window.addEventListener('resize',()=>{if(!el.clientWidth)return;renderer.setSize(el.clientWidth,el.clientHeight);cam.aspect=el.clientWidth/el.clientHeight;cam.updateProjectionMatrix()});function loop(){requestAnimationFrame(loop);controls.update();renderer.render(dashScene,cam);updateTargets3D()}loop();drawRoom(dashScene)}
-function grid(g){let gr=new THREE.GridHelper(Math.max(room.w,room.d)+4,Math.ceil(Math.max(room.w,room.d)*2),0x008dcc,0x07334c);gr.position.y=0;g.add(gr)}
-function box(g,w,h,d,x,y,z,c=0x159ed0,wire=false){let mat=new THREE.MeshStandardMaterial({color:c,transparent:true,opacity:wire?.42:1,wireframe:wire,metalness:.15,roughness:.72});let q=new THREE.Mesh(new THREE.BoxGeometry(Math.max(.03,w),Math.max(.03,h),Math.max(.03,d)),mat);q.position.set(x,y+h/2,z);return q}
-function furniture(g,o){let group=new THREE.Group();group.position.set(o.x||0,o.y||0,o.z||0);group.rotation.y=THREE.MathUtils.degToRad(o.r||0);let c=o.type==='bed'?0x8b5a35:o.type==='sofa'?0x777777:o.type==='chair'?0x9b6b43:o.type==='table'?0x6b4025:0x35a85a;
- const part=(w,h,d,x,y,z,col=c)=>{let m=box(group,w,h,d,x,y,z,col,false);group.add(m);return m};
- if(o.type==='bed'){part(1.9,.28,2.05,0,.05,0,0x5b4638);part(1.75,.18,1.9,0,.34,0,0xd7d7d7);part(1.78,.45,.18,0,.58,-.92,0x4a2f22);part(.65,.12,.42,-.55,.48,-.55,0xf2f2f2);part(.65,.12,.42,.55,.48,-.55,0xf2f2f2)}
- else if(o.type==='sofa'){part(2.2,.35,.85,0,.35,0);part(2.2,.75,.18,0,.75,-.34);part(.18,.7,.85,-1.01,.55,0);part(.18,.7,.85,1.01,.55,0);part(1.95,.22,.58,0,.62,.05,0x909090)}
- else if(o.type==='chair'){part(.65,.12,.65,0,.48,0);part(.62,.65,.12,0,.82,-.25);for(const [x,z] of [[-.25,-.25],[.25,-.25],[-.25,.25],[.25,.25]])part(.1,.48,.1,x,.02,z)}
- else if(o.type==='table'){part(1.25,.12,.8,0,.72,0);for(const [x,z] of [[-.5,-.3],[.5,-.3],[-.5,.3],[.5,.3]])part(.1,.72,.1,x,0,z)}
- else if(o.type==='plant'){part(.28,.45,.28,0,.02,0,0x7a4a25);for(let i=0;i<5;i++){let leaf=part(.08,.7,.25,(i-2)*.08,.42,0,0x20a84a);leaf.rotation.z=(i-2)*.25}}
- group.userData.ref=o;g.add(group);o.mesh=group;return group}
-function renderObj(g,o){let c=o.type==='danger'?0xff2638:o.type==='sensor'?0x32ff9b:o.type==='camera'?0xeeeeee:0x16bfff;let q=null;
- if(['bed','sofa','chair','table','plant'].includes(o.type)) return furniture(g,o);
- if(o.type==='wall')q=box(g,o.w||1,o.h||room.h,o.d||.12,o.x,o.y||0,o.z,c,true);
- else if(o.type==='door'){q=box(g,o.w||.9,o.h||2.1,.14,o.x,o.y||0,o.z,0x9a673d,false);q.rotation.y=THREE.MathUtils.degToRad(o.r||0)}
- else if(o.type==='window'){q=box(g,o.w||1.2,o.h||1.1,.10,o.x,o.y||1.2,o.z,0x24bff0,true);q.rotation.y=THREE.MathUtils.degToRad(o.r||0)}
- else if(o.type==='danger'){q=box(g,o.w||1,.05,o.d||1,o.x,0,o.z,c,true);q.material.opacity=.35}
- else if(o.type==='sensor'||o.type==='camera'){q=box(g,.28,.22,.28,o.x,o.y||1.5,o.z,c,false);q.rotation.y=THREE.MathUtils.degToRad(o.r||0);let cone=new THREE.Mesh(new THREE.ConeGeometry(.7,.9,32,1,true),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.08,side:THREE.DoubleSide}));cone.rotation.x=-Math.PI/2;cone.position.set(o.x,(o.y||1.5),o.z);g.add(cone)}
- if(q){q.userData.ref=o;g.add(q);o.mesh=q}return q}
-function grid(g){let gr=new THREE.GridHelper(Math.max(room.w,room.d)+4,Math.ceil(Math.max(room.w,room.d)*2),0x008dcc,0x07334c);gr.position.y=0;g.add(gr)}
-function drawRoom(g){if(!g)return;while(g.children.length>2)g.remove(g.children[g.children.length-1]);grid(g);let W=room.w,D=room.d,H=room.h;let wall=new THREE.LineBasicMaterial({color:0x09baff,transparent:true,opacity:.85});[[0,H/2,-D/2,W,H,.08],[0,H/2,D/2,W,H,.08],[-W/2,H/2,0,.08,H,D],[W/2,H/2,0,.08,H,D]].forEach(a=>{let geo=new THREE.BoxGeometry(a[3],a[4],a[5]);let e=new THREE.LineSegments(new THREE.EdgesGeometry(geo),wall);e.position.set(a[0],a[1],a[2]);g.add(e)});let floor=box(g,W,.03,D,0,0,0,0x07304a,false);floor.material.transparent=true;floor.material.opacity=.45;g.add(floor);room.objects.forEach(o=>renderObj(g,o))}
-function updateTargets3D(){if(!dashScene)return;let remove=[];dashScene.traverse(o=>{if(o.userData&&o.userData.targetMarker)remove.push(o)});remove.forEach(o=>o.parent.remove(o));targets.forEach((t,i)=>{if(!t)return;let col=[0x00ff77,0x18a8ff,0xffc21c][i];let m=box(dashScene,.18,.9,.18,t.x,0,t.z,col,false);m.userData.targetMarker=true})}
-function initBuilder(){let el=$('builderScene');bRenderer=makeRenderer(el);let s=new THREE.Scene();builderScene=s;let cam=new THREE.PerspectiveCamera(48,el.clientWidth/el.clientHeight,.1,100);cam.position.set(8,7,9);bControls=new THREE.OrbitControls(cam,bRenderer.domElement);bControls.enableDamping=true;bControls.target.set(0,1,0);s.add(new THREE.AmbientLight(0x90cfff,.8));let l=new THREE.DirectionalLight(0xffffff,1.1);l.position.set(4,8,4);s.add(l);function loop(){requestAnimationFrame(loop);bControls.update();bRenderer.render(s,cam)}loop();drawRoom(s);bRenderer.userData={cam};bRenderer.domElement.addEventListener('pointerdown',placeFromMouse)}
-function resizeBuilder(){if(!bRenderer)return;let el=$('builderScene'),cam=bRenderer.userData.cam;bRenderer.setSize(el.clientWidth,el.clientHeight);cam.aspect=el.clientWidth/el.clientHeight;cam.updateProjectionMatrix()}
-let placementType=null;
-function addObj(type){if(role!=='admin')return toast('المشاهدة فقط');placementType=type;toast('اضغط الآن على أرضية الغرفة لوضع '+type)}
-function placeFromMouse(ev){if(!placementType||role!=='admin')return;let rect=bRenderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2(((ev.clientX-rect.left)/rect.width)*2-1,-((ev.clientY-rect.top)/rect.height)*2+1),cam=bRenderer.userData.cam,ray=new THREE.Raycaster();ray.setFromCamera(mouse,cam);let p=ray.intersectObjects(builderScene.children,true).find(h=>h.object.geometry&&h.object.geometry.type==='BoxGeometry');if(!p)return;let pt=p.point;let type=placementType;placementType=null;let defaults={wall:{w:1,d:.12,h:room.h},door:{w:.9,d:.14,h:2.1},window:{w:1.2,d:.1,h:1.1},bed:{w:1.9,d:2.05,h:.8},sofa:{w:2.2,d:.85,h:1},chair:{w:.65,d:.65,h:1},table:{w:1.25,d:.8,h:.8},plant:{w:.35,d:.35,h:1},camera:{w:.28,d:.28,h:1.5},sensor:{w:.28,d:.28,h:1.5},danger:{w:1,d:1,h:.05}};let d=defaults[type]||{w:1,d:1,h:1};let o={id:Date.now()+Math.random(),type,x:Math.max(-room.w/2+d.w/2,Math.min(room.w/2-d.w/2,pt.x)),y:0,z:Math.max(-room.d/2+d.d/2,Math.min(room.d/2-d.d/2,pt.z)),r:0,...d};room.objects.push(o);selected=o;syncProps();drawRoom(builderScene);drawRoom(dashScene);toast('تم وضع العنصر عند الإحداثيات المحددة')}
-function syncProps(){if(!selected)return;['x','y','z'].forEach(k=>$(('o'+k)).value=selected[k]??0);$('or').value=selected.r||0}
-function editSelected(){if(!selected||role!=='admin')return;selected.x=+$('ox').value||0;selected.y=+$('oy').value||0;selected.z=+$('oz').value||0;selected.r=+$('or').value||0;drawRoom(builderScene)}
-function deleteSelected(){if(!selected||role!=='admin')return;room.objects=room.objects.filter(o=>o!==selected);selected=null;drawRoom(builderScene)}function clearObjects(){if(role!=='admin')return;room.objects=[];drawRoom(builderScene)}
-function updateRoom(){if(role!=='admin')return;room.w=Math.max(2,+$('rw').value||5);room.d=Math.max(2,+$('rd').value||4);room.h=Math.max(2,+$('rh').value||3);drawRoom(builderScene);drawRoom(dashScene)}
-function aiBuild(){if(role!=='admin')return;let t=$('aiPrompt').value.toLowerCase();let m=t.match(/(\d+(?:\.\d+)?)\s*[×x*]\s*(\d+(?:\.\d+)?)/);if(m){room.w=+m[1];room.d=+m[2];$('rw').value=room.w;$('rd').value=room.d}room.objects=[];let add=(type,x,z)=>room.objects.push({id:Date.now()+Math.random(),type,x,z,y:0,r:0,w:type==='wall'||type==='danger'?1:1,d:1,h:2.2});add('door',0,-room.d/2);if(t.includes('شباك')||t.includes('نافذة')||t.includes('window')){add('window',-room.w/2+0.5,0);add('window',room.w/2-0.5,0)}if(t.includes('سرير')||t.includes('bed'))add('bed',-1,0);if(t.includes('أريكة')||t.includes('كنبة')||t.includes('sofa'))add('sofa',1,1);if(t.includes('طاولة')||t.includes('table'))add('table',1,-1);if(t.includes('كاميرا')||t.includes('camera'))add('camera',room.w/2-.2,room.d/2-.2);if(t.includes('حساس')||t.includes('ld2450'))add('sensor',room.w/2-.2,room.d/2-.4);drawRoom(builderScene);drawRoom(dashScene);toast('تم توليد مخطط أولي من الوصف');log('AI room layout generated')}
-function saveRoom(){if(role!=='admin')return;localStorage.setItem('aegisRoom',JSON.stringify(room));toast('تم حفظ المخطط');log('Room saved locally');renderSaved()}function loadRoom(){let x=localStorage.getItem('aegisRoom');if(!x)return toast('لا يوجد مخطط محفوظ');room=JSON.parse(x);$('rw').value=room.w;$('rd').value=room.d;$('rh').value=room.h;drawRoom(builderScene);drawRoom(dashScene);toast('تم تحميل المخطط')}function exportRoom(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(room,null,2)],{type:'application/json'}));a.download='aegis-room.json';a.click()}function renderSaved(){$('savedList').innerHTML=localStorage.getItem('aegisRoom')?'<p class="ok">يوجد مخطط محفوظ محلياً</p>':'<p class="note">لا يوجد</p>'}function resetRoom(){if(role!=='admin')return;room={w:5,d:4,h:3,objects:[]};$('rw').value=5;$('rd').value=4;$('rh').value=3;drawRoom(builderScene);drawRoom(dashScene)}
-function applyDanger(){if(role!=='admin')return;danger={x:+$('dx').value,y:+$('dy').value,w:+$('dw').value,d:+$('dd').value};room.objects=room.objects.filter(o=>o.type!=='danger');room.objects.push({id:Date.now(),type:'danger',x:danger.x,z:danger.y,y:0,w:danger.w,d:danger.d});drawRoom(builderScene);drawRoom(dashScene);$('dangerStatus').textContent='تم تطبيق المنطقة';log('Danger zone updated')}
-let faceDetector=null, poseEstimator=null, visionRunning=false, lastVision=0, faceSeen=false, poseLabel='غير معروفة';
-async function startPhoneCamera(){try{let v=$('phoneVideo'),img=$('ipStream');img.style.display='none';v.style.display='block';if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop())}v.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});await v.play();$('visionStatus').textContent='كاميرا الجهاز تعمل.';log('Device camera connected')}catch(e){toast('تعذر فتح الكاميرا: '+e.message)}}
-function openIpCamera(){let u=$('cameraUrl').value.trim();if(!u)return;let img=$('ipStream'),v=$('phoneVideo');if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null}v.style.display='none';img.style.display='block';img.src='';setTimeout(()=>img.src=u,80);$('visionStatus').textContent='بث IP Camera مباشر';log('IP Camera stream connected');toast('تم تشغيل بث كاميرا الآيفون')}
-async function startVisionAI(){if(visionRunning)return;try{if(typeof FaceDetection==='undefined'||typeof Pose==='undefined')throw new Error('تعذر تحميل مكتبات AI');faceDetector=new FaceDetection({locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`});faceDetector.setOptions({model:'short',minDetectionConfidence:.55});faceDetector.onResults(onFaceResults);poseEstimator=new Pose({locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`});poseEstimator.setOptions({modelComplexity:1,smoothLandmarks:true,minDetectionConfidence:.5,minTrackingConfidence:.5});poseEstimator.onResults(onPoseResults);visionRunning=true;$('visionStatus').textContent='AI يعمل: Face + Pose';visionLoop();}catch(e){$('visionStatus').textContent='تعذر تشغيل AI: '+e.message;toast(e.message)}}
-function stopVisionAI(){visionRunning=false;$('visionStatus').textContent='AI متوقف'}
-async function visionLoop(){if(!visionRunning)return;let v=$('phoneVideo');if(v.readyState>=2){try{await faceDetector.send({image:v});await poseEstimator.send({image:v});}catch(e){} }setTimeout(visionLoop,180)}
-function onFaceResults(res){let ds=res.detections||[];faceSeen=ds.length>0;$('faceState').textContent=faceSeen?'مكتشف':'غير مكتشف';$('camPeople').textContent=ds.length;let c=$('visionOverlay'),v=$('phoneVideo');if(c.width!==v.videoWidth){c.width=v.videoWidth||640;c.height=v.videoHeight||360}let ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.strokeStyle='#00ff8a';ctx.lineWidth=3;ds.forEach(d=>{let b=d.boundingBox,x=b.xCenter*c.width-b.width*c.width/2,y=b.yCenter*c.height-b.height*c.height/2,w=b.width*c.width,h=b.height*c.height;ctx.strokeRect(x,y,w,h);ctx.fillStyle='#00ff8a';ctx.font='18px Arial';ctx.fillText('FACE',x,y-6)});if(faceSeen) log('Face detected')}
-function onPoseResults(res){let lm=res.poseLandmarks;if(!lm){$('poseState').textContent='غير معروفة';return}let ls=lm[11],rs=lm[12],lh=lm[23],rh=lm[24],la=lm[27],ra=lm[28];let shoulderY=(ls.y+rs.y)/2,hipY=(lh.y+rh.y)/2,ankleY=(la.y+ra.y)/2;let torso=Math.abs(hipY-shoulderY), leg=Math.abs(ankleY-hipY);let label;if(shoulderY>hipY-0.08)label='مستلقٍ';else if(leg<torso*1.15)label='جالس';else label='واقف';poseLabel=label;$('poseState').textContent=label;$('poseP1').textContent=label}
-function captureFace(){let v=$('phoneVideo'),img=$('ipStream'),c=$('captureCanvas');let src=v.style.display!=='none'?v:img;if(v.style.display!=='none'&&!v.videoWidth)return toast('شغّل الكاميرا أولاً');if(v.style.display==='none'&&!img.naturalWidth)return toast('شغّل IP Camera أولاً');c.width=v.style.display!=='none'?v.videoWidth:img.naturalWidth;c.height=v.style.display!=='none'?v.videoHeight:img.naturalHeight;c.getContext('2d').drawImage(src,0,0);c.toBlob(async b=>{let url=URL.createObjectURL(b);let a=document.createElement('a');a.href=url;a.download='AegisRadar-face-'+Date.now()+'.jpg';a.click();$('lastCapture').textContent=new Date().toLocaleTimeString('ar-IQ');storeFace(url);log('Face image captured');if($('sendTelegram').checked||$('sendWhatsApp').checked)await sendNotification(b,{event:'face_capture',name:$('personName').value||'Unknown'});},'image/jpeg',.92)}
-function storeFace(url){let g=$('faceGallery');if(!g)return;let img=document.createElement('img');img.src=url;img.className='faceThumb';img.title='لقطة محفوظة محلياً';g.prepend(img);let imgs=[...g.querySelectorAll('img')];if(imgs.length>12)imgs.at(-1).remove()}
-async function sendNotification(blob,payload){let endpoint=$('notifyEndpoint').value||localStorage.getItem('aegisNotifyEndpoint')||'';if(!endpoint){toast('ضع Notify Endpoint آمن أولاً');return false}try{let fd=new FormData();fd.append('event',payload.event||'aegisradar');fd.append('name',payload.name||'');fd.append('data',JSON.stringify(payload));if(blob)fd.append('image',blob,'capture.jpg');let r=await fetch(endpoint,{method:'POST',body:fd});if(!r.ok)throw new Error('HTTP '+r.status);log('Notification sent to backend');return true}catch(e){log('<span class="danger">Notification failed: '+e.message+'</span>');return false}}
-function saveNotifyEndpoint(){let v=$('notifyEndpointSettings').value.trim();localStorage.setItem('aegisNotifyEndpoint',v);if($('notifyEndpoint'))$('notifyEndpoint').value=v;toast('تم حفظ رابط التنبيهات')}
-function connectMQTT(){let u=$('mqttUrl').value;if(!u||!window.mqtt)return toast('ضع رابط MQTT WebSocket مثل wss://broker:8084/mqtt');try{let c=mqtt.connect(u);c.on('connect',()=>{c.subscribe($('mqttTopic').value);$('connText').textContent='متصل';$('radarState').textContent='متصل';$('radarState').className='ok';log('Radar connected via MQTT')});c.on('message',(topic,msg)=>handleRadar(msg.toString()));c.on('error',()=>toast('MQTT error'))}catch(e){toast('خطأ MQTT')}}
-function handleRadar(txt){try{let d=JSON.parse(txt);let arr=d.targets||[d];arr.slice(0,3).forEach((t,i)=>{if(t&&t.detected!==false){targets[i]={x:+(t.roomX??t.x??0),z:+(t.roomY??t.y??0),speed:+(t.speed??0),distance:+(t.distance??0),detected:true};}});renderTargets();checkDanger();log('Target data received')}catch(e){console.log(e)}}
-function renderTargets(){let cards=targets.map((t,i)=>t?`<div class="target"><b>P${i+1}</b><br>X ${t.x.toFixed(2)} m<br>Y ${t.z.toFixed(2)} m<br>${t.distance.toFixed(2)} m • ${t.speed.toFixed(2)} m/s</div>`:`<div class="target">P${i+1}<br>لا يوجد</div>`).join('');$('targetCards').innerHTML=cards;$('peopleList').innerHTML=cards;$('currentTarget').innerHTML=targets[0]?`X=${targets[0].x.toFixed(2)} m<br>Y=${targets[0].z.toFixed(2)} m<br>Distance=${targets[0].distance.toFixed(2)} m<br>Speed=${targets[0].speed.toFixed(2)} m/s<br><span class="note">Z غير مقاس بواسطة LD2450</span>`:'لا يوجد هدف'}
-let dangerLatch={};
-async function checkDanger(){targets.forEach(async(t,i)=>{if(!t)return;let hit=Math.abs(t.x-danger.x)<=danger.w/2&&Math.abs(t.z-danger.y)<=danger.d/2;if(hit&&!dangerLatch[i]){dangerLatch[i]=true;log('<span class="danger">⚠ Danger zone triggered — P'+(i+1)+'</span>');document.body.classList.add('dangerFlash');setTimeout(()=>document.body.classList.remove('dangerFlash'),1200);if($('sendTelegram')?.checked||$('sendWhatsApp')?.checked)await sendNotification(null,{event:'danger_zone',person:'P'+(i+1),x:t.x,y:t.z,distance:t.distance});}if(!hit)dangerLatch[i]=false;});}
-function initAll(){initDash();initBuilder();renderSaved();renderTargets();drawRoom(builderScene);drawRoom(dashScene);let ep=localStorage.getItem('aegisNotifyEndpoint')||'';if($('notifyEndpoint'))$('notifyEndpoint').value=ep;if($('notifyEndpointSettings'))$('notifyEndpointSettings').value=ep}
-</script></body></html>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const state={W:15,D:12,H:3,floors:1,currentFloor:1,objects:[],selected:null,tool:'select',wallStart:null,targets:[
+ {id:'P1',x:2.2,y:3.1,s:0.1,state:'واقف'},
+ {id:'P2',x:8.1,y:6.0,s:0.0,state:'جالس'},
+ {id:'P3',x:11.2,y:8.4,s:0.2,state:'مستلقٍ'}
+]};
+let role='viewer',scene,camera,renderer,raycaster,mouse=new THREE.Vector2(),group,floorGroup;
+const toast=m=>{ $('toast').textContent=m;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',1800) };
+function login(){
+ const p=$('pass').value.trim();
+ if(p==='1234'){role='admin';$('login').style.display='none';$('app').style.display='block';document.body.classList.remove('viewerOnly');init();toast('تم الدخول بصلاحيات التحكم الكامل');}
+ else if(p==='5678'){role='viewer';$('login').style.display='none';$('app').style.display='block';document.body.classList.add('viewerOnly');init();toast('تم الدخول بوضع المشاهدة');}
+ else {$('error').textContent='الرمز غير صحيح';$('pass').select();}
+}
+$('loginBtn').addEventListener('click',login);$('pass').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+
+function init(){
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x020a12);
+ camera=new THREE.PerspectiveCamera(48,1,.1,1000);renderer=new THREE.WebGLRenderer({antialias:true});
+ renderer.setPixelRatio(Math.min(devicePixelRatio,2));$('scene').appendChild(renderer.domElement);
+ group=new THREE.Group();scene.add(group);raycaster=new THREE.Raycaster();
+ scene.add(new THREE.HemisphereLight(0x8edbff,0x05101a,1.2));
+ const dl=new THREE.DirectionalLight(0xffffff,1.5);dl.position.set(10,20,10);scene.add(dl);
+ renderer.domElement.addEventListener('pointerdown',onCanvas);
+ renderer.domElement.addEventListener('pointermove',movePointer);
+ window.addEventListener('resize',resize);resize();rebuild();
+ animate();
+}
+function resize(){if(!renderer)return;const r=$('scene').getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();}
+function floorY(){return (state.currentFloor-1)*state.H}
+function clearGroup(){while(group.children.length)group.remove(group.children[0]);}
+function mat(c,opacity=1,wire=false){return new THREE.MeshStandardMaterial({color:c,transparent:opacity<1,opacity,wireframe:wire,roughness:.55,metalness:.1});}
+function lineMat(c=0x00aaff){return new THREE.LineBasicMaterial({color:c,transparent:true,opacity:.8});}
+function cube(w,h,d,c,op=1){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c,op));return m}
+function addWall(x1,z1,x2,z2,h,th=.18,color=0x18bfff){
+ const len=Math.hypot(x2-x1,z2-z1),m=cube(len,h,th,color,.8);m.position.set((x1+x2)/2,floorY()+h/2,(z1+z2)/2);m.rotation.y=-Math.atan2(z2-z1,x2-x1);return m;
+}
+function rebuild(){
+ clearGroup();
+ const grid=new THREE.GridHelper(Math.max(state.W,state.D)*1.5,Math.max(20,Math.round(Math.max(state.W,state.D)*2)),0x0873a8,0x12344c);grid.position.y=floorY();group.add(grid);
+ // current floor boundary
+ const y=floorY();
+ const walls=[
+  [0,0,state.W,0],[state.W,0,state.W,state.D],[state.W,state.D,0,state.D],[0,state.D,0,0]
+ ];
+ walls.forEach(a=>group.add(addWall(...a,state.H,.18,0x00aaff)));
+ // floor slab
+ const slab=cube(state.W,.08,state.D,0x06243a,0.75);slab.position.set(state.W/2,y-.05,state.D/2);group.add(slab);
+ // axes
+ addAxes();
+ state.objects.filter(o=>o.floor===state.currentFloor).forEach(addObjectMesh);
+ // targets
+ state.targets.forEach(t=>addTarget(t));
+ $('floorLabel').textContent=state.currentFloor+' / '+state.floors;
+ $('roomW').value=state.W;$('roomD').value=state.D;$('roomH').value=state.H;$('floors').value=state.floors;
+}
+function addAxes(){const ox=0,oy=floorY()+.02,oz=0;const pts=[new THREE.Vector3(ox,oy,oz),new THREE.Vector3(3,oy,oz),new THREE.Vector3(ox,oy,0),new THREE.Vector3(ox,oy,3)];const g=new THREE.BufferGeometry().setFromPoints(pts);group.add(new THREE.Line(g,lineMat(0xff3344)));const gy=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(ox,oy,oz),new THREE.Vector3(ox,oy,3)]);group.add(new THREE.Line(gy,lineMat(0x00ff88)));}
+function objectColor(type){return ({wall:0x00aaff,door:0xd89b42,window:0x4dc9ff,bed:0xbca37c,sofa:0xb3a08e,table:0x7b4b2b,chair:0x8d633f,plant:0x26bd67,camera:0xffffff,sensor:0x00d9ff,danger:0xff253f})[type]||0x5b7c8f}
+function addObjectMesh(o){
+ let m;
+ if(o.type==='wall'){m=addWall(o.x,o.y,o.x2,o.y2,o.h||state.H,o.th||.18,0x00aaff)}
+ else if(o.type==='door'){m=cube(1,.08,2.1,objectColor(o.type));m.position.set(o.x,floorY()+1.05,o.y);m.rotation.y=o.rot*Math.PI/180}
+ else if(o.type==='window'){m=cube(1.4,.12,1.2,objectColor(o.type),.8);m.position.set(o.x,floorY()+1.7,o.y);m.rotation.y=o.rot*Math.PI/180}
+ else if(o.type==='bed'){m=cube(2,.55,3,objectColor(o.type));m.position.set(o.x,floorY()+.28,o.y);m.rotation.y=o.rot*Math.PI/180}
+ else if(o.type==='sofa'){m=cube(3,.8,1,objectColor(o.type));m.position.set(o.x,floorY()+.4,o.y);m.rotation.y=o.rot*Math.PI/180}
+ else if(o.type==='table'){m=cube(1.5,.75,1.5,objectColor(o.type));m.position.set(o.x,floorY()+.38,o.y);m.rotation.y=o.rot*Math.PI/180}
+ else if(o.type==='chair'){m=cube(.7,1,.7,objectColor(o.type));m.position.set(o.x,floorY()+.5,o.y);m.rotation.y=o.rot*Math.PI/180}
+ else if(o.type==='plant'){m=cube(.5,1,.5,objectColor(o.type));m.position.set(o.x,floorY()+.5,o.y)}
+ else if(o.type==='camera'||o.type==='sensor'){m=cube(.5,.35,.5,objectColor(o.type));m.position.set(o.x,o.z||floorY()+2.3,o.y);m.rotation.y=o.rot*Math.PI/180}
+ else if(o.type==='danger'){m=cube(o.w||2,.08,o.d||2,objectColor(o.type),.28);m.position.set(o.x,floorY()+.04,o.y)}
+ else return;
+ m.userData.obj=o;group.add(m);
+ if(state.selected===o.id){const e=new THREE.Box3().setFromObject(m),s=new THREE.Box3Helper(e,0xffffff);s.userData.selection=true;group.add(s)}
+}
+function addTarget(t){
+ const y=floorY()+.12;
+ const g=new THREE.Group();const c=t.id==='P1'?0x00ef82:t.id==='P2'?0x00aaff:0xffc52f;
+ const stem=cube(.06,.8,.06,c);stem.position.y=.4;g.add(stem);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.18,12,12),mat(c));head.position.y=.85;g.add(head);
+ g.position.set(t.x,y,t.y);g.userData.target=t;group.add(g);
+}
+function worldPoint(ev){
+ const r=renderer.domElement.getBoundingClientRect();mouse.x=((ev.clientX-r.left)/r.width)*2-1;mouse.y=-((ev.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(mouse,camera);
+ const plane=new THREE.Plane(new THREE.Vector3(0,1,0),-floorY());const p=new THREE.Vector3();return raycaster.ray.intersectPlane(plane,p)?p:null;
+}
+function onCanvas(ev){
+ if(role!=='admin')return;
+ const p=worldPoint(ev);if(!p)return;
+ const x=Math.max(0,Math.min(state.W,p.x)),z=Math.max(0,Math.min(state.D,p.z));
+ $('cx').textContent=x.toFixed(2);$('cy').textContent=z.toFixed(2);$('cz').textContent=floorY().toFixed(2);
+ if(state.tool==='wall2'){
+   if(!state.wallStart){state.wallStart={x,z};toast('تم تحديد بداية الجدار — اختر النهاية');return}
+   if(Math.hypot(x-state.wallStart.x,z-state.wallStart.z)<.15){state.wallStart=null;return}
+   state.objects.push({id:crypto.randomUUID(),type:'wall',floor:state.currentFloor,x:state.wallStart.x,y:state.wallStart.z,x2:x,y2:z,h:state.H,th:.18,rot:0});
+   const wallLen=Math.hypot(x-state.wallStart.x,z-state.wallStart.z);state.wallStart=null;rebuild();log('تم بناء جدار بطول '+wallLen.toFixed(2)+' m');return;
+ }
+ if(state.tool==='select'){
+   raycaster.intersectObjects(group.children,true).forEach(hit=>{if(hit.object.userData.obj){state.selected=hit.object.userData.obj.id;syncProps();rebuild();}});
+   return;
+ }
+ const type=state.tool;
+ if(type==='danger')state.objects.push({id:crypto.randomUUID(),type,floor:state.currentFloor,x,y:z,w:2,d:2,rot:0});
+ else state.objects.push({id:crypto.randomUUID(),type,floor:state.currentFloor,x,y:z,z:floorY()+1,rot:0,h:state.H});
+ rebuild();syncProps();toast('تم وضع '+typeName(type));
+}
+function movePointer(ev){const p=worldPoint(ev);if(p){$('cx').textContent=p.x.toFixed(2);$('cy').textContent=p.z.toFixed(2);$('cz').textContent=floorY().toFixed(2)}}
+function typeName(t){return ({wall:'الجدار',door:'الباب',window:'الشباك',bed:'السرير',sofa:'الأريكة',table:'الطاولة',chair:'الكرسي',plant:'النبات',camera:'الكاميرا',sensor:'LD2450',danger:'منطقة الخطر'})[t]||t}
+function selectedObj(){return state.objects.find(o=>o.id===state.selected)}
+function syncProps(){const o=selectedObj();if(!o)return; $('ox').value=o.x||0;$('oy').value=o.y||0;$('oz').value=o.z||floorY();$('rot').value=o.rot||0}
+$('applyRoom').onclick=()=>{state.W=+$('roomW').value||15;state.D=+$('roomD').value||12;state.H=+$('roomH').value||3;state.floors=Math.max(1,+$('floors').value||1);state.currentFloor=Math.min(state.currentFloor,state.floors);fitView();rebuild();toast('تم تطبيق حجم المبنى')};
+$('applyObj').onclick=()=>{const o=selectedObj();if(!o)return toast('حدد عنصراً أولاً');o.x=+$('ox').value;o.y=+$('oy').value;o.z=+$('oz').value;o.rot=+$('rot').value;rebuild();toast('تم تطبيق الإحداثيات')};
+$('nextFloor').onclick=()=>{if(state.currentFloor<state.floors){state.currentFloor++;rebuild()}};
+$('prevFloor').onclick=()=>{if(state.currentFloor>1){state.currentFloor--;rebuild()}};
+$('addFloor').onclick=()=>{state.floors++;state.currentFloor=state.floors;rebuild();toast('تمت إضافة طابق')};
+$('fit').onclick=fitView;
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{state.tool=b.dataset.tool;document.querySelectorAll('.tool').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.wallStart=null;$('hint').textContent=state.tool==='wall2'?'الجدار: اضغط نقطة البداية ثم نقطة النهاية — يمكنك الرسم بأي اتجاه':'اضغط على أرضية الغرفة لوضع '+typeName(state.tool)});
+function fitView(){const s=Math.max(state.W,state.D);camera.position.set(s*1.25,s*1.05,s*1.25);camera.lookAt(state.W/2,((state.floors-1)*state.H)/2,state.D/2)}
+function save(){localStorage.setItem('aegisradar_project',JSON.stringify(state));toast('تم حفظ المخطط')}
+$('save').onclick=save;
+$('load').onclick=()=>{const x=localStorage.getItem('aegisradar_project');if(!x)return toast('لا يوجد مخطط محفوظ');Object.assign(state,JSON.parse(x));rebuild();fitView();toast('تم تحميل المخطط')};
+$('export').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='aegisradar-room.json';a.click();URL.revokeObjectURL(a.href)};
+$('clear').onclick=()=>{if(confirm('مسح جميع عناصر البناء؟')){state.objects=[];state.selected=null;rebuild();toast('تم مسح البناء')}};
+$('aiBuild').onclick=()=>{
+ const txt=$('aiText').value;
+ const m=txt.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/i);
+ if(m){state.W=+m[1];state.D=+m[2]}
+ const fm=txt.match(/(?:طابقين|2\s*طابق|2\s*طوابق)/); if(fm)state.floors=2;
+ state.objects=[];
+ const w=state.W,d=state.D;
+ const add=(type,x,y,rot=0)=>state.objects.push({id:crypto.randomUUID(),type,floor:1,x,y,z:1,rot,h:state.H});
+ add('bed',w*.25,d*.25);add('sofa',w*.62,d*.35);add('table',w*.58,d*.55);add('chair',w*.7,d*.55);add('plant',w*.12,d*.8);add('door',w*.5,0,0);add('window',w*.8,d,0);
+ rebuild();fitView();toast('تم إنشاء مخطط أولي من الوصف — عدّله بالماوس والإحداثيات');
+};
+function log(s){const el=document.createElement('div');el.textContent=new Date().toLocaleTimeString()+'  '+s;el.style.padding='4px;border-bottom:1px solid #0a3046';$('logs').prepend(el)}
+function updateTargets(){const el=$('targets');el.innerHTML='';state.targets.forEach(t=>{const d=document.createElement('div');d.className='target';d.innerHTML='<b class="'+(t.id==='P1'?'green':t.id==='P2'?'':'gold')+'">'+t.id+'</b><span>('+t.x.toFixed(1)+', '+t.y.toFixed(1)+')<br>'+t.s.toFixed(1)+' m/s — '+t.state+'</span>';el.appendChild(d)})}
+function radarDraw(){const c=$('radar2d'),ctx=c.getContext('2d'),w=c.width,h=c.height,cx=w/2,cy=h/2;ctx.clearRect(0,0,w,h);ctx.strokeStyle='#00cc66';ctx.lineWidth=1;for(let r=20;r<70;r+=20){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke()}ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(Date.now()/900)*70,cy+Math.sin(Date.now()/900)*70);ctx.stroke();state.targets.forEach(t=>{ctx.fillStyle=t.id==='P1'?'#00ef82':t.id==='P2'?'#00aaff':'#ffc52f';ctx.beginPath();ctx.arc(cx+(t.x/state.W)*60,cy+(t.y/state.D)*55,4,0,Math.PI*2);ctx.fill()})}
+function animate(){requestAnimationFrame(animate);if(!renderer)return;renderer.render(scene,camera);radarDraw();updateTargets()}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('navActive'));b.classList.add('navActive');toast('صفحة '+b.textContent.replace(/[\n🏠🏗️📡📷👥📋⚙️]/g,'').trim())});
+})();
+</script>
+</body>
+</html>
