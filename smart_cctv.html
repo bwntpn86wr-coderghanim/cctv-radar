@@ -12,9 +12,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
-
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     body { background-color: #020617; color: #f8fafc; overflow: hidden; width: 100vw; height: 100vh; position: fixed; }
@@ -56,7 +53,6 @@
     .collapsed .panel-content { display: none !important; }
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    .read-only-disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
   </style>
 </head>
 <body>
@@ -66,54 +62,52 @@
       <div class="w-14 h-14 bg-gradient-to-tr from-cyan-600 to-emerald-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-3 animate-pulse">
         <i class="fa-solid fa-shield-halved text-2xl text-white"></i>
       </div>
-      <h1 class="text-2xl font-black hud-title mb-1 system-title-text">AegisRadar 360 AI</h1>
-      <h2 class="text-[11px] text-slate-400 mb-3">نظام المراقبة الهندسية وإدارة المنازل الذكية ثلاثي الأبعاد</h2>
+      <h1 class="text-2xl font-black hud-title mb-1">AegisRadar 360 AI</h1>
+      <h2 class="text-[11px] text-slate-400 mb-3">نظام المراقبة الهندسية والرادار ثلاثي الأبعاد</h2>
       
       <div class="bg-slate-900/80 border-r-4 border-cyan-500 p-2.5 text-right text-xs leading-relaxed text-slate-300 mb-3 rounded">
-        نظام أمني هجين يدمج حساس الرادار المليمتري (LD2450) مع محرك تقييم الوضعية والرؤية الحاسوبية.
+        نظام أمني يدمج حساس الرادار المليمتري مع الكاميرا الشبكية والمساحة الهندسية ثلاثية الأبعاد.
       </div>
 
       <div class="bg-slate-950 p-2.5 rounded-lg text-right text-xs border border-slate-800 mb-4 space-y-1">
-        <p>👨‍🏫 <b>إشراف الأستاذ القدير:</b> <span id="supervisor-display" class="text-cyan-400 font-bold">إبراهيم</span></p>
-        <p>👨‍💻 <b>إعداد الطلاب:</b> <span id="students-display" class="text-emerald-400">غانم فراس | سما غسان | إبراهيم غسان</span></p>
+        <p>👨‍🏫 <b>إشراف الأستاذ:</b> <span class="text-cyan-400 font-bold">إبراهيم</span></p>
+        <p>👨‍💻 <b>إعداد الطلاب:</b> <span class="text-emerald-400">غانم فراس | سما غسان | إبراهيم غسان</span></p>
         <p class="text-[9px] text-slate-500 pt-0.5">جامعة نينوى - كلية الهندسة</p>
       </div>
 
       <button onclick="goToStep(2)" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2.5 rounded-lg transition text-xs">
-        المتابعة لإعدادات الدخول ➔
+        المتابعة للدخول ➔
       </button>
     </div>
   </div>
 
   <div id="step-2" class="step-screen hidden">
     <div class="glass-panel max-w-md w-full p-5 text-center border border-cyan-500/30">
-      <h2 class="text-lg font-bold hud-title mb-3">🔒 مصادقة حماية النظام</h2>
+      <h2 class="text-lg font-bold hud-title mb-3">🔒 تسجيل الدخول للنظام</h2>
       
       <div class="mb-3 text-right">
         <label class="text-xs text-slate-300 font-bold block mb-1">حساب المستخدم:</label>
-        <select id="user-role-select" onchange="updatePinHint()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
-          <option value="admin">المهندس غانم (مدير النظام - Admin)</option>
-          <option value="operator">المشرف الأمني (Security Operator)</option>
-          <option value="viewer">حساب مراقب (View Only)</option>
+        <select id="user-role-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
+          <option value="admin">المهندس غانم (Admin - الرمز: 1234)</option>
+          <option value="operator">المشرف الأمني (Operator - الرمز: 5678)</option>
+          <option value="viewer">حساب مراقب (Viewer - الرمز: 0000)</option>
         </select>
       </div>
 
       <div class="mb-4 text-right">
         <label class="text-xs text-slate-300 font-bold block mb-1">رمز الدخول الأمني (PIN):</label>
-        <input type="password" id="pin-input" maxlength="8" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 p-2.5 text-center text-lg text-cyan-400 font-mono" />
-        <p class="text-[10px] text-slate-400 mt-1">عنوان IP الحالي: <span id="user-ip-display" class="text-cyan-400 font-mono">جاري الجلب...</span></p>
+        <input type="password" id="pin-input" maxlength="8" placeholder="••••" value="1234" class="w-full bg-slate-900 border border-slate-700 p-2.5 text-center text-lg text-cyan-400 font-mono" />
       </div>
 
       <button onclick="authenticateUser()" class="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 text-white font-bold py-2.5 rounded-lg text-xs">
         دخول النظام 🔓
       </button>
-      <p id="auth-error" class="text-xs text-red-400 mt-2 hidden">رمز الدخول غير صحيح أو أن حسابك محظور!</p>
+      <p id="auth-error" class="text-xs text-red-400 mt-2 hidden">رمز الدخول غير صحيح!</p>
     </div>
   </div>
 
   <div id="main-app" class="hidden relative w-full h-full">
     <div id="canvas-container"></div>
-    <video id="webcam-video" class="hidden" autoplay playsinline webkit-playsinline muted></video>
 
     <div class="glass-panel absolute top-2 right-2 left-2 z-20 p-2 flex flex-col sm:flex-row justify-between items-center gap-2">
       <div class="flex items-center justify-between w-full sm:w-auto">
@@ -122,95 +116,48 @@
             <i class="fa-solid fa-layer-group text-sm text-white"></i>
           </div>
           <div>
-            <h1 class="font-black text-xs hud-title system-title-text">AegisRadar 360 AI</h1>
-            <p class="text-[9px] text-slate-400">المستخدم: <span id="active-user-display" class="text-emerald-400 font-bold">---</span> <span id="permission-badge" class="ml-1 px-1 bg-cyan-900 text-cyan-300 rounded text-[8px]"></span></p>
+            <h1 class="font-black text-xs hud-title">AegisRadar 360 AI</h1>
+            <p class="text-[9px] text-slate-400">المستخدم: <span id="active-user-display" class="text-emerald-400 font-bold">---</span></p>
           </div>
         </div>
-        <button onclick="logout()" class="sm:hidden bg-slate-800 text-red-400 text-xs px-2 py-1 rounded border border-slate-700">
-          <i class="fa-solid fa-power-off"></i>
-        </button>
       </div>
 
       <div class="flex gap-1 overflow-x-auto w-full sm:w-auto justify-start sm:justify-center py-1">
-        <button class="nav-btn active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-line ml-1"></i> المراقبة</button>
-        <button class="nav-btn" onclick="switchTab('architect', this)"><i class="fa-solid fa-wand-magic-sparkles ml-1"></i> البناء الذكي</button>
-        <button class="nav-btn" onclick="switchTab('faces', this)"><i class="fa-solid fa-user-gear ml-1"></i> الوجوه</button>
-        <button class="nav-btn" onclick="switchTab('security', this)"><i class="fa-solid fa-shield-cat ml-1"></i> الخطر والـ IP</button>
-        <button class="nav-btn" onclick="switchTab('settings', this)"><i class="fa-solid fa-sliders ml-1"></i> الإعدادات والأمان</button>
+        <button class="nav-btn active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-chart-line ml-1"></i> المراقبة والرادار</button>
+        <button class="nav-btn" onclick="switchTab('architect', this)"><i class="fa-solid fa-wand-magic-sparkles ml-1"></i> البناء CAD</button>
+        <button class="nav-btn" onclick="switchTab('camera', this)"><i class="fa-solid fa-video ml-1"></i> الكاميرا الحية</button>
       </div>
 
-      <div class="hidden sm:flex items-center gap-2">
-        <button id="sensor-btn" onclick="connectMQTT()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2 py-1 rounded-lg border border-emerald-500 flex items-center gap-1">
-          <i class="fa-solid fa-plug text-amber-300"></i> الرادار
-        </button>
-        <button onclick="logout()" class="bg-slate-800 hover:bg-slate-700 text-red-400 text-xs p-1.5 rounded-lg border border-slate-700">
-          <i class="fa-solid fa-power-off"></i>
-        </button>
-      </div>
+      <button onclick="logout()" class="bg-slate-800 text-red-400 text-xs px-3 py-1 rounded border border-slate-700">
+        <i class="fa-solid fa-power-off"></i> خروج
+      </button>
     </div>
 
-    <div id="tab-dashboard" class="tab-content relative z-10 pointer-events-none w-full h-full pt-20 pb-16 px-2 overflow-y-auto max-h-screen">
+    <div id="tab-dashboard" class="tab-content relative z-10 pointer-events-none w-full h-full pt-20 pb-16 px-2 overflow-y-auto">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pointer-events-auto max-w-7xl mx-auto">
         
-        <div id="panel-pose" class="glass-panel p-3 relative">
+        <div class="glass-panel p-3">
           <div class="flex justify-between items-center mb-1.5 border-b border-slate-800 pb-1">
-            <span class="text-xs font-bold text-slate-200 flex items-center gap-1"><i class="fa-solid fa-camera text-cyan-400"></i> الكاميرا وتحليل الوضعية</span>
-            <div class="flex items-center gap-1">
-              <button onclick="toggleCollapse('panel-pose')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
-              <button onclick="hidePanel('panel-pose')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <span class="text-xs font-bold text-slate-200 flex items-center gap-1"><i class="fa-solid fa-radar text-cyan-400"></i> بيانات الرادار الذكي</span>
           </div>
-          
-          <div class="panel-content">
-            <div class="relative w-full h-40 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 mb-1">
-              <canvas id="ai-canvas" class="w-full h-full object-cover relative z-10"></canvas>
-              <div class="scanline absolute inset-0 z-20"></div>
-              <div class="absolute top-1.5 left-1.5 z-30 bg-slate-950/80 px-1.5 py-0.5 rounded border border-cyan-500/40">
-                <p class="text-[8px] text-slate-400">الوضعية:</p>
-                <p id="hud-pose-text" class="text-[10px] font-black text-emerald-400 font-mono">جاري التشغيل...</p>
-              </div>
+          <div class="space-y-2 text-xs">
+            <div class="bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center">
+              <span>الهدف 1 (Radar Target):</span>
+              <span id="target-1-coords" class="text-emerald-400 font-mono font-bold">X: 1.2m | Z: 3.4m</span>
             </div>
-            <button onclick="startCameraManual()" class="w-full bg-cyan-900/60 hover:bg-cyan-800 border border-cyan-700 text-cyan-300 text-[10px] p-1 rounded flex items-center justify-center gap-1">
-              <i class="fa-solid fa-arrows-rotate"></i> إعادة تشغيل الكاميرا
-            </button>
+            <div class="bg-slate-950 p-2 rounded border border-slate-800 flex justify-between items-center">
+              <span>الحالة:</span>
+              <span id="radar-status" class="text-cyan-400 font-bold">متصل وفعال 🟢</span>
+            </div>
           </div>
         </div>
 
-        <div id="panel-chart" class="glass-panel p-3 relative">
+        <div class="glass-panel p-3">
           <div class="flex justify-between items-center mb-1.5 border-b border-slate-800 pb-1">
-            <h3 class="text-xs font-bold text-slate-300 flex items-center gap-1"><i class="fa-solid fa-chart-line text-cyan-400"></i> تحليلات المسافة</h3>
-            <div class="flex items-center gap-1">
-              <button onclick="toggleCollapse('panel-chart')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
-              <button onclick="hidePanel('panel-chart')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <h3 class="text-xs font-bold text-slate-300 flex items-center gap-1"><i class="fa-solid fa-chart-line text-cyan-400"></i> تتبع حركة الهدف</h3>
           </div>
-          <div class="panel-content h-40 w-full">
+          <div class="h-40 w-full">
             <canvas id="analyticsChart"></canvas>
-          </div>
-        </div>
-
-        <div id="panel-logs" class="glass-panel p-3 relative">
-          <div class="flex justify-between items-center mb-1.5 border-b border-slate-800 pb-1">
-            <h3 class="text-xs font-bold text-slate-300 flex items-center gap-1"><i class="fa-solid fa-shield-cat text-amber-400"></i> السجل الأمني الأحداث</h3>
-            <div class="flex items-center gap-1">
-              <button onclick="toggleCollapse('panel-logs')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
-              <button onclick="hidePanel('panel-logs')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-          </div>
-          
-          <div class="panel-content space-y-2">
-            <div id="security-logs" class="space-y-1.5 h-28 overflow-y-auto text-[10px] pr-1"></div>
-
-            <div class="grid grid-cols-2 gap-1.5 text-center text-xs pt-1 border-t border-slate-800">
-              <div class="bg-slate-900/60 p-1 rounded border border-slate-800">
-                <span class="text-slate-400 block text-[9px]">إحداثي X</span>
-                <span class="text-xs font-bold text-emerald-400 font-mono" id="raw-x">0.00 m</span>
-              </div>
-              <div class="bg-slate-900/60 p-1 rounded border border-slate-800">
-                <span class="text-slate-400 block text-[9px]">إحداثي Z</span>
-                <span class="text-xs font-bold text-cyan-400 font-mono" id="raw-y">0.00 m</span>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -218,208 +165,71 @@
     </div>
 
     <div id="tab-architect" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
-      <div id="panel-architect" class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[82vh] overflow-y-auto">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-1">
-          <h3 class="text-xs font-bold text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> البناء الهندسي الواقعي (3D)</h3>
-          <div class="flex items-center gap-1">
-            <button onclick="toggleCollapse('panel-architect')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
-            <button onclick="hidePanel('panel-architect')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
-          </div>
+      <div class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[82vh] overflow-y-auto">
+        <div class="border-b border-slate-800 pb-1">
+          <h3 class="text-xs font-bold text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> أدوات البناء التفاعلي</h3>
         </div>
         
-        <div class="panel-content space-y-2 admin-only-container">
-          <div class="grid grid-cols-2 gap-1.5 text-xs">
-            <div>
-              <label class="block text-slate-400 text-[9px] mb-0.5">الطابق الحالي:</label>
-              <select id="floorSelect" onchange="changeFloor(this.value)" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-cyan-400 font-bold text-xs">
-                <option value="0">الأرضي (0)</option>
-                <option value="1">الأول (1)</option>
-                <option value="2">الثاني (2)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-slate-400 text-[9px] mb-0.5">اتجاه التدوير (زاوية):</label>
-              <select id="angleSelect" onchange="updateRotationAngle(this.value)" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-emerald-400 font-bold text-xs">
-                <option value="0">0° (أفقي)</option>
-                <option value="45">45° (قطري)</option>
-                <option value="90">90° (عمودي)</option>
-                <option value="135">135° (معاكس)</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-slate-400 text-[9px] mb-0.5">خلفية ورؤية الموقع:</label>
-            <select id="bgSelect" onchange="changeSiteBackground(this.value)" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-amber-300 font-bold text-xs">
-              <option value="dark">النمط الليلي الأمني (Cyber Dark)</option>
-              <option value="sky">السماء الواقعية (Realistic Sky)</option>
-              <option value="grid">الفضاء الشبكي (Blueprint Grid)</option>
-            </select>
-          </div>
-
-          <div class="bg-gradient-to-b from-slate-900 to-slate-950 p-2.5 rounded-lg border border-cyan-500/40 text-xs space-y-2">
-            <span class="text-cyan-300 font-bold block text-[11px]"><i class="fa-solid fa-house-chimney text-amber-400 ml-1"></i> مولّد الغرف والأبنية:</span>
-            
-            <div>
-              <label class="text-[9px] text-slate-400 block mb-0.5">نوع التصميم:</label>
-              <select id="aiRoomType" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-[11px] text-slate-200">
-                <option value="living">غرفة معيشة متكاملة (جدران + أبواب + نوافذ)</option>
-                <option value="office">مكتب أمني مغلق (جدران سميكة + باب)</option>
-                <option value="hall">صالة زجاجية مفتوحة (واجهة زجاجية)</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="text-[9px] text-slate-400 block mb-0.5">المساحة:</label>
-              <select id="aiRoomSize" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-[11px] text-slate-200">
-                <option value="4">صغيرة (4x4 م)</option>
-                <option value="6" selected>متوسطة (6x6 م)</option>
-                <option value="8">كبيرة (8x8 م)</option>
-              </select>
-            </div>
-
-            <button id="tool-ai-room" onclick="setCadTool('ai-room')" class="cad-btn w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 p-2 rounded text-white font-bold text-xs flex items-center justify-center gap-1 shadow-lg shadow-cyan-500/20">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> انقر على الخريطة للتشييد
-            </button>
-          </div>
-
-          <span class="text-[10px] text-slate-400 block pt-1">أدوات البناء اليدوي:</span>
-          <div id="cad-tools-panel" class="grid grid-cols-2 gap-1.5">
+        <div class="space-y-2">
+          <div class="grid grid-cols-2 gap-1.5">
             <button id="tool-select" onclick="setCadTool('select')" class="cad-btn active p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-arrow-pointer text-cyan-400"></i> تحديد</button>
-            <button id="tool-wall" onclick="setCadTool('wall')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-cube text-emerald-400"></i> جدار واقعي</button>
-            <button id="tool-door" onclick="setCadTool('door')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-door-closed text-amber-300"></i> باب خشب</button>
-            <button id="tool-window" onclick="setCadTool('window')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-window-restore text-cyan-300"></i> شباك زجاج</button>
+            <button id="tool-wall" onclick="setCadTool('wall')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-cube text-emerald-400"></i> جدار</button>
+            <button id="tool-door" onclick="setCadTool('door')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-door-closed text-amber-300"></i> باب</button>
+            <button id="tool-window" onclick="setCadTool('window')" class="cad-btn p-1.5 rounded text-xs font-semibold flex items-center gap-1 justify-center"><i class="fa-solid fa-window-restore text-cyan-300"></i> نافذة</button>
           </div>
 
-          <div class="grid grid-cols-2 gap-1 mt-2">
+          <button onclick="buildQuickRoom()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white p-2 rounded text-xs font-bold flex items-center justify-center gap-1">
+            <i class="fa-solid fa-house"></i> بناء غرفة سريعة (6x6)
+          </button>
+
+          <div class="grid grid-cols-2 gap-1.5 mt-2">
             <button onclick="saveCADDesign()" class="bg-emerald-600 hover:bg-emerald-500 text-white p-1.5 rounded text-xs font-bold transition flex items-center justify-center gap-1">
-              <i class="fa-solid fa-floppy-disk"></i> حفظ التصميم 💾
+              <i class="fa-solid fa-floppy-disk"></i> حفظ Drawing
             </button>
-            <button onclick="clearCADObjects()" class="bg-red-950/60 hover:bg-red-900/80 text-red-300 p-1.5 rounded text-xs font-semibold border border-red-800/50 flex items-center justify-center gap-1">
-              <i class="fa-solid fa-trash-can"></i> مسح الخريطة
+            <button onclick="loadCADDesign()" class="bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded text-xs font-bold transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-folder-open"></i> تحميل Drawing
             </button>
           </div>
+
+          <button onclick="clearCADObjects()" class="w-full bg-red-950/80 hover:bg-red-900 text-red-300 p-1.5 rounded text-xs font-semibold border border-red-800/50 mt-1">
+            <i class="fa-solid fa-trash-can"></i> مسح جميع الأجسام
+          </button>
         </div>
       </div>
     </div>
 
-    <div id="tab-faces" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
-      <div id="panel-faces" class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[80vh] overflow-y-auto">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-1">
-          <h3 class="text-xs font-bold text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-camera-retro"></i> التقاط وخزن وجوه المستخدمين</h3>
-          <div class="flex items-center gap-1">
-            <button onclick="toggleCollapse('panel-faces')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
-            <button onclick="hidePanel('panel-faces')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
-          </div>
+    <div id="tab-camera" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
+      <div class="absolute top-16 right-2 left-2 sm:left-auto sm:w-96 pointer-events-auto glass-panel p-3 flex flex-col gap-2">
+        <div class="border-b border-slate-800 pb-1 flex justify-between items-center">
+          <h3 class="text-xs font-bold text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-video"></i> البث الحي للكاميرا (IP Camera Stream)</h3>
+          <span id="cam-status" class="text-[10px] text-emerald-400 font-bold">متصل</span>
         </div>
-        
-        <div class="panel-content space-y-2">
-          <div class="admin-only-container space-y-2">
-            <input type="text" id="faceNameInput" placeholder="اسم الشخص" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200 text-xs">
-            <button onclick="captureFace()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-1.5 rounded font-bold text-xs transition flex items-center justify-center gap-1">
-              <i class="fa-solid fa-expand"></i> التقاط وصنع بصمة وجه 📸
-            </button>
+
+        <div class="space-y-2">
+          <div class="relative w-full h-52 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 flex items-center justify-center">
+            <img id="ip-camera-stream" src="http://192.168.1.3:8081/video" class="w-full h-full object-cover" onerror="handleCamError()" />
+            <div id="cam-fallback-msg" class="hidden absolute inset-0 bg-slate-950/90 text-red-400 text-xs p-3 flex flex-col items-center justify-center text-center">
+              <i class="fa-solid fa-triangle-exclamation text-2xl mb-1"></i>
+              <span>فشل الاتصال بالبث المباشر. يرجى التأكد من تشغيل خادم الكاميرا وتطابق الشبكة.</span>
+            </div>
           </div>
 
-          <div class="pt-2 border-t border-slate-800">
-            <span class="text-[10px] text-slate-400 block mb-1">الوجوه المحفوظة بالنظام:</span>
-            <div id="faces-gallery" class="grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="tab-security" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
-      <div id="panel-security" class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[82vh] overflow-y-auto">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-1">
-          <h3 class="text-xs font-bold text-red-400 flex items-center gap-1"><i class="fa-solid fa-user-shield"></i> الأمان وحظر العناوين (IP Blacklist)</h3>
-          <div class="flex items-center gap-1">
-            <button onclick="toggleCollapse('panel-security')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
-            <button onclick="hidePanel('panel-security')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-        </div>
-        
-        <div class="panel-content space-y-3 text-xs">
-          <div>
-            <span class="text-[10px] text-cyan-400 font-bold block mb-1">🔍 سجل المتواجدين ومن دخل للموقع:</span>
-            <div id="login-audit-logs" class="bg-slate-950 p-2 rounded border border-slate-800 h-28 overflow-y-auto font-mono text-[9px] space-y-1"></div>
-          </div>
-
-          <div class="admin-only-container border-t border-slate-800 pt-2 space-y-1.5">
-            <span class="text-[10px] text-red-400 font-bold block">🚫 حظر عنوان IP:</span>
-            <input type="text" id="banIpInput" placeholder="أدخل IP لحظره (مثال: 192.168.1.5)" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
-            <button onclick="banIpAddress()" class="w-full bg-red-600 hover:bg-red-500 text-white p-1.5 rounded font-bold transition">
-              حظر العنوان الآن 🛑
-            </button>
+          <div class="space-y-1 text-xs">
+            <label class="text-[10px] text-slate-400">رابط البث (Stream URL):</label>
+            <input type="text" id="cam-url-input" value="http://192.168.1.3:8081/video" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-cyan-300 font-mono text-[10px]">
             
-            <div class="mt-2">
-              <span class="text-[9px] text-slate-400 block mb-1">قائمة العناوين المحظورة:</span>
-              <ul id="banned-ip-list" class="text-[10px] text-red-400 space-y-0.5 bg-slate-950 p-1.5 rounded border border-slate-800"></ul>
+            <div class="grid grid-cols-2 gap-1 mt-1">
+              <button onclick="updateCamUrl('http://192.168.1.3:8081/video')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] p-1 rounded border border-slate-700">
+                192.168.1.3 (IP)
+              </button>
+              <button onclick="updateCamUrl('http://ghanim.local:8081/video')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] p-1 rounded border border-slate-700">
+                ghanim.local (mDNS)
+              </button>
             </div>
-          </div>
 
-          <div class="admin-only-container border-t border-slate-800 pt-2 space-y-1.5">
-            <span class="text-[10px] text-amber-400 font-bold block">🚨 إضافة منطقة خطر (Geofencing):</span>
-            <input type="text" id="zoneName" placeholder="اسم المنطقة" value="منطقة محظورة" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
-            <div class="grid grid-cols-2 gap-1.5">
-              <input type="number" id="zoneX" placeholder="X" value="0" class="bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
-              <input type="number" id="zoneZ" placeholder="Z" value="0" class="bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
-            </div>
-            <button onclick="addDangerZoneUI()" class="w-full bg-amber-600 hover:bg-amber-500 text-white p-1.5 rounded font-bold transition">
-              إنشاء منطقة الخطر
+            <button onclick="reloadCamera()" class="w-full bg-cyan-700 hover:bg-cyan-600 text-white font-bold py-1.5 rounded text-xs mt-1">
+              إعادة الاتصال بالبث 🔄
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="tab-settings" class="tab-content hidden relative z-10 pointer-events-none w-full h-full">
-      <div id="panel-settings" class="absolute top-16 right-2 left-2 sm:left-auto sm:w-80 pointer-events-auto glass-panel p-3 flex flex-col gap-2 max-h-[82vh] overflow-y-auto">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-1">
-          <h3 class="text-xs font-bold text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-pen-to-square"></i> الإعدادات وتغيير كلمات السر</h3>
-          <div class="flex items-center gap-1">
-            <button onclick="toggleCollapse('panel-settings')" class="text-slate-400 hover:text-white text-xs px-1"><i class="fa-solid fa-minus"></i></button>
-            <button onclick="hidePanel('panel-settings')" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-        </div>
-        
-        <div class="panel-content space-y-3 text-xs">
-          <div class="admin-only-container bg-slate-950 p-2 rounded border border-cyan-500/30 space-y-1.5">
-            <span class="text-[10px] text-cyan-300 font-bold block"><i class="fa-solid fa-key ml-1"></i> تغيير الأرقام السرية (PIN):</span>
-            <select id="changePinTarget" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-slate-200">
-              <option value="admin">حساب المهندس غانم (Admin)</option>
-              <option value="operator">المشرف الأمني (Operator)</option>
-              <option value="viewer">حساب المراقب (Viewer)</option>
-            </select>
-            <input type="password" id="newPinInput" maxlength="8" placeholder="الرمز السري الجديد" class="w-full bg-slate-900 border border-slate-700 p-1 rounded text-slate-200 text-center font-mono">
-            <button onclick="updateAccountPin()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white p-1 rounded font-bold">
-              تحديث الرمز السري 🔑
-            </button>
-          </div>
-
-          <div class="admin-only-container space-y-2">
-            <div>
-              <label class="text-[10px] text-slate-400 block mb-0.5">اسم النظام / الصفحة:</label>
-              <input type="text" id="editSystemTitle" value="AegisRadar 360 AI" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-cyan-300 font-bold">
-            </div>
-
-            <div>
-              <label class="text-[10px] text-slate-400 block mb-0.5">الأستاذ المشرف:</label>
-              <input type="text" id="editSupervisor" value="إبراهيم" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
-            </div>
-
-            <div>
-              <label class="text-[10px] text-slate-400 block mb-0.5">فريق العمل (الطلاب):</label>
-              <input type="text" id="editStudents" value="غانم فراس | سما غسان | إبراهيم غسان" class="w-full bg-slate-900 border border-slate-700 p-1.5 rounded text-slate-200">
-            </div>
-
-            <button onclick="saveSystemSettings()" class="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white p-2 rounded font-bold shadow-lg transition">
-              حفظ وتحديث البيانات 💾
-            </button>
-          </div>
-
-          <div id="read-only-notice" class="hidden bg-amber-950/60 border border-amber-500/40 p-2 rounded text-amber-200 text-[10px]">
-            ⚠️ أنت تسجل الدخول كـ (مشاهد/مشرف أمني). جميع الصلاحيات في وضع القراءة فقط. التعديل متاح للمهندس غانم حصراً.
           </div>
         </div>
       </div>
@@ -428,283 +238,70 @@
     <div class="glass-panel absolute bottom-2 left-1/2 -translate-x-1/2 z-20 px-3 py-1 flex items-center gap-3 text-[10px] text-slate-300 border border-cyan-500/30 whitespace-nowrap">
       <div>X: <span id="pos-x" class="text-cyan-400 font-mono font-bold">0.00</span></div>
       <div>Z: <span id="pos-z" class="text-emerald-400 font-mono font-bold">0.00</span></div>
-      <div>الطابق: <span id="current-floor-hud" class="text-cyan-300 font-bold">0</span></div>
-      <div>الأداة: <span id="active-tool-label" class="text-amber-400 font-bold">تحديد</span></div>
+      <div>الأداة الحالية: <span id="active-tool-label" class="text-amber-400 font-bold">تحديد</span></div>
     </div>
 
   </div>
 
   <script>
-    // ==========================================
-    // 1. AUTHENTICATION, ROLES & PERSISTENCE
-    // ==========================================
-    let currentUserRole = null;
-    let currentUserIP = "127.0.0.1";
-
-    const DEFAULT_ACCOUNTS = {
-      admin: { name: "المهندس غانم (Admin)", pin: "1234", role: "Admin", canEdit: true },
-      operator: { name: "المشرف الأمني", pin: "5678", role: "Operator", canEdit: false },
-      viewer: { name: "حساب مراقب", pin: "0000", role: "View Only", canEdit: false }
+    // System Authentication
+    const ACCOUNTS = {
+      admin: { name: "المهندس غانم (Admin)", pin: "1234" },
+      operator: { name: "المشرف الأمني", pin: "5678" },
+      viewer: { name: "حساب مراقب", pin: "0000" }
     };
 
-    function getStoredAccounts() {
-      try {
-        const stored = localStorage.getItem('aegis_accounts');
-        return stored ? JSON.parse(stored) : DEFAULT_ACCOUNTS;
-      } catch(e) {
-        return DEFAULT_ACCOUNTS;
-      }
+    let currentUser = null;
+    let activeTool = 'select';
+    let cadObjects = [];
+
+    function goToStep(step) {
+      document.getElementById('step-1').classList.add('hidden');
+      document.getElementById('step-2').classList.add('hidden');
+      document.getElementById(`step-${step}`).classList.remove('hidden');
     }
-
-    const ACCOUNTS = getStoredAccounts();
-    const loginAuditList = JSON.parse(localStorage.getItem('aegis_audit_logs') || '[]');
-    const bannedIpList = JSON.parse(localStorage.getItem('aegis_banned_ips') || '[]');
-
-    try {
-      fetch('https://api.ipify.org?format=json')
-        .then(res => res.json())
-        .then(data => {
-          currentUserIP = data.ip;
-          const el = document.getElementById('user-ip-display');
-          if (el) el.innerText = currentUserIP;
-        })
-        .catch(() => {
-          const el = document.getElementById('user-ip-display');
-          if (el) el.innerText = "192.168.1.100 (محلي)";
-        });
-    } catch(e) {}
-
-    function goToStep(stepNumber) {
-      document.getElementById('step-1')?.classList.add('hidden');
-      document.getElementById('step-2')?.classList.add('hidden');
-      document.getElementById(`step-${stepNumber}`)?.classList.remove('hidden');
-    }
-
-    function updatePinHint() {}
 
     function authenticateUser() {
-      if (bannedIpList.includes(currentUserIP)) {
-        alert("🛑 هذا العنوان (IP) محظور من دخول النظام!");
-        return;
-      }
+      const role = document.getElementById('user-role-select').value;
+      const pin = document.getElementById('pin-input').value;
 
-      const roleSelect = document.getElementById('user-role-select');
-      const pinInput = document.getElementById('pin-input');
-      if (!roleSelect || !pinInput) return;
-
-      const roleKey = roleSelect.value;
-      const pinEntered = pinInput.value;
-      const account = ACCOUNTS[roleKey];
-
-      if (account && (pinEntered === account.pin || pinEntered === "20262026")) {
-        currentUserRole = account;
-        document.getElementById('step-2')?.classList.add('hidden');
-        document.getElementById('main-app')?.classList.remove('hidden');
-        
-        document.getElementById('active-user-display').innerText = account.name;
-        document.getElementById('permission-badge').innerText = account.role;
-
-        // سجل الدخول
-        const auditLog = `${new Date().toLocaleTimeString('ar-EG')} - ${account.name} - IP: ${currentUserIP}`;
-        loginAuditList.unshift(auditLog);
-        localStorage.setItem('aegis_audit_logs', JSON.stringify(loginAuditList));
-        renderAuditLogs();
-        renderBannedIPs();
-
-        // تطبيق الصلاحيات
-        if (!account.canEdit) {
-          document.querySelectorAll('.admin-only-container').forEach(el => el.classList.add('read-only-disabled'));
-          document.getElementById('read-only-notice')?.classList.remove('hidden');
-        }
-
+      if (ACCOUNTS[role] && ACCOUNTS[role].pin === pin) {
+        currentUser = ACCOUNTS[role];
+        document.getElementById('active-user-display').innerText = currentUser.name;
+        document.getElementById('step-2').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
         init3DScene();
         initChart();
-        startCameraStream();
-        loadSavedData();
+        loadCADDesign();
       } else {
-        document.getElementById('auth-error')?.classList.remove('hidden');
+        document.getElementById('auth-error').classList.remove('hidden');
       }
     }
 
     function logout() {
-      location.reload();
+      document.getElementById('main-app').classList.add('hidden');
+      document.getElementById('step-1').classList.remove('hidden');
     }
 
-    function renderAuditLogs() {
-      const container = document.getElementById('login-audit-logs');
-      if (!container) return;
-      container.innerHTML = loginAuditList.map(log => `<div class="text-cyan-300 border-b border-slate-800/50 pb-0.5">${log}</div>`).join('');
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      btn.classList.add('active');
     }
 
-    function renderBannedIPs() {
-      const container = document.getElementById('banned-ip-list');
-      if (!container) return;
-      container.innerHTML = bannedIpList.map(ip => `<li class="flex justify-between items-center">${ip} <button onclick="unbanIp('${ip}')" class="text-xs text-emerald-400 hover:underline">إلغاء</button></li>`).join('');
-    }
-
-    function banIpAddress() {
-      const input = document.getElementById('banIpInput');
-      if (!input || !input.value) return;
-      const ip = input.value.trim();
-      if (!bannedIpList.includes(ip)) {
-        bannedIpList.push(ip);
-        localStorage.setItem('aegis_banned_ips', JSON.stringify(bannedIpList));
-        renderBannedIPs();
-        input.value = '';
-      }
-    }
-
-    function unbanIp(ip) {
-      const index = bannedIpList.indexOf(ip);
-      if (index > -1) {
-        bannedIpList.splice(index, 1);
-        localStorage.setItem('aegis_banned_ips', JSON.stringify(bannedIpList));
-        renderBannedIPs();
-      }
-    }
-
-    function updateAccountPin() {
-      const target = document.getElementById('changePinTarget').value;
-      const newPin = document.getElementById('newPinInput').value;
-      if (newPin && ACCOUNTS[target]) {
-        ACCOUNTS[target].pin = newPin;
-        localStorage.setItem('aegis_accounts', JSON.stringify(ACCOUNTS));
-        alert("🔑 تم تغيير الرقم السري بنجاح وتخزينه بالنظام!");
-        document.getElementById('newPinInput').value = '';
-      }
-    }
-
-    function saveSystemSettings() {
-      const title = document.getElementById('editSystemTitle').value;
-      const supervisor = document.getElementById('editSupervisor').value;
-      const students = document.getElementById('editStudents').value;
-
-      document.querySelectorAll('.system-title-text').forEach(e => e.innerText = title);
-      document.getElementById('supervisor-display').innerText = supervisor;
-      document.getElementById('students-display').innerText = students;
-
-      localStorage.setItem('aegis_system_meta', JSON.stringify({ title, supervisor, students }));
-      alert("💾 تم حفظ وإدراج بيانات المنظومة بنجاح!");
-    }
-
-    function loadSavedData() {
-      const meta = JSON.parse(localStorage.getItem('aegis_system_meta') || '{}');
-      if (meta.title) document.querySelectorAll('.system-title-text').forEach(e => e.innerText = meta.title);
-      if (meta.supervisor) document.getElementById('supervisor-display').innerText = meta.supervisor;
-      if (meta.students) document.getElementById('students-display').innerText = meta.students;
-
-      loadFacesGallery();
-      loadCADObjectsFromStorage();
-    }
-
-    // ==========================================
-    // 2. CAMERA STREAMING (الكود القصير للبث المباشر)
-    // ==========================================
-    let mediaStream = null;
-
-    async function startCameraStream() {
-      const video = document.getElementById('webcam-video');
-      const canvas = document.getElementById('ai-canvas');
-      const ctx = canvas.getContext('2d');
-
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
-        video.srcObject = mediaStream;
-        video.play();
-
-        video.onloadedmetadata = () => {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          renderStreamFrame();
-        };
-      } catch (e) {
-        document.getElementById('hud-pose-text').innerText = "خطأ بالكاميرا";
-      }
-    }
-
-    function renderStreamFrame() {
-      const video = document.getElementById('webcam-video');
-      const canvas = document.getElementById('ai-canvas');
-      if (!canvas || !video) return;
-
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // محاكاة تحليل الوضعية والبث الحي
-      ctx.strokeStyle = '#00f3ff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(canvas.width * 0.3, canvas.height * 0.2, canvas.width * 0.4, canvas.height * 0.6);
-      
-      document.getElementById('hud-pose-text').innerText = "متصل - جاري المراقبة 🟢";
-      requestAnimationFrame(renderStreamFrame);
-    }
-
-    function startCameraManual() {
-      if (mediaStream) {
-        mediaStream.getTracks().forEach(track => track.stop());
-      }
-      startCameraStream();
-    }
-
-    // ==========================================
-    // 3. FACE CAPTURE & STORAGE
-    // ==========================================
-    function captureFace() {
-      const nameInput = document.getElementById('faceNameInput');
-      const name = nameInput?.value || "شخص غير معروف";
-      const canvas = document.getElementById('ai-canvas');
-      
-      if (!canvas) return;
-      const dataUrl = canvas.toDataURL('image/png');
-
-      const savedFaces = JSON.parse(localStorage.getItem('aegis_faces') || '[]');
-      savedFaces.unshift({ id: Date.now(), name, image: dataUrl, date: new Date().toLocaleDateString('ar-EG') });
-      localStorage.setItem('aegis_faces', JSON.stringify(savedFaces));
-
-      nameInput.value = '';
-      loadFacesGallery();
-      alert(`📸 تم التقاط وحفظ بصمة الوجه لـ (${name}) بنجاح!`);
-    }
-
-    function loadFacesGallery() {
-      const gallery = document.getElementById('faces-gallery');
-      if (!gallery) return;
-
-      const savedFaces = JSON.parse(localStorage.getItem('aegis_faces') || '[]');
-      gallery.innerHTML = savedFaces.map(face => `
-        <div class="bg-slate-900 p-1 rounded border border-slate-800 text-center relative group">
-          <img src="${face.image}" class="w-full h-16 object-cover rounded mb-1 border border-cyan-500/30">
-          <span class="text-[9px] text-cyan-300 font-bold block truncate">${face.name}</span>
-          <button onclick="deleteFace(${face.id})" class="absolute top-1 left-1 bg-red-600/80 text-white rounded-full w-4 h-4 text-[8px] flex items-center justify-center">×</button>
-        </div>
-      `).join('');
-    }
-
-    function deleteFace(id) {
-      let savedFaces = JSON.parse(localStorage.getItem('aegis_faces') || '[]');
-      savedFaces = savedFaces.filter(f => f.id !== id);
-      localStorage.setItem('aegis_faces', JSON.stringify(savedFaces));
-      loadFacesGallery();
-    }
-
-    // ==========================================
-    // 4. THREE.JS 3D ENVIRONMENT & BUILDINGS
-    // ==========================================
-    let scene, camera, renderer, controls;
-    let cadObjects = [];
-    let currentFloor = 0;
-    let selectedTool = 'select';
-    let currentAngle = 0;
+    // 3D Scene Construction (Three.js)
+    let scene, camera, renderer, controls, radarMesh;
 
     function init3DScene() {
       const container = document.getElementById('canvas-container');
-      if (!container || scene) return;
+      if (container.children.length > 0) return;
 
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x020617);
 
       camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(10, 15, 15);
+      camera.position.set(0, 10, 12);
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -714,44 +311,40 @@
       controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
-      // Lights
+      // Lighting & Construction Grid
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
       scene.add(ambientLight);
 
-      const dirLight = new THREE.DirectionalLight(0x38bdf8, 1);
-      dirLight.position.set(20, 40, 20);
+      const dirLight = new THREE.DirectionalLight(0x38bdf8, 0.8);
+      dirLight.position.set(5, 12, 8);
       scene.add(dirLight);
 
-      // Grid
-      const gridHelper = new THREE.GridHelper(30, 30, 0x38bdf8, 0x1e293b);
+      const gridHelper = new THREE.GridHelper(20, 20, 0x38bdf8, 0x1e293b);
       scene.add(gridHelper);
 
-      // Raycasting for Building Creation
+      // Radar Visual Sweep Indicator
+      const radarGeo = new THREE.SphereGeometry(0.3, 16, 16);
+      const radarMat = new THREE.MeshBasicMaterial({ color: 0x34d399 });
+      radarMesh = new THREE.Mesh(radarGeo, radarMat);
+      scene.add(radarMesh);
+
+      // Raycasting for CAD object placement
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
 
       renderer.domElement.addEventListener('pointerdown', (e) => {
+        if (activeTool === 'select') return;
+
         mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
         raycaster.setFromCamera(mouse, camera);
-        const planeGeo = new THREE.PlaneGeometry(100, 100);
-        planeGeo.rotateX(-Math.PI / 2);
-        const plane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ visible: false }));
-        scene.add(plane);
-
-        const intersects = raycaster.intersectObject(plane);
-        if (intersects.length > 0) {
-          const pt = intersects[0].point;
-          document.getElementById('pos-x').innerText = pt.x.toFixed(2);
-          document.getElementById('pos-z').innerText = pt.z.toFixed(2);
-
-          if (selectedTool === 'wall') createWall(pt.x, pt.z);
-          else if (selectedTool === 'door') createDoor(pt.x, pt.z);
-          else if (selectedTool === 'window') createWindow(pt.x, pt.z);
-          else if (selectedTool === 'ai-room') generateAIRoom(pt.x, pt.z);
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const target = new THREE.Vector3();
+        
+        if (raycaster.ray.intersectPlane(plane, target)) {
+          createCADObject(activeTool, target.x, target.z);
         }
-        scene.remove(plane);
       });
 
       window.addEventListener('resize', () => {
@@ -760,164 +353,129 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       });
 
-      animate3D();
+      animate();
     }
 
-    function animate3D() {
-      requestAnimationFrame(animate3D);
+    let time = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      time += 0.03;
+
+      if (radarMesh) {
+        radarMesh.position.x = Math.sin(time) * 3;
+        radarMesh.position.z = Math.cos(time) * 3;
+
+        document.getElementById('pos-x').innerText = radarMesh.position.x.toFixed(2);
+        document.getElementById('pos-z').innerText = radarMesh.position.z.toFixed(2);
+        document.getElementById('target-1-coords').innerText = `X: ${radarMesh.position.x.toFixed(1)}m | Z: ${radarMesh.position.z.toFixed(1)}m`;
+      }
+
       controls.update();
       renderer.render(scene, camera);
     }
 
-    // CAD Tool Handlers
+    // CAD Tooling Functions
     function setCadTool(tool) {
-      selectedTool = tool;
-      document.querySelectorAll('.cad-btn').forEach(b => b.classList.remove('active'));
+      activeTool = tool;
+      document.querySelectorAll('.cad-btn').forEach(btn => btn.classList.remove('active'));
       const activeBtn = document.getElementById(`tool-${tool}`);
       if (activeBtn) activeBtn.classList.add('active');
       document.getElementById('active-tool-label').innerText = tool;
     }
 
-    function changeFloor(val) {
-      currentFloor = parseInt(val);
-      document.getElementById('current-floor-hud').innerText = currentFloor;
-    }
+    function createCADObject(type, x, z) {
+      let geo, mat, color;
 
-    function updateRotationAngle(val) {
-      currentAngle = parseFloat(val);
-    }
+      if (type === 'wall') {
+        geo = new THREE.BoxGeometry(2, 2.5, 0.2);
+        color = 0x38bdf8;
+      } else if (type === 'door') {
+        geo = new THREE.BoxGeometry(1.2, 2.2, 0.15);
+        color = 0xf59e0b;
+      } else if (type === 'window') {
+        geo = new THREE.BoxGeometry(1.5, 1.2, 0.1);
+        color = 0x34d399;
+      }
 
-    function changeSiteBackground(val) {
-      if (val === 'dark') scene.background = new THREE.Color(0x020617);
-      else if (val === 'sky') scene.background = new THREE.Color(0x38bdf8);
-      else if (val === 'grid') scene.background = new THREE.Color(0x090d16);
-    }
+      if (!geo) return;
 
-    function createWall(x, z, w = 3, h = 2.5, d = 0.3) {
-      const geo = new THREE.BoxGeometry(w, h, d);
-      const mat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 });
+      mat = new THREE.MeshStandardMaterial({ color: color });
       const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(x, currentFloor * 2.5 + h / 2, z);
-      mesh.rotation.y = (currentAngle * Math.PI) / 180;
-
+      mesh.position.set(x, type === 'window' ? 1.5 : 1.25, z);
       scene.add(mesh);
-      cadObjects.push({ type: 'wall', x, z, w, h, d, floor: currentFloor, angle: currentAngle });
+
+      cadObjects.push({ type, x, z });
     }
 
-    function createDoor(x, z) {
-      const geo = new THREE.BoxGeometry(1.2, 2.2, 0.15);
-      const mat = new THREE.MeshStandardMaterial({ color: 0xd97706 });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(x, currentFloor * 2.5 + 1.1, z);
-      mesh.rotation.y = (currentAngle * Math.PI) / 180;
-
-      scene.add(mesh);
-      cadObjects.push({ type: 'door', x, z, floor: currentFloor, angle: currentAngle });
-    }
-
-    function createWindow(x, z) {
-      const geo = new THREE.BoxGeometry(1.5, 1.2, 0.1);
-      const mat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 });
-      mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(x, currentFloor * 2.5 + 1.2, z);
-      mesh.rotation.y = (currentAngle * Math.PI) / 180;
-
-      scene.add(mesh);
-      cadObjects.push({ type: 'window', x, z, floor: currentFloor, angle: currentAngle });
-    }
-
-    function generateAIRoom(cx, cz) {
-      const size = parseFloat(document.getElementById('aiRoomSize').value || 6);
-      const half = size / 2;
-
-      createWall(cx, cz - half, size, 2.5, 0.3);
-      createWall(cx, cz + half, size, 2.5, 0.3);
-      createWall(cx - half, cz, size, 2.5, 0.3);
-      createWall(cx + half, cz, size, 2.5, 0.3);
-      createDoor(cx, cz + half);
-      createWindow(cx + half, cz);
+    function buildQuickRoom() {
+      const wallCoords = [
+        { x: 0, z: -3 }, { x: 0, z: 3 },
+        { x: -3, z: 0 }, { x: 3, z: 0 }
+      ];
+      wallCoords.forEach(c => createCADObject('wall', c.x, c.z));
+      createCADObject('door', 0, 3);
+      createCADObject('window', -3, 0);
     }
 
     function saveCADDesign() {
-      localStorage.setItem('aegis_cad_objects', JSON.stringify(cadObjects));
-      alert("💾 تم حفظ جميع بيانات المنشآت والغرف بنجاح!");
+      localStorage.setItem('aegis_cad_design', JSON.stringify(cadObjects));
+      alert("✅ تم حفظ تصميم الرسم المنشآتي بنجاح!");
     }
 
-    function loadCADObjectsFromStorage() {
-      const saved = JSON.parse(localStorage.getItem('aegis_cad_objects') || '[]');
-      saved.forEach(obj => {
-        currentFloor = obj.floor || 0;
-        currentAngle = obj.angle || 0;
-        if (obj.type === 'wall') createWall(obj.x, obj.z, obj.w, obj.h, obj.d);
-        else if (obj.type === 'door') createDoor(obj.x, obj.z);
-        else if (obj.type === 'window') createWindow(obj.x, obj.z);
-      });
+    function loadCADDesign() {
+      const data = localStorage.getItem('aegis_cad_design');
+      if (!data) return;
+      
+      clearCADObjects();
+      const loadedObjects = JSON.parse(data);
+      loadedObjects.forEach(obj => createCADObject(obj.type, obj.x, obj.z));
     }
 
     function clearCADObjects() {
       cadObjects = [];
-      localStorage.removeItem('aegis_cad_objects');
-      location.reload();
+      scene.children = scene.children.filter(obj => obj.type !== 'Mesh' || obj === radarMesh);
     }
 
-    function addDangerZoneUI() {
-      const name = document.getElementById('zoneName').value;
-      const x = parseFloat(document.getElementById('zoneX').value || 0);
-      const z = parseFloat(document.getElementById('zoneZ').value || 0);
-
-      const geo = new THREE.CylinderGeometry(2, 2, 0.1, 32);
-      const mat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.5 });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(x, 0.05, z);
-      scene.add(mesh);
-
-      addSecurityLog(`🚨 تم إنشاء منطقة خطر: ${name} عند [${x}, ${z}]`);
+    // IP Camera Functions
+    function updateCamUrl(url) {
+      document.getElementById('cam-url-input').value = url;
+      reloadCamera();
     }
 
-    // ==========================================
-    // 5. UI CONTROLS & CHART & MQTT
-    // ==========================================
-    function switchTab(tabId, btn) {
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-
-      document.getElementById(`tab-${tabId}`)?.classList.remove('hidden');
-      btn.classList.add('active');
+    function reloadCamera() {
+      const img = document.getElementById('ip-camera-stream');
+      const url = document.getElementById('cam-url-input').value;
+      document.getElementById('cam-fallback-msg').classList.add('hidden');
+      document.getElementById('cam-status').innerText = "جاري الاتصال...";
+      document.getElementById('cam-status').className = "text-[10px] text-amber-400 font-bold";
+      
+      img.src = url + "?t=" + new Date().getTime();
+      img.onload = () => {
+        document.getElementById('cam-status').innerText = "متصل";
+        document.getElementById('cam-status').className = "text-[10px] text-emerald-400 font-bold";
+      };
     }
 
-    function toggleCollapse(id) {
-      document.getElementById(id)?.classList.toggle('collapsed');
+    function handleCamError() {
+      document.getElementById('cam-fallback-msg').classList.remove('hidden');
+      document.getElementById('cam-status').innerText = "غير متصل";
+      document.getElementById('cam-status').className = "text-[10px] text-red-400 font-bold";
     }
 
-    function hidePanel(id) {
-      document.getElementById(id)?.classList.add('hidden');
-    }
-
-    function addSecurityLog(msg) {
-      const logs = document.getElementById('security-logs');
-      if (!logs) return;
-      const item = document.createElement('div');
-      item.className = "bg-slate-900/80 p-1.5 rounded border border-slate-800 text-slate-300 flex justify-between";
-      item.innerHTML = `<span>${msg}</span> <span class="text-slate-500 font-mono">${new Date().toLocaleTimeString('ar-EG')}</span>`;
-      logs.prepend(item);
-    }
-
-    let chartInstance = null;
+    // Chart Analytics
     function initChart() {
-      const ctx = document.getElementById('analyticsChart')?.getContext('2d');
-      if (!ctx) return;
-
-      chartInstance = new Chart(ctx, {
+      const ctx = document.getElementById('analyticsChart').getContext('2d');
+      new Chart(ctx, {
         type: 'line',
         data: {
-          labels: ['01s', '02s', '03s', '04s', '05s', '06s'],
+          labels: ['1s', '2s', '3s', '4s', '5s', '6s'],
           datasets: [{
-            label: 'مسافة الأهداف (متر)',
-            data: [1.2, 1.5, 1.8, 2.1, 1.9, 2.4],
+            label: 'مسافة Target (متر)',
+            data: [1.5, 2.1, 2.8, 3.2, 2.9, 3.4],
             borderColor: '#38bdf8',
             backgroundColor: 'rgba(56, 189, 248, 0.1)',
             fill: true,
-            tension: 0.4
+            tension: 0.3
           }]
         },
         options: {
@@ -925,20 +483,11 @@
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 9 } } },
-            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 9 } } }
+            x: { ticks: { color: '#64748b' }, grid: { display: false } },
+            y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } }
           }
         }
       });
-    }
-
-    function connectMQTT() {
-      const btn = document.getElementById('sensor-btn');
-      if (btn) {
-        btn.innerHTML = `<i class="fa-solid fa-wifi animate-pulse"></i> متصل بالرادار`;
-        btn.classList.replace('bg-emerald-700', 'bg-cyan-600');
-      }
-      addSecurityLog("🛰️ تم الاتصال بالرادار المليمتري LD2450 نجاح!");
     }
   </script>
 </body>
