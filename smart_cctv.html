@@ -90,6 +90,28 @@ aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:au
 .page-settings aside{display:block!important;overflow:auto}
 .page-settings .toolbar,.page-settings .canvasWrap,.page-settings .bottom{display:none!important}
 @media(max-width:1000px){.page-radar aside,.page-camera aside,.page-people aside,.page-logs aside{display:none!important}}
+
+#photoScanModal{position:fixed;inset:0;z-index:500;background:rgba(1,8,18,.96);display:none;overflow:auto;padding:18px}
+#photoScanModal.open{display:block}
+.scanWrap{max-width:1100px;margin:0 auto;color:#e6f7ff}
+.scanGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.scanPanel{background:#071b2b;border:1px solid #125276;border-radius:14px;padding:14px}
+.scanPanel h3{font-size:16px;color:#67d7ff;margin-bottom:10px}
+.scanField{display:flex;flex-direction:column;gap:5px;margin:8px 0}
+.scanField label{font-size:12px;color:#9fc5d7}
+.scanField input{background:#020d18;color:#fff;border:1px solid #1c5271;border-radius:8px;padding:10px;min-width:0;width:100%}
+.scanActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.scanActions button{background:#075985;color:#fff;border:1px solid #0e7490;border-radius:9px;padding:10px 12px;font-weight:700}
+.scanActions button.secondary{background:#142536;border-color:#345064}
+#scanPreviewGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:12px}
+.scanThumb{background:#020b14;border:1px solid #23465b;border-radius:8px;overflow:hidden;position:relative}
+.scanThumb img{width:100%;height:90px;object-fit:cover;display:block}
+.scanThumb small{display:block;padding:5px;font-size:10px;overflow-wrap:anywhere}
+.scanThumb button{position:absolute;top:4px;left:4px;background:#7f1d1d;color:#fff;border:0;border-radius:5px;padding:3px 6px}
+.scanNotice{background:#132c3c;border-right:3px solid #22d3ee;padding:10px;border-radius:8px;font-size:12px;line-height:1.8;color:#c5e7f5;margin:10px 0}
+.scanStatus{font-size:12px;color:#9fe7c2;white-space:pre-wrap;line-height:1.8;margin-top:10px}
+@media(max-width:750px){.scanGrid{grid-template-columns:1fr}#photoScanModal{padding:10px}}
+
 </style>
 </head>
 <body>
@@ -148,6 +170,7 @@ aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:au
 <nav>
  <button data-page="home" class="navActive">🏠<br>الرئيسية</button>
  <button data-page="build">🏗️<br>بناء الغرفة</button>
+ <button data-page="scan" class="adminOnly">📐<br>مسح بالصور</button>
  <button data-page="radar">📡<br>رؤية الرادار</button>
  <button data-page="camera">📷<br>الكاميرا</button>
  <button data-page="people">👥<br>الأشخاص</button>
@@ -313,6 +336,39 @@ aside{border-right:1px solid #075f99;background:#03111d;padding:10px;overflow:au
  <div class="panel logsPanel"><h3>📋 سجل الأحداث</h3><div id="logs" class="objList" style="max-height:260px"></div></div>
 </aside>
 </div>
+</div>
+
+
+<div id="photoScanModal" role="dialog" aria-modal="true" aria-label="مسح الغرفة بالصور">
+ <div class="scanWrap">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+   <div><h2 style="font-size:22px;font-weight:800;color:#67d7ff">📐 مسح الغرفة بالآيفون</h2>
+   <div style="font-size:12px;color:#9fc5d7">التقاط صور متعددة + معايرة الأبعاد + إنشاء نموذج أولي داخل AegisRadar</div></div>
+   <button id="closePhotoScan" style="background:#263747;border:1px solid #476174;color:white;border-radius:8px;padding:10px 14px">إغلاق ✕</button>
+  </div>
+  <div class="scanNotice"><b>طريقة الاستخدام:</b> صوّر الغرفة من زوايا متعددة، وامشِ ببطء مع تداخل الصور بنسبة تقريبية 60–70%. صوّر كل جدار من زاويتين أو أكثر، وأظهر الأرضية والسقف قدر الإمكان. تجنب الصور المهزوزة والأسطح الزجاجية العاكسة. الصور تُعاين داخل المتصفح ولا تُرفع تلقائيًا إلى أي خادم.</div>
+  <div class="scanGrid">
+   <div class="scanPanel">
+    <h3>1) إضافة صور الغرفة</h3>
+    <div class="scanField"><label for="scanPhotos">اختر صورًا متعددة من الآيفون</label><input id="scanPhotos" type="file" accept="image/*" multiple></div>
+    <div id="scanPhotoCount" style="font-size:12px;color:#9fc5d7">لم تُضف صور بعد.</div>
+    <div id="scanPreviewGrid"></div>
+    <div class="scanActions"><button id="scanClearPhotos" class="secondary">حذف الصور</button><button id="scanDownloadManifest" class="secondary">تنزيل سجل المسح</button></div>
+   </div>
+   <div class="scanPanel">
+    <h3>2) معايرة القياس الحقيقي</h3>
+    <div class="scanNotice">لإنشاء نموذج بمقياس صحيح، أدخل قياسات الغرفة الفعلية. الصور وحدها لا تعطي قياسًا مطلقًا موثوقًا من دون معايرة أو خوارزمية Photogrammetry مخصصة.</div>
+    <div class="scanField"><label for="scanWidth">طول الغرفة X (متر)</label><input id="scanWidth" type="number" min="1" max="100" step="0.01" value="5"></div>
+    <div class="scanField"><label for="scanDepth">عرض الغرفة Y (متر)</label><input id="scanDepth" type="number" min="1" max="100" step="0.01" value="4"></div>
+    <div class="scanField"><label for="scanHeight">ارتفاع السقف (متر)</label><input id="scanHeight" type="number" min="1.8" max="10" step="0.01" value="3"></div>
+    <div class="scanField"><label for="scanFloors">عدد الطوابق</label><input id="scanFloors" type="number" min="1" max="10" step="1" value="1"></div>
+    <div class="scanField"><label for="scanScaleRef">قياس مرجعي موثوق (اختياري، بالمتر)</label><input id="scanScaleRef" type="number" min="0" step="0.01" placeholder="مثال: عرض الباب 0.90"></div>
+    <div class="scanActions"><button id="scanBuildModel">إنشاء نموذج 3D معاير</button><button id="scanExportPhotos" class="secondary">تصدير قائمة الصور</button></div>
+    <div id="scanStatus" class="scanStatus">جاهز لاستقبال الصور.</div>
+   </div>
+  </div>
+  <div class="scanNotice" style="margin-top:14px"><b>حدود النسخة الحالية:</b> هذا المسار يستقبل الصور ويجهز جلسة مسح معايرة ويبني غلاف الغرفة من الأبعاد التي تدخلها. لا يدّعي استخراج الجدران والأبواب والنوافذ تلقائيًا من الصور بعد؛ لذلك نحتاج لاحقًا محرك Photogrammetry/Structure-from-Motion (مثل COLMAP/OpenMVG) على الكمبيوتر أو خدمة معالجة مناسبة لإنتاج سحابة نقاط وMesh حقيقيين. لا تُعتبر الصور وحدها نموذجًا ثلاثي الأبعاد حتى تتم معالجتها.</div>
+ </div>
 </div>
 
 <div id="toast"></div>
@@ -957,13 +1013,72 @@ $('applySettings').onclick=applySettings;$('resetSettings').onclick=resetSetting
 $('logout').onclick=()=>{try{disconnectMQTT();}catch(e){}try{disconnectSerial();}catch(e){}stopCam();$('app').style.display='none';$('login').style.display='flex';$('pass').value='';$('error').textContent='';role='viewer';document.body.classList.remove('viewerOnly');setPage('home')};
 syncSettingsUI();updateRoleUI();
 
+
+// ===== iPhone photo-based room scan workflow =====
+const scanPhotoFiles = [];
+let scanPhotoUrls = [];
+function scanRenderPhotos(){
+ const grid=$('scanPreviewGrid'); if(!grid)return;
+ scanPhotoUrls.forEach(u=>URL.revokeObjectURL(u)); scanPhotoUrls=[];
+ grid.innerHTML='';
+ scanPhotoFiles.forEach((file,i)=>{
+   const url=URL.createObjectURL(file);scanPhotoUrls.push(url);
+   const card=document.createElement('div');card.className='scanThumb';
+   const img=document.createElement('img');img.src=url;img.alt='صورة مسح '+(i+1);
+   const small=document.createElement('small');small.textContent=(i+1)+'. '+file.name;
+   const del=document.createElement('button');del.type='button';del.textContent='×';del.title='حذف الصورة';
+   del.addEventListener('click',()=>{scanPhotoFiles.splice(i,1);scanRenderPhotos();});
+   card.append(img,small,del);grid.appendChild(card);
+ });
+ $('scanPhotoCount').textContent=scanPhotoFiles.length+' صورة محددة.';
+ $('scanStatus').textContent=scanPhotoFiles.length>=8
+  ? 'عدد الصور مناسب كبداية. تأكد من تداخل الصور وتغطية جميع الجدران.'
+  : 'أضف 8 صور أو أكثر من زوايا متداخلة للحصول على تغطية أولية أفضل.';
+}
+$('scanPhotos').addEventListener('change',e=>{
+ const files=[...(e.target.files||[])].filter(f=>f.type.startsWith('image/'));
+ files.forEach(f=>{if(!scanPhotoFiles.some(x=>x.name===f.name&&x.size===f.size))scanPhotoFiles.push(f);});
+ scanRenderPhotos();e.target.value='';
+});
+$('scanClearPhotos').addEventListener('click',()=>{
+ scanPhotoFiles.length=0;scanRenderPhotos();$('scanPhotoCount').textContent='لم تُضف صور بعد.';$('scanStatus').textContent='تم حذف الصور من جلسة المسح.';
+});
+$('closePhotoScan').addEventListener('click',()=>{$('photoScanModal').classList.remove('open');});
+$('scanBuildModel').addEventListener('click',()=>{
+ if(role!=='admin'){toast('مسح الغرفة متاح للمهندس فقط');return;}
+ const w=Number($('scanWidth').value),d=Number($('scanDepth').value),h=Number($('scanHeight').value),f=Number($('scanFloors').value);
+ if(!(w>0&&d>0&&h>0&&f>=1)){ $('scanStatus').textContent='تحقق من إدخال أبعاد صحيحة.';return; }
+ if(scanPhotoFiles.length<4){$('scanStatus').textContent='أضف 4 صور على الأقل قبل إنشاء جلسة المسح.';return;}
+ state.W=w;state.D=d;state.H=h;state.floors=Math.max(1,Math.min(10,Math.round(f)));state.currentFloor=1;
+ rebuild();fitView();resize();
+ const manifest={project:'AegisRadar 360 AI',method:'phone-photo-assisted-calibrated-shell',createdAt:new Date().toISOString(),
+  dimensionsMeters:{lengthX:w,widthY:d,height:h,floors:state.floors},referenceLengthMeters:Number($('scanScaleRef').value)||null,
+  imageCount:scanPhotoFiles.length,images:scanPhotoFiles.map(x=>({name:x.name,sizeBytes:x.size,type:x.type})),
+  limitations:'This operation creates a dimension-calibrated room shell only. Photos have not been photogrammetrically reconstructed into a point cloud or mesh.'};
+ localStorage.setItem('aegisradar_photo_scan_manifest',JSON.stringify(manifest));
+ try{localStorage.setItem('aegisradar_settings',JSON.stringify({W:w,D:d,H:h,floors:state.floors}));}catch(e){}
+ $('scanStatus').textContent='تم إنشاء غلاف غرفة 3D بأبعاد '+w+' × '+d+' × '+h+' متر، وعدد الطوابق '+state.floors+'.\\nعدد الصور في جلسة المسح: '+scanPhotoFiles.length+'.\\nملاحظة: الصور لم تتحول بعد إلى Mesh تلقائي؛ الغلاف مبني على القياسات المدخلة. يمكنك الآن الانتقال إلى «بناء الغرفة» لإضافة/تصحيح الجدران والأبواب والنوافذ.';
+ toast('تم إنشاء نموذج الغرفة المعاير');
+});
+$('scanDownloadManifest').addEventListener('click',()=>{
+ const data={createdAt:new Date().toISOString(),images:scanPhotoFiles.map(f=>({name:f.name,sizeBytes:f.size,type:f.type}))};
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='AegisRadar-photo-scan-images.json';a.click();URL.revokeObjectURL(a.href);
+});
+$('scanExportPhotos').addEventListener('click',()=>{
+ if(!scanPhotoFiles.length){$('scanStatus').textContent='لا توجد صور لتصدير قائمتها.';return;}
+ const data={project:'AegisRadar 360 AI',dimensionsMeters:{lengthX:Number($('scanWidth').value),widthY:Number($('scanDepth').value),height:Number($('scanHeight').value)},
+  photos:scanPhotoFiles.map(f=>({name:f.name,sizeBytes:f.size,type:f.type}))};
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='AegisRadar-photo-scan-manifest.json';a.click();URL.revokeObjectURL(a.href);
+});
+
 function animate(){requestAnimationFrame(animate);if(!renderer)return;renderer.render(scene,camera);radarDraw();updateTargets()}
 function setPage(page){
+ if(page==='scan'){if(role!=='admin'){toast('مسح الغرفة متاح للمهندس فقط');page='home';}else{$('photoScanModal').classList.add('open');document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('navActive',x.dataset.page==='scan'));return;}}
  if(page==='settings' && role!=='admin'){toast('الإعدادات متاحة للمهندس فقط');page='home';}
  if(page==='build' && role!=='admin'){toast('البناء متاح للمهندس فقط');page='home';}
  if(page==='logs' && role!=='admin'){toast('السجلات متاحة للمهندس فقط');page='home';}
  const app=document.getElementById('app');
- app.classList.remove('page-home','page-build','page-radar','page-camera','page-people','page-logs','page-settings');
+ app.classList.remove('page-home','page-build','page-radar','page-camera','page-people','page-logs','page-settings','page-scan');
  app.classList.add('page-'+page);
  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('navActive',x.dataset.page===page));
  if(page==='home'||page==='build'){fitView();resize();}else if(page==='radar'){resize();}else if(page==='camera'){resize();}else if(page==='logs'){if(typeof log==='function')log('فتح سجل الأحداث');}else if(page==='settings'){toast('الإعدادات جاهزة للتعديل من اللوحة الجانبية');}
